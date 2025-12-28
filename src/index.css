@@ -9,104 +9,106 @@
 
 @layer base {
   :root {
-    /* Kitchen Flow - Food Nature Theme */
-    --background: 210 40% 98%;
-    --foreground: 215 25% 15%;
+    /* Kitchen Flow - Fresh Food Theme 🍊🥬🍅 */
+    --background: 85 30% 97%;
+    --foreground: 140 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 140 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 140 25% 15%;
 
-    /* Emerald Green - Primary (freshness, validation) */
-    --primary: 160 84% 39%;
+    /* Fresh Green - Primary */
+    --primary: 142 76% 36%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 160 76% 95%;
+    --primary-light: 140 60% 95%;
 
-    /* Orange - Secondary (CTA, alerts) */
-    --secondary: 25 95% 53%;
+    /* Citrus Orange - Secondary */
+    --secondary: 32 98% 50%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Muted */
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    /* Muted - Soft sage */
+    --muted: 100 25% 93%;
+    --muted-foreground: 140 15% 40%;
 
-    /* Accent */
-    --accent: 160 76% 95%;
-    --accent-foreground: 160 84% 30%;
+    /* Accent - Light lime */
+    --accent: 80 60% 92%;
+    --accent-foreground: 142 76% 28%;
 
-    /* Destructive */
-    --destructive: 0 84% 60%;
+    /* Tomato Red - Destructive */
+    --destructive: 4 90% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders and inputs */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 160 84% 39%;
+    /* Borders */
+    --border: 100 20% 88%;
+    --input: 100 20% 88%;
+    --ring: 142 76% 36%;
 
     --radius: 1rem;
 
-    /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 215 25% 35%;
-    --sidebar-primary: 160 84% 39%;
+    /* Sidebar - Fresh garden feel */
+    --sidebar-background: 90 25% 98%;
+    --sidebar-foreground: 140 25% 25%;
+    --sidebar-primary: 142 76% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 76% 95%;
-    --sidebar-accent-foreground: 160 84% 30%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 160 84% 39%;
+    --sidebar-accent: 80 50% 92%;
+    --sidebar-accent-foreground: 142 76% 28%;
+    --sidebar-border: 100 20% 88%;
+    --sidebar-ring: 142 76% 36%;
 
     /* Custom colors */
     --kpi-events: 217 91% 60%;
-    --kpi-alerts: 0 84% 60%;
-    --kpi-reserve: 270 70% 60%;
-    --frozen: 270 70% 60%;
-    --fresh: 160 84% 39%;
+    --kpi-alerts: 4 90% 58%;
+    --kpi-reserve: 280 65% 60%;
+    --frozen: 200 80% 55%;
+    --fresh: 142 76% 36%;
 
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(160 60% 50%) 50%, hsl(25 95% 53%) 100%);
-    --gradient-hero-soft: linear-gradient(135deg, hsl(160 84% 39% / 0.9) 0%, hsl(160 60% 50% / 0.85) 100%);
+    /* Fruity gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(80 70% 45%) 50%, hsl(32 98% 50%) 100%);
+    --gradient-hero-soft: linear-gradient(135deg, hsl(142 76% 36% / 0.9) 0%, hsl(100 60% 50% / 0.85) 100%);
+    --gradient-fresh: linear-gradient(180deg, hsl(85 30% 97%) 0%, hsl(100 40% 94%) 100%);
+    --gradient-citrus: linear-gradient(135deg, hsl(55 90% 65% / 0.15) 0%, hsl(32 95% 55% / 0.1) 100%);
   }
 
   .dark {
-    --background: 215 25% 10%;
-    --foreground: 210 40% 98%;
+    --background: 140 20% 8%;
+    --foreground: 85 30% 95%;
 
-    --card: 215 25% 13%;
-    --card-foreground: 210 40% 98%;
+    --card: 140 20% 11%;
+    --card-foreground: 85 30% 95%;
 
-    --popover: 215 25% 13%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 140 20% 11%;
+    --popover-foreground: 85 30% 95%;
 
-    --primary: 160 84% 45%;
+    --primary: 142 70% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 160 50% 20%;
+    --primary-light: 142 40% 18%;
 
-    --secondary: 25 95% 53%;
+    --secondary: 32 90% 50%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 215 25% 20%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 140 15% 18%;
+    --muted-foreground: 100 20% 60%;
 
-    --accent: 160 50% 20%;
-    --accent-foreground: 160 84% 70%;
+    --accent: 100 30% 18%;
+    --accent-foreground: 142 70% 65%;
 
-    --destructive: 0 62% 40%;
+    --destructive: 4 70% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 20%;
-    --input: 215 25% 20%;
-    --ring: 160 84% 45%;
+    --border: 140 15% 20%;
+    --input: 140 15% 20%;
+    --ring: 142 70% 45%;
 
-    --sidebar-background: 215 25% 12%;
-    --sidebar-foreground: 210 40% 90%;
-    --sidebar-primary: 160 84% 45%;
+    --sidebar-background: 140 20% 10%;
+    --sidebar-foreground: 85 25% 85%;
+    --sidebar-primary: 142 70% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 50% 20%;
-    --sidebar-accent-foreground: 160 84% 70%;
-    --sidebar-border: 215 25% 20%;
-    --sidebar-ring: 160 84% 45%;
+    --sidebar-accent: 100 30% 18%;
+    --sidebar-accent-foreground: 142 70% 65%;
+    --sidebar-border: 140 15% 20%;
+    --sidebar-ring: 142 70% 45%;
   }
 }
 
@@ -122,6 +124,11 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Heebo', sans-serif;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, hsl(142 76% 36% / 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, hsl(32 98% 50% / 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, hsl(80 70% 50% / 0.03) 0%, transparent 60%);
+    background-attachment: fixed;
   }
 }
 
@@ -132,6 +139,23 @@
   
   .gradient-hero-soft {
     background: var(--gradient-hero-soft);
+  }
+
+  .gradient-fresh {
+    background: var(--gradient-fresh);
+  }
+
+  .gradient-citrus {
+    background: var(--gradient-citrus);
+  }
+
+  .bg-food-pattern {
+    background-image: 
+      radial-gradient(ellipse at 15% 25%, hsl(142 76% 36% / 0.06) 0%, transparent 40%),
+      radial-gradient(ellipse at 85% 75%, hsl(32 98% 50% / 0.05) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 10%, hsl(4 90% 58% / 0.03) 0%, transparent 35%),
+      radial-gradient(ellipse at 75% 30%, hsl(55 90% 60% / 0.04) 0%, transparent 40%);
+    background-attachment: fixed;
   }
 }
 
