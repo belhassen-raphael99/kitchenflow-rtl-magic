@@ -7,7 +7,8 @@ import {
   Package,
   Maximize,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,8 +27,13 @@ export const Sidebar = () => {
     sidebarOpen, 
     setSidebarOpen,
     toggleFullscreen,
-    clientInfo 
+    clientInfo,
+    logout,
+    currentClient
   } = useApp();
+
+  // Dynamic logo background based on client
+  const logoBgColor = currentClient === 'pizzaking' ? 'bg-[#EF4444]' : 'bg-primary';
 
   return (
     <>
@@ -55,7 +61,7 @@ export const Sidebar = () => {
                 <p className="text-xs text-muted-foreground">{clientInfo.tagline}</p>
               </div>
             )}
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-2xl shrink-0">
+            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0", logoBgColor)}>
               {clientInfo.logo}
             </div>
           </div>
@@ -64,7 +70,7 @@ export const Sidebar = () => {
         {/* Navigation */}
         <nav className="flex-1 p-3 overflow-y-auto">
           <div className="space-y-1">
-            {navItems.map((item, index) => (
+            {navItems.map((item) => (
               <div key={item.id}>
                 {item.section && sidebarOpen && (
                   <p className="text-xs text-muted-foreground px-3 py-2 mt-4">
@@ -107,6 +113,18 @@ export const Sidebar = () => {
           >
             <Maximize className="w-5 h-5 shrink-0" />
             {sidebarOpen && <span>מסך מלא למטבח</span>}
+          </button>
+          
+          <button
+            onClick={logout}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200",
+              "text-destructive hover:bg-destructive/10",
+              !sidebarOpen && "justify-center"
+            )}
+          >
+            <LogOut className="w-5 h-5 shrink-0" />
+            {sidebarOpen && <span>התנתק</span>}
           </button>
         </div>
 

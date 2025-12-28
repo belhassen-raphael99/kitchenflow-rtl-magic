@@ -206,4 +206,8 @@ export const clientInfo = {
   name: 'קסרולה',
   tagline: 'ניהול קייטרינג חכם',
   logo: '🍳',
+  primaryColor: '#10B981', // Green
 };
+
+// Type for client info
+export type ClientInfo = typeof clientInfo;
