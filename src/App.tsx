@@ -1,27 +1,51 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { AppProvider, useApp } from './context/AppContext';
+import { AppLayout } from './components/layout/AppLayout';
+import { LoginPage } from './components/pages/LoginPage';
+import { DashboardPage } from './components/pages/DashboardPage';
+import { AgendaPage } from './components/pages/AgendaPage';
+import { RecipesPage } from './components/pages/RecipesPage';
+import { ReservePage } from './components/pages/ReservePage';
+import { WarehousePage } from './components/pages/WarehousePage';
+import { Toaster } from '@/components/ui/toaster';
 
-const queryClient = new QueryClient();
+const AppContent = () => {
+  const { isLoggedIn, currentPage } = useApp();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+  if (!isLoggedIn) {
+    return <LoginPage />;
+  }
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <DashboardPage />;
+      case 'agenda':
+        return <AgendaPage />;
+      case 'recipes':
+        return <RecipesPage />;
+      case 'reserve':
+        return <ReservePage />;
+      case 'warehouse':
+        return <WarehousePage />;
+      default:
+        return <DashboardPage />;
+    }
+  };
+
+  return (
+    <AppLayout>
+      {renderPage()}
+    </AppLayout>
+  );
+};
+
+const App = () => {
+  return (
+    <AppProvider>
+      <AppContent />
       <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </AppProvider>
+  );
+};
 
 export default App;
