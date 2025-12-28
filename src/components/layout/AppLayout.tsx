@@ -16,7 +16,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <main
         className={cn(
           "min-h-screen transition-all duration-300",
-          sidebarOpen ? "lg:mr-64" : "lg:mr-16"
+          // Desktop: margin for sidebar
+          sidebarOpen ? "lg:mr-72" : "lg:mr-20",
+          // Mobile/Tablet: padding top for floating menu button
+          "pt-20 lg:pt-0"
         )}
       >
         <div className="p-4 md:p-6 lg:p-8 max-w-6xl">
