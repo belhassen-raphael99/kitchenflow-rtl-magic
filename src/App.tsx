@@ -10,6 +10,7 @@ import { WarehousePage } from './components/pages/WarehousePage';
 import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
 import { AdminUsersPage } from './components/pages/AdminUsersPage';
 import { Toaster } from '@/components/ui/toaster';
+import { FoodBackground } from './components/layout/FoodBackground';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
@@ -139,6 +140,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppProvider>
+        <FoodBackground />
         <AppRoutes />
         <Toaster />
       </AppProvider>
