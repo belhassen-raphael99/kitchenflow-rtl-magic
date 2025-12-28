@@ -1,4 +1,4 @@
-import { AppProvider, useApp } from './context/AppContext';
+import { AppProvider, useApp } from '@/context/AppContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './components/pages/LoginPage';
 import { DashboardPage } from './components/pages/DashboardPage';
