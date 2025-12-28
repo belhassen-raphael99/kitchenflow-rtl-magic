@@ -13,6 +13,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,7 +40,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw } from 'lucide-react';
+import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2 } from 'lucide-react';
 import { z } from 'zod';
 
 const inviteSchema = z.object({
@@ -48,11 +59,12 @@ interface UserWithRole {
 }
 
 export const AdminUsersPage = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   
   // Invite form state
   const [email, setEmail] = useState('');
@@ -180,6 +192,25 @@ export const AdminUsersPage = () => {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setPassword(result);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    setDeletingUserId(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast({ title: 'הצלחה!', description: 'המשתמש נמחק בהצלחה' });
+      fetchUsers();
+    } catch (error: any) {
+      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } finally {
+      setDeletingUserId(null);
+    }
   };
 
   if (!isAdmin) {
@@ -326,6 +357,7 @@ export const AdminUsersPage = () => {
                 <TableHead className="text-right">אימייל</TableHead>
                 <TableHead className="text-right">תפקיד</TableHead>
                 <TableHead className="text-right">תאריך הצטרפות</TableHead>
+                <TableHead className="text-right">פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -355,6 +387,44 @@ export const AdminUsersPage = () => {
                   </TableCell>
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString('he-IL')}
+                  </TableCell>
+                  <TableCell>
+                    {user.id !== currentUser?.id && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={deletingUserId === user.id}
+                          >
+                            {deletingUserId === user.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent dir="rtl">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>מחיקת משתמש</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              האם אתה בטוח שברצונך למחוק את {user.full_name || user.email}? 
+                              פעולה זו תמחק את המשתמש לצמיתות ולא ניתן לבטלה.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="flex-row-reverse gap-2">
+                            <AlertDialogCancel>ביטול</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              מחק משתמש
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
