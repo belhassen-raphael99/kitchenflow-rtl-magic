@@ -14,7 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          contact_info: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          contact_info?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          contact_info?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      warehouse_items: {
+        Row: {
+          category_id: string | null
+          code: string | null
+          created_at: string
+          id: string
+          min_stock: number
+          name: string
+          price: number | null
+          quantity: number
+          status: string
+          supplier_id: string | null
+          unit: string
+          updated_at: string
+          waste_percent: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name: string
+          price?: number | null
+          quantity?: number
+          status?: string
+          supplier_id?: string | null
+          unit?: string
+          updated_at?: string
+          waste_percent?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          min_stock?: number
+          name?: string
+          price?: number | null
+          quantity?: number
+          status?: string
+          supplier_id?: string | null
+          unit?: string
+          updated_at?: string
+          waste_percent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warehouse_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warehouse_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
