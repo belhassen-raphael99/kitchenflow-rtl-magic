@@ -28,12 +28,8 @@ export const Sidebar = () => {
     setSidebarOpen,
     toggleFullscreen,
     clientInfo,
-    logout,
-    currentClient
+    logout
   } = useApp();
-
-  // Dynamic logo background based on client
-  const logoBgColor = currentClient === 'pizzaking' ? 'bg-[#EF4444]' : 'bg-primary';
 
   return (
     <>
@@ -61,7 +57,7 @@ export const Sidebar = () => {
                 <p className="text-xs text-muted-foreground">{clientInfo.tagline}</p>
               </div>
             )}
-            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0", logoBgColor)}>
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-2xl shrink-0">
               {clientInfo.logo}
             </div>
           </div>

@@ -1,32 +1,22 @@
-// AppContext v2 - Kitchen Flow State Management
+// AppContext v3 - Kitchen Flow State Management (Simplified)
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { 
-  warehouseItems as casseroleWarehouse, 
-  reserveItems as casseroleReserve, 
-  events as casseroleEvents,
-  recipes as casseroleRecipes,
-  clientInfo as casseroleClientInfo,
+  warehouseItems, 
+  reserveItems, 
+  events as initialEvents,
+  recipes as initialRecipes,
+  clientInfo as defaultClientInfo,
   WarehouseItem,
   ReserveItem,
   Event,
   Recipe,
   ClientInfo
 } from '@/data/mockData';
-import {
-  pizzakingWarehouse,
-  pizzakingReserve,
-  pizzakingEvents,
-  pizzakingRecipes,
-  pizzakingClientInfo
-} from '@/data/pizzakingData';
-
-export type ClientType = 'casserole' | 'pizzaking';
 
 interface AppContextType {
   isLoggedIn: boolean;
   setIsLoggedIn: (value: boolean) => void;
-  currentClient: ClientType;
-  loginAs: (client: ClientType) => void;
+  login: () => void;
   logout: () => void;
   currentPage: string;
   setCurrentPage: (page: string) => void;
@@ -50,34 +40,16 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentClient, setCurrentClient] = useState<ClientType>('casserole');
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [warehouse, setWarehouse] = useState<WarehouseItem[]>(casseroleWarehouse);
-  const [reserve, setReserve] = useState<ReserveItem[]>(casseroleReserve);
-  const [eventsState, setEvents] = useState<Event[]>(casseroleEvents);
-  const [recipes, setRecipes] = useState<Recipe[]>(casseroleRecipes);
-  const [clientInfo, setClientInfo] = useState<ClientInfo>(casseroleClientInfo);
+  const [warehouse, setWarehouse] = useState<WarehouseItem[]>(warehouseItems);
+  const [reserve, setReserve] = useState<ReserveItem[]>(reserveItems);
+  const [eventsState, setEvents] = useState<Event[]>(initialEvents);
+  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
-  const loginAs = (client: ClientType) => {
-    setCurrentClient(client);
-    
-    if (client === 'casserole') {
-      setWarehouse(casseroleWarehouse);
-      setReserve(casseroleReserve);
-      setEvents(casseroleEvents);
-      setRecipes(casseroleRecipes);
-      setClientInfo(casseroleClientInfo);
-    } else {
-      setWarehouse(pizzakingWarehouse);
-      setReserve(pizzakingReserve);
-      setEvents(pizzakingEvents);
-      setRecipes(pizzakingRecipes);
-      setClientInfo(pizzakingClientInfo);
-    }
-    
+  const login = () => {
     setCurrentPage('dashboard');
     setIsLoggedIn(true);
   };
@@ -102,8 +74,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         isLoggedIn,
         setIsLoggedIn,
-        currentClient,
-        loginAs,
+        login,
         logout,
         currentPage,
         setCurrentPage,
@@ -118,7 +89,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         events: eventsState,
         setEvents,
         recipes,
-        clientInfo,
+        clientInfo: defaultClientInfo,
         selectedRecipe,
         setSelectedRecipe,
       }}
