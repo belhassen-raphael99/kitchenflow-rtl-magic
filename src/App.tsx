@@ -39,13 +39,13 @@ const AppContent = () => {
   );
 };
 
-const App = () => {
+function App() {
   return (
     <AppProvider>
       <AppContent />
       <Toaster />
     </AppProvider>
   );
-};
+}
 
 export default App;
