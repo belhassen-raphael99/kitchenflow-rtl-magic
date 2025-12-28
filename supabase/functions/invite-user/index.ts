@@ -5,6 +5,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// HTML escape function to prevent injection attacks
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 interface InviteRequest {
   email: string;
   fullName: string;
@@ -129,7 +139,7 @@ Deno.serve(async (req) => {
                   <p style="color: #666;">ניהול קייטרינג חכם</p>
                 </div>
                 
-                <h2 style="color: #333;">שלום ${fullName}!</h2>
+                <h2 style="color: #333;">שלום ${escapeHtml(fullName)}!</h2>
                 
                 <p style="color: #555; line-height: 1.6;">
                   ברוכים הבאים למערכת קסרולה! חשבונך נוצר בהצלחה.
@@ -137,8 +147,8 @@ Deno.serve(async (req) => {
                 
                 <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <p style="margin: 0 0 10px 0;"><strong>פרטי התחברות:</strong></p>
-                  <p style="margin: 5px 0;">📧 אימייל: <strong>${email}</strong></p>
-                  <p style="margin: 5px 0;">🔑 סיסמה זמנית: <strong>${password}</strong></p>
+                  <p style="margin: 5px 0;">📧 אימייל: <strong>${escapeHtml(email)}</strong></p>
+                  <p style="margin: 5px 0;">🔑 סיסמה זמנית: <strong>${escapeHtml(password)}</strong></p>
                 </div>
                 
                 <p style="color: #d32f2f; font-size: 14px;">
