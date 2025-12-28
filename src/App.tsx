@@ -1,6 +1,7 @@
-import { AppProvider, useApp } from '@/context/AppContext';
+import { AppProvider } from '@/context/AppContext';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
-import { LoginPage } from './components/pages/LoginPage';
+import { AuthPage } from './components/pages/AuthPage';
 import { DashboardPage } from './components/pages/DashboardPage';
 import { AgendaPage } from './components/pages/AgendaPage';
 import { RecipesPage } from './components/pages/RecipesPage';
@@ -8,46 +9,129 @@ import { ReservePage } from './components/pages/ReservePage';
 import { WarehousePage } from './components/pages/WarehousePage';
 import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
 import { Toaster } from '@/components/ui/toaster';
+import { useAuth } from '@/hooks/useAuth';
+import { Loader2 } from 'lucide-react';
 
-const AppContent = () => {
-  const { isLoggedIn, currentPage } = useApp();
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
 
-  if (!isLoggedIn) {
-    return <LoginPage />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <DashboardPage />;
-      case 'kitchen-ops':
-        return <KitchenOpsPage />;
-      case 'agenda':
-        return <AgendaPage />;
-      case 'recipes':
-        return <RecipesPage />;
-      case 'reserve':
-        return <ReservePage />;
-      case 'warehouse':
-        return <WarehousePage />;
-      default:
-        return <DashboardPage />;
-    }
-  };
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
+  return <>{children}</>;
+};
+
+const AuthRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+const AppRoutes = () => {
   return (
-    <AppLayout>
-      {renderPage()}
-    </AppLayout>
+    <Routes>
+      <Route
+        path="/auth"
+        element={
+          <AuthRoute>
+            <AuthPage />
+          </AuthRoute>
+        }
+      />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <DashboardPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/warehouse"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <WarehousePage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/kitchen-ops"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <KitchenOpsPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/agenda"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <AgendaPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/recipes"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <RecipesPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reserve"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ReservePage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 };
 
 function App() {
   return (
-    <AppProvider>
-      <AppContent />
-      <Toaster />
-    </AppProvider>
+    <BrowserRouter>
+      <AppProvider>
+        <AppRoutes />
+        <Toaster />
+      </AppProvider>
+    </BrowserRouter>
   );
 }
 
