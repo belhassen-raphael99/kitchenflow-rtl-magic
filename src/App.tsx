@@ -6,6 +6,7 @@ import { AgendaPage } from './components/pages/AgendaPage';
 import { RecipesPage } from './components/pages/RecipesPage';
 import { ReservePage } from './components/pages/ReservePage';
 import { WarehousePage } from './components/pages/WarehousePage';
+import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
 import { Toaster } from '@/components/ui/toaster';
 
 const AppContent = () => {
@@ -19,6 +20,8 @@ const AppContent = () => {
     switch (currentPage) {
       case 'dashboard':
         return <DashboardPage />;
+      case 'kitchen-ops':
+        return <KitchenOpsPage />;
       case 'agenda':
         return <AgendaPage />;
       case 'recipes':
