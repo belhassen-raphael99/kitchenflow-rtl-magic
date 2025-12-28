@@ -1,11 +1,54 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
+// ============================================
+// CORS HEADERS
+// ============================================
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// HTML escape function to prevent injection attacks
+// ============================================
+// VALIDATION SCHEMAS (Zod)
+// ============================================
+const emailSchema = z.string()
+  .trim()
+  .toLowerCase()
+  .min(5, 'Email trop court')
+  .max(255, 'Email trop long')
+  .email('Format email invalide');
+
+const passwordSchema = z.string()
+  .min(12, 'Le mot de passe doit contenir au moins 12 caractères')
+  .max(128, 'Mot de passe trop long')
+  .regex(/[a-z]/, 'Doit contenir une minuscule')
+  .regex(/[A-Z]/, 'Doit contenir une majuscule')
+  .regex(/[0-9]/, 'Doit contenir un chiffre')
+  .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Doit contenir un caractère spécial');
+
+const fullNameSchema = z.string()
+  .trim()
+  .min(2, 'Nom trop court')
+  .max(100, 'Nom trop long')
+  .transform(s => s.replace(/[^a-zA-Z\u0590-\u05FF\u0600-\u06FF\s\-']/g, ''));
+
+const roleSchema = z.enum(['admin', 'employee']);
+
+const inviteUserSchema = z.object({
+  email: emailSchema,
+  fullName: fullNameSchema,
+  password: passwordSchema,
+  role: roleSchema,
+});
+
+// ============================================
+// SECURITY UTILITIES
+// ============================================
+
+/**
+ * Escape HTML pour prévenir XSS
+ */
 function escapeHtml(unsafe: string): string {
   return unsafe
     .replace(/&/g, '&amp;')
@@ -15,30 +58,92 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, '&#039;');
 }
 
-interface InviteRequest {
-  email: string;
-  fullName: string;
-  password: string;
-  role: 'admin' | 'employee';
+/**
+ * Rate limiting avec base de données
+ */
+async function checkRateLimit(
+  client: any,
+  identifier: string,
+  action: string,
+  maxRequests: number,
+  windowSeconds: number
+): Promise<boolean> {
+  try {
+    const { data, error } = await client.rpc('check_rate_limit', {
+      p_identifier: identifier,
+      p_action: action,
+      p_max_requests: maxRequests,
+      p_window_seconds: windowSeconds,
+    });
+    
+    if (error) {
+      console.error('Rate limit check error:', error);
+      return true; // Allow on error to not block legitimate users
+    }
+    
+    return data as boolean;
+  } catch (err) {
+    console.error('Rate limit error:', err);
+    return true;
+  }
 }
 
+/**
+ * Crée une réponse d'erreur sécurisée (messages génériques)
+ */
+function errorResponse(
+  userMessage: string,
+  status: number,
+  technicalDetails?: string
+): Response {
+  // Log technique uniquement côté serveur
+  if (technicalDetails) {
+    console.error(`[ERROR] ${technicalDetails}`);
+  }
+  
+  return new Response(
+    JSON.stringify({ error: userMessage }),
+    { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+/**
+ * Log d'audit sécurisé
+ */
+function auditLog(action: string, userId: string, details: Record<string, unknown>): void {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    action,
+    userId,
+    // Ne pas logger les données sensibles
+    details: {
+      ...details,
+      password: details.password ? '[REDACTED]' : undefined,
+    },
+  }));
+}
+
+// ============================================
+// MAIN HANDLER
+// ============================================
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Only allow POST
+  if (req.method !== 'POST') {
+    return errorResponse('Méthode non autorisée', 405);
+  }
+
   try {
-    // Get the authorization header to verify the caller is authenticated
+    // 1. AUTHENTICATION - Vérifier le token JWT
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Non authentifié', 401, 'Missing authorization header');
     }
 
-    // Create a Supabase client with the user's JWT to verify they're an admin
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -47,16 +152,12 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Get the current user
     const { data: { user: callerUser }, error: userError } = await userClient.auth.getUser();
     if (userError || !callerUser) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Session invalide', 401, `Auth error: ${userError?.message}`);
     }
 
-    // Check if the caller is an admin using service role client
+    // 2. AUTHORIZATION - Vérifier le rôle admin
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
     
     const { data: roleData } = await adminClient
@@ -67,25 +168,44 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!roleData) {
-      return new Response(
-        JSON.stringify({ error: 'Only admins can invite users' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      auditLog('UNAUTHORIZED_INVITE_ATTEMPT', callerUser.id, { email: callerUser.email });
+      return errorResponse('Permissions insuffisantes', 403, 'Non-admin attempted to invite user');
     }
 
-    // Parse the request body
-    const { email, fullName, password, role }: InviteRequest = await req.json();
+    // 3. RATE LIMITING - Limiter les invitations
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimitPassed = await checkRateLimit(
+      adminClient,
+      `${callerUser.id}:invite`,
+      'invite_user',
+      10, // Max 10 invitations
+      3600 // Par heure
+    );
 
-    if (!email || !fullName || !password || !role) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!rateLimitPassed) {
+      auditLog('RATE_LIMITED', callerUser.id, { action: 'invite_user' });
+      return errorResponse('Trop de tentatives. Veuillez patienter.', 429);
     }
 
-    console.log(`Creating user: ${email} with role: ${role}`);
+    // 4. INPUT VALIDATION - Validation stricte avec Zod
+    let requestBody: unknown;
+    try {
+      requestBody = await req.json();
+    } catch {
+      return errorResponse('Format de requête invalide', 400, 'Invalid JSON body');
+    }
 
-    // Create the user using admin API
+    const validationResult = inviteUserSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(e => e.message).join(', ');
+      return errorResponse('Données invalides', 400, `Validation failed: ${errors}`);
+    }
+
+    const { email, fullName, password, role } = validationResult.data;
+
+    // 5. BUSINESS LOGIC - Créer l'utilisateur
+    auditLog('INVITE_USER_START', callerUser.id, { targetEmail: email, role });
+
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -94,31 +214,26 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      console.error('Error creating user:', createError);
-      return new Response(
-        JSON.stringify({ error: createError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // Messages génériques pour ne pas révéler si l'email existe
+      if (createError.message.includes('already exists') || createError.message.includes('duplicate')) {
+        return errorResponse('Impossible de créer cet utilisateur', 400, `User exists: ${email}`);
+      }
+      return errorResponse('Erreur lors de la création du compte', 400, createError.message);
     }
 
-    console.log(`User created successfully: ${newUser.user.id}`);
-
-    // Assign the role - first delete any existing role from the trigger, then insert the correct one
-    await adminClient
-      .from('user_roles')
-      .delete()
-      .eq('user_id', newUser.user.id);
+    // 6. ROLE ASSIGNMENT
+    await adminClient.from('user_roles').delete().eq('user_id', newUser.user.id);
     
     const { error: roleError } = await adminClient
       .from('user_roles')
       .insert({ user_id: newUser.user.id, role });
 
     if (roleError) {
-      console.error('Error assigning role:', roleError);
-      // User was created but role assignment failed - still return success but with warning
+      console.error('Role assignment error:', roleError);
+      // Ne pas échouer complètement, l'utilisateur est créé
     }
 
-    // Try to send welcome email if RESEND_API_KEY is configured
+    // 7. EMAIL NOTIFICATION (optionnel)
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (resendApiKey) {
       try {
@@ -134,49 +249,31 @@ Deno.serve(async (req) => {
             subject: 'ברוכים הבאים לקסרולה!',
             html: `
               <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                  <h1 style="color: #333;">🍳 קסרולה</h1>
-                  <p style="color: #666;">ניהול קייטרינג חכם</p>
-                </div>
-                
-                <h2 style="color: #333;">שלום ${escapeHtml(fullName)}!</h2>
-                
-                <p style="color: #555; line-height: 1.6;">
-                  ברוכים הבאים למערכת קסרולה! חשבונך נוצר בהצלחה.
-                </p>
-                
+                <h1 style="color: #333;">🍳 קסרולה</h1>
+                <h2>שלום ${escapeHtml(fullName)}!</h2>
+                <p>ברוכים הבאים למערכת קסרולה! חשבונך נוצר בהצלחה.</p>
                 <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <p style="margin: 0 0 10px 0;"><strong>פרטי התחברות:</strong></p>
-                  <p style="margin: 5px 0;">📧 אימייל: <strong>${escapeHtml(email)}</strong></p>
-                  <p style="margin: 5px 0;">🔑 סיסמה זמנית: <strong>${escapeHtml(password)}</strong></p>
+                  <p><strong>פרטי התחברות:</strong></p>
+                  <p>📧 אימייל: <strong>${escapeHtml(email)}</strong></p>
+                  <p>🔑 סיסמה זמנית: <strong>${escapeHtml(password)}</strong></p>
                 </div>
-                
-                <p style="color: #d32f2f; font-size: 14px;">
-                  ⚠️ מומלץ לשנות את הסיסמה מיד לאחר ההתחברות הראשונה
-                </p>
-                
-                <div style="text-align: center; margin-top: 30px;">
-                  <a href="${Deno.env.get('SITE_URL') || 'https://your-app.lovable.app'}/auth" 
-                     style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                    התחבר למערכת
-                  </a>
-                </div>
-                
-                <p style="color: #999; font-size: 12px; margin-top: 30px; text-align: center;">
-                  אם יש לך שאלות, פנה למנהל המערכת שלך.
-                </p>
+                <p style="color: #d32f2f;">⚠️ מומלץ לשנות את הסיסמה מיד לאחר ההתחברות הראשונה</p>
               </div>
             `,
           }),
         });
-        console.log('Welcome email sent successfully');
       } catch (emailError) {
-        console.error('Error sending welcome email:', emailError);
-        // Don't fail the whole operation if email fails
+        console.error('Email error:', emailError);
+        // Don't fail the operation
       }
-    } else {
-      console.log('RESEND_API_KEY not configured, skipping welcome email');
     }
+
+    // 8. AUDIT LOG - Succès
+    auditLog('INVITE_USER_SUCCESS', callerUser.id, { 
+      targetUserId: newUser.user.id, 
+      targetEmail: email, 
+      role 
+    });
 
     return new Response(
       JSON.stringify({ 
@@ -185,12 +282,9 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     console.error('Unexpected error:', error);
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return errorResponse('Une erreur est survenue', 500);
   }
 });

@@ -1,31 +1,106 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
+// ============================================
+// CORS HEADERS
+// ============================================
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface DeleteRequest {
-  userId: string;
+// ============================================
+// VALIDATION SCHEMAS
+// ============================================
+const deleteUserSchema = z.object({
+  userId: z.string().uuid('Format UUID invalide'),
+});
+
+// ============================================
+// SECURITY UTILITIES
+// ============================================
+
+/**
+ * Rate limiting avec base de données
+ */
+async function checkRateLimit(
+  client: any,
+  identifier: string,
+  action: string,
+  maxRequests: number,
+  windowSeconds: number
+): Promise<boolean> {
+  try {
+    const { data, error } = await client.rpc('check_rate_limit', {
+      p_identifier: identifier,
+      p_action: action,
+      p_max_requests: maxRequests,
+      p_window_seconds: windowSeconds,
+    });
+    
+    if (error) {
+      console.error('Rate limit check error:', error);
+      return true;
+    }
+    
+    return data as boolean;
+  } catch (err) {
+    console.error('Rate limit error:', err);
+    return true;
+  }
 }
 
+/**
+ * Réponse d'erreur sécurisée
+ */
+function errorResponse(
+  userMessage: string,
+  status: number,
+  technicalDetails?: string
+): Response {
+  if (technicalDetails) {
+    console.error(`[ERROR] ${technicalDetails}`);
+  }
+  
+  return new Response(
+    JSON.stringify({ error: userMessage }),
+    { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+/**
+ * Log d'audit sécurisé
+ */
+function auditLog(action: string, userId: string, details: Record<string, unknown>): void {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    action,
+    userId,
+    details,
+  }));
+}
+
+// ============================================
+// MAIN HANDLER
+// ============================================
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Only allow POST
+  if (req.method !== 'POST') {
+    return errorResponse('Méthode non autorisée', 405);
+  }
+
   try {
-    // Get the authorization header to verify the caller is authenticated
+    // 1. AUTHENTICATION
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Non authentifié', 401, 'Missing authorization header');
     }
 
-    // Create a Supabase client with the user's JWT to verify they're an admin
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -34,16 +109,12 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Get the current user
     const { data: { user: callerUser }, error: userError } = await userClient.auth.getUser();
     if (userError || !callerUser) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Session invalide', 401, `Auth error: ${userError?.message}`);
     }
 
-    // Check if the caller is an admin using service role client
+    // 2. AUTHORIZATION - Admin only
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
     
     const { data: roleData } = await adminClient
@@ -54,76 +125,99 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!roleData) {
-      return new Response(
-        JSON.stringify({ error: 'Only admins can delete users' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      auditLog('UNAUTHORIZED_DELETE_ATTEMPT', callerUser.id, { email: callerUser.email });
+      return errorResponse('Permissions insuffisantes', 403, 'Non-admin attempted to delete user');
     }
 
-    // Parse the request body
-    const { userId }: DeleteRequest = await req.json();
+    // 3. RATE LIMITING
+    const rateLimitPassed = await checkRateLimit(
+      adminClient,
+      `${callerUser.id}:delete`,
+      'delete_user',
+      5, // Max 5 suppressions
+      3600 // Par heure
+    );
 
-    if (!userId) {
-      return new Response(
-        JSON.stringify({ error: 'Missing userId' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!rateLimitPassed) {
+      auditLog('RATE_LIMITED', callerUser.id, { action: 'delete_user' });
+      return errorResponse('Trop de tentatives. Veuillez patienter.', 429);
     }
 
-    // Prevent self-deletion
+    // 4. INPUT VALIDATION
+    let requestBody: unknown;
+    try {
+      requestBody = await req.json();
+    } catch {
+      return errorResponse('Format de requête invalide', 400, 'Invalid JSON body');
+    }
+
+    const validationResult = deleteUserSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(e => e.message).join(', ');
+      return errorResponse('Données invalides', 400, `Validation failed: ${errors}`);
+    }
+
+    const { userId } = validationResult.data;
+
+    // 5. PREVENT SELF-DELETION
     if (userId === callerUser.id) {
-      return new Response(
-        JSON.stringify({ error: 'You cannot delete your own account' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Action non autorisée', 400, 'Attempted self-deletion');
     }
 
-    console.log(`Deleting user: ${userId}`);
+    // 6. VERIFY TARGET USER EXISTS
+    const { data: targetUser, error: targetError } = await adminClient.auth.admin.getUserById(userId);
+    if (targetError || !targetUser.user) {
+      return errorResponse('Utilisateur introuvable', 404, `User not found: ${userId}`);
+    }
 
-    // Delete user role first (due to foreign key constraint behavior)
+    auditLog('DELETE_USER_START', callerUser.id, { 
+      targetUserId: userId, 
+      targetEmail: targetUser.user.email 
+    });
+
+    // 7. DELETE USER DATA (order matters for foreign keys)
     const { error: roleDeleteError } = await adminClient
       .from('user_roles')
       .delete()
       .eq('user_id', userId);
 
     if (roleDeleteError) {
-      console.error('Error deleting user role:', roleDeleteError);
+      console.error('Role deletion error:', roleDeleteError);
     }
 
-    // Delete user profile
     const { error: profileDeleteError } = await adminClient
       .from('profiles')
       .delete()
       .eq('id', userId);
 
     if (profileDeleteError) {
-      console.error('Error deleting user profile:', profileDeleteError);
+      console.error('Profile deletion error:', profileDeleteError);
     }
 
-    // Delete the user from auth.users using admin API
-    // This will cascade delete related data if configured
+    // 8. DELETE AUTH USER
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
 
     if (deleteError) {
-      console.error('Error deleting user:', deleteError);
-      return new Response(
-        JSON.stringify({ error: deleteError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      auditLog('DELETE_USER_FAILED', callerUser.id, { 
+        targetUserId: userId, 
+        error: deleteError.message 
+      });
+      return errorResponse('Erreur lors de la suppression', 500, deleteError.message);
     }
 
-    console.log(`User deleted successfully: ${userId}`);
+    // 9. SUCCESS AUDIT
+    auditLog('DELETE_USER_SUCCESS', callerUser.id, { 
+      targetUserId: userId, 
+      targetEmail: targetUser.user.email 
+    });
 
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     console.error('Unexpected error:', error);
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return errorResponse('Une erreur est survenue', 500);
   }
 });
