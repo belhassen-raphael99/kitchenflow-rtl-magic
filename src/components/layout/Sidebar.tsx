@@ -8,12 +8,14 @@ import {
   Maximize,
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  Monitor
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { id: 'dashboard', label: 'דשבורד', icon: LayoutDashboard },
+  { id: 'kitchen-ops', label: 'פוסט מטבח', icon: Monitor, section: 'תפעול' },
   { id: 'agenda', label: 'יומן אירועים', icon: Calendar },
   { id: 'recipes', label: 'ספר מתכונים', icon: ChefHat },
   { id: 'reserve', label: 'רזרבה (הכנות)', icon: Layers, section: 'ניהול מלאי' },
