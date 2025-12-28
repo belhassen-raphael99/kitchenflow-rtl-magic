@@ -30,7 +30,7 @@ export const FoodBackground = () => {
       {emojiPositions.map((pos, index) => (
         <span
           key={index}
-          className={`absolute ${pos.size} opacity-[0.07] select-none animate-float`}
+          className={`absolute ${pos.size} opacity-20 select-none animate-float`}
           style={{
             top: pos.top,
             left: pos.left,

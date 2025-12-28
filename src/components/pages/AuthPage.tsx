@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Mail, Lock, LogIn, KeyRound, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
+import { FoodBackground } from '@/components/layout/FoodBackground';
 
 const authSchema = z.object({
   email: z.string().email('כתובת אימייל לא תקינה'),
@@ -146,8 +147,9 @@ export const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 p-4" dir="rtl">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative" dir="rtl">
+      <FoodBackground />
+      <div className="w-full max-w-md relative z-10">
         <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
           {/* Logo */}
           <div className="text-center mb-8">
