@@ -1,3 +1,4 @@
+// @refresh reset
 // AppContext v3 - Kitchen Flow State Management (Simplified)
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { 
