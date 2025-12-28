@@ -1,3 +1,4 @@
+// AppContext v2 - Kitchen Flow State Management
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { 
   warehouseItems as casseroleWarehouse, 
@@ -47,7 +48,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider = ({ children }: { children: ReactNode }) => {
+export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentClient, setCurrentClient] = useState<ClientType>('casserole');
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -125,12 +126,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </AppContext.Provider>
   );
-};
+}
 
-export const useApp = () => {
+export function useApp() {
   const context = useContext(AppContext);
   if (context === undefined) {
     throw new Error('useApp must be used within an AppProvider');
   }
   return context;
-};
+}
