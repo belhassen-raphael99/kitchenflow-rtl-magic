@@ -1,20 +1,17 @@
 import { useState } from 'react';
-import { useApp, ClientType } from '@/context/AppContext';
+import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui/button';
 import { Loader2, Leaf } from 'lucide-react';
 
 export const LoginPage = () => {
-  const { loginAs } = useApp();
-  const [loading, setLoading] = useState<ClientType | null>(null);
+  const { login } = useApp();
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (client: ClientType) => {
-    setLoading(client);
-    
-    // Simulate login
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    
-    loginAs(client);
-    setLoading(null);
+  const handleLogin = async () => {
+    setLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    login();
+    setLoading(false);
   };
 
   return (
@@ -32,51 +29,29 @@ export const LoginPage = () => {
         {/* Login Card */}
         <div className="bg-card rounded-3xl shadow-card p-8 animate-fade-in-up stagger-1">
           <h2 className="text-xl font-semibold text-foreground mb-2 text-center">
-            בחר חשבון להתחברות
+            ברוכים הבאים
           </h2>
           <p className="text-sm text-muted-foreground text-center mb-8">
-            Demo: בחר אחד מהלקוחות להדגמה
+            לחץ להתחברות לחשבון שלך
           </p>
 
-          <div className="space-y-4">
-            {/* Casserole Button - Green */}
-            <Button
-              onClick={() => handleLogin('casserole')}
-              className="w-full h-14 text-lg bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-3"
-              disabled={loading !== null}
-            >
-              {loading === 'casserole' ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  מתחבר...
-                </>
-              ) : (
-                <>
-                  <span className="text-2xl">🍳</span>
-                  <span>התחבר כ"קסרולה"</span>
-                </>
-              )}
-            </Button>
-
-            {/* PizzaKing Button - Red */}
-            <Button
-              onClick={() => handleLogin('pizzaking')}
-              className="w-full h-14 text-lg bg-[#EF4444] hover:bg-[#DC2626] text-white rounded-2xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-3"
-              disabled={loading !== null}
-            >
-              {loading === 'pizzaking' ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  מתחבר...
-                </>
-              ) : (
-                <>
-                  <span className="text-2xl">🍕</span>
-                  <span>התחבר כ"פיצה קינג"</span>
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={handleLogin}
+            className="w-full h-14 text-lg bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl transition-all duration-200 active:scale-95 flex items-center justify-center gap-3"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                מתחבר...
+              </>
+            ) : (
+              <>
+                <span className="text-2xl">🍳</span>
+                <span>התחבר לקסרולה</span>
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Footer */}
