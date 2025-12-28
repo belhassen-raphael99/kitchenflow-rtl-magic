@@ -93,7 +93,12 @@ Deno.serve(async (req) => {
 
     console.log(`User created successfully: ${newUser.user.id}`);
 
-    // Assign the role
+    // Assign the role - first delete any existing role from the trigger, then insert the correct one
+    await adminClient
+      .from('user_roles')
+      .delete()
+      .eq('user_id', newUser.user.id);
+    
     const { error: roleError } = await adminClient
       .from('user_roles')
       .insert({ user_id: newUser.user.id, role });
