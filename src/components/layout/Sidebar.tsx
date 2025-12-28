@@ -1,4 +1,6 @@
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -9,38 +11,42 @@ import {
   LogOut,
   Monitor,
   Menu,
-  X
+  X,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 const navItems = [
-  { id: 'dashboard', label: 'דשבורד', icon: LayoutDashboard },
-  { id: 'kitchen-ops', label: 'פוסט מטבח', icon: Monitor, section: 'תפעול' },
-  { id: 'agenda', label: 'יומן אירועים', icon: Calendar },
-  { id: 'recipes', label: 'ספר מתכונים', icon: ChefHat },
-  { id: 'reserve', label: 'רזרבה (הכנות)', icon: Layers, section: 'ניהול מלאי' },
-  { id: 'warehouse', label: 'מחסן (חומרי גלם)', icon: Package },
+  { id: '/', label: 'דשבורד', icon: LayoutDashboard },
+  { id: '/kitchen-ops', label: 'פוסט מטבח', icon: Monitor, section: 'תפעול' },
+  { id: '/agenda', label: 'יומן אירועים', icon: Calendar },
+  { id: '/recipes', label: 'ספר מתכונים', icon: ChefHat },
+  { id: '/reserve', label: 'רזרבה (הכנות)', icon: Layers, section: 'ניהול מלאי' },
+  { id: '/warehouse', label: 'מחסן (חומרי גלם)', icon: Package },
 ];
 
 export const Sidebar = () => {
-  const { 
-    currentPage, 
-    setCurrentPage, 
-    sidebarOpen, 
-    setSidebarOpen,
-    toggleFullscreen,
-    clientInfo,
-    logout
-  } = useApp();
+  const { sidebarOpen, setSidebarOpen, toggleFullscreen, clientInfo } = useApp();
+  const { user, role, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleNavClick = (pageId: string) => {
-    setCurrentPage(pageId);
-    // Close sidebar on mobile and tablet
+  const handleNavClick = (path: string) => {
+    navigate(path);
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
     }
   };
 
+  const handleLogout = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } else {
+      navigate('/auth');
+    }
+  };
   return (
     <>
       {/* Mobile/Tablet overlay */}
@@ -108,7 +114,7 @@ export const Sidebar = () => {
                     "hover:bg-sidebar-accent active:scale-[0.98]",
                     // Larger touch targets for mobile/tablet
                     "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
-                    currentPage === item.id
+                    location.pathname === item.id
                       ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
                       : "text-sidebar-foreground",
                     !sidebarOpen && "lg:justify-center lg:px-0"
@@ -118,7 +124,7 @@ export const Sidebar = () => {
                     "shrink-0 transition-all",
                     // Larger icons for mobile
                     "w-6 h-6 md:w-5 md:h-5",
-                    currentPage === item.id && "text-primary"
+                    location.pathname === item.id && "text-primary"
                   )} />
                   <span className={cn(
                     "text-base md:text-sm font-medium",
@@ -153,7 +159,7 @@ export const Sidebar = () => {
           </button>
           
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200",
               "text-destructive hover:bg-destructive/10",
