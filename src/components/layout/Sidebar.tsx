@@ -17,6 +17,8 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
+import { Users } from 'lucide-react';
+
 const navItems = [
   { id: '/', label: 'דשבורד', icon: LayoutDashboard },
   { id: '/kitchen-ops', label: 'פוסט מטבח', icon: Monitor, section: 'תפעול' },
@@ -26,9 +28,13 @@ const navItems = [
   { id: '/warehouse', label: 'מחסן (חומרי גלם)', icon: Package },
 ];
 
+const adminNavItems = [
+  { id: '/admin/users', label: 'ניהול משתמשים', icon: Users, section: 'ניהול' },
+];
+
 export const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen, toggleFullscreen, clientInfo } = useApp();
-  const { user, role, signOut } = useAuth();
+  const { user, role, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -123,6 +129,41 @@ export const Sidebar = () => {
                   <item.icon className={cn(
                     "shrink-0 transition-all",
                     // Larger icons for mobile
+                    "w-6 h-6 md:w-5 md:h-5",
+                    location.pathname === item.id && "text-primary"
+                  )} />
+                  <span className={cn(
+                    "text-base md:text-sm font-medium",
+                    !sidebarOpen && "lg:hidden"
+                  )}>
+                    {item.label}
+                  </span>
+                </button>
+              </div>
+            ))}
+
+            {/* Admin Navigation */}
+            {isAdmin && adminNavItems.map((item) => (
+              <div key={item.id}>
+                {item.section && sidebarOpen && (
+                  <p className="text-xs text-muted-foreground px-3 py-2 mt-4 font-medium uppercase tracking-wide">
+                    {item.section}
+                  </p>
+                )}
+                <button
+                  onClick={() => handleNavClick(item.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200",
+                    "hover:bg-sidebar-accent active:scale-[0.98]",
+                    "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
+                    location.pathname === item.id
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
+                      : "text-sidebar-foreground",
+                    !sidebarOpen && "lg:justify-center lg:px-0"
+                  )}
+                >
+                  <item.icon className={cn(
+                    "shrink-0 transition-all",
                     "w-6 h-6 md:w-5 md:h-5",
                     location.pathname === item.id && "text-primary"
                   )} />

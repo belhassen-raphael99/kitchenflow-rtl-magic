@@ -8,6 +8,7 @@ import { RecipesPage } from './components/pages/RecipesPage';
 import { ReservePage } from './components/pages/ReservePage';
 import { WarehousePage } from './components/pages/WarehousePage';
 import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
+import { AdminUsersPage } from './components/pages/AdminUsersPage';
 import { Toaster } from '@/components/ui/toaster';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
@@ -115,6 +116,16 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <AppLayout>
               <ReservePage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <AdminUsersPage />
             </AppLayout>
           </ProtectedRoute>
         }
