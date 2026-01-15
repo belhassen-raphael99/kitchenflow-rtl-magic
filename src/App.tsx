@@ -11,44 +11,8 @@ import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
 import { AdminUsersPage } from './components/pages/AdminUsersPage';
 import { Toaster } from '@/components/ui/toaster';
 import { FoodBackground } from './components/layout/FoodBackground';
-import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-const AuthRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (user) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
-};
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AuthRoute } from '@/components/auth/AuthRoute';
 
 const AppRoutes = () => {
   return (
