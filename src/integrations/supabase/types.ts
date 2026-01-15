@@ -246,6 +246,102 @@ export type Database = {
         }
         Relationships: []
       }
+      recipe_ingredients: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          notes: string | null
+          quantity: number
+          recipe_id: string
+          unit: string
+          warehouse_item_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          quantity?: number
+          recipe_id: string
+          unit?: string
+          warehouse_item_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          quantity?: number
+          recipe_id?: string
+          unit?: string
+          warehouse_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipe_ingredients_warehouse_item_id_fkey"
+            columns: ["warehouse_item_id"]
+            isOneToOne: false
+            referencedRelation: "warehouse_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          category: string
+          cook_time: number | null
+          cost_per_serving: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          instructions: string[] | null
+          name: string
+          prep_time: number | null
+          selling_price: number | null
+          servings: number
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          cook_time?: number | null
+          cost_per_serving?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          instructions?: string[] | null
+          name: string
+          prep_time?: number | null
+          selling_price?: number | null
+          servings?: number
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          cook_time?: number | null
+          cost_per_serving?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          instructions?: string[] | null
+          name?: string
+          prep_time?: number | null
+          selling_price?: number | null
+          servings?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           contact_info: string | null
