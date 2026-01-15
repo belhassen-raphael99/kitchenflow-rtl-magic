@@ -195,6 +195,50 @@ export type Database = {
           },
         ]
       }
+      production_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          new_quantity: number
+          notes: string | null
+          previous_quantity: number
+          quantity: number
+          reserve_item_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          new_quantity?: number
+          notes?: string | null
+          previous_quantity?: number
+          quantity: number
+          reserve_item_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          new_quantity?: number
+          notes?: string | null
+          previous_quantity?: number
+          quantity?: number
+          reserve_item_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_logs_reserve_item_id_fkey"
+            columns: ["reserve_item_id"]
+            isOneToOne: false
+            referencedRelation: "reserve_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -341,6 +385,59 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      reserve_items: {
+        Row: {
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          location: string | null
+          min_stock: number
+          name: string
+          notes: string | null
+          quantity: number
+          recipe_id: string | null
+          storage_type: string
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          location?: string | null
+          min_stock?: number
+          name: string
+          notes?: string | null
+          quantity?: number
+          recipe_id?: string | null
+          storage_type?: string
+          unit?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          location?: string | null
+          min_stock?: number
+          name?: string
+          notes?: string | null
+          quantity?: number
+          recipe_id?: string | null
+          storage_type?: string
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reserve_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppliers: {
         Row: {
