@@ -225,14 +225,14 @@ export const EventDialog = ({
                 <FormItem>
                   <FormLabel>לקוח</FormLabel>
                   <div className="flex gap-2">
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={(val) => field.onChange(val === "none" ? "" : val)} value={field.value || "none"}>
                       <FormControl>
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="בחר לקוח" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">ללא לקוח</SelectItem>
+                        <SelectItem value="none">ללא לקוח</SelectItem>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.name}
