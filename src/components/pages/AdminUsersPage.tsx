@@ -186,12 +186,27 @@ export const AdminUsersPage = () => {
   };
 
   const generatePassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    const lowercase = 'abcdefghijkmnpqrstuvwxyz';
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const numbers = '23456789';
+    const special = '!@#$%&*';
+    
+    // Ensure at least one of each required type
     let result = '';
+    result += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+    result += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    result += special.charAt(Math.floor(Math.random() * special.length));
+    
+    // Fill the rest to reach 14 characters
+    const allChars = lowercase + uppercase + numbers + special;
     for (let i = 0; i < 10; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+      result += allChars.charAt(Math.floor(Math.random() * allChars.length));
     }
-    setPassword(result);
+    
+    // Shuffle the result
+    const shuffled = result.split('').sort(() => Math.random() - 0.5).join('');
+    setPassword(shuffled);
   };
 
   const handleDeleteUser = async (userId: string) => {
