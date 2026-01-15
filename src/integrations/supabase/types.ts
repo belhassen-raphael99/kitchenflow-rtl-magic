@@ -239,6 +239,94 @@ export type Database = {
           },
         ]
       }
+      production_tasks: {
+        Row: {
+          assigned_to: string | null
+          completed_at: string | null
+          completed_quantity: number
+          created_at: string | null
+          date: string
+          department: string
+          event_id: string | null
+          id: string
+          name: string
+          notes: string | null
+          priority: number
+          recipe_id: string | null
+          reserve_item_id: string | null
+          started_at: string | null
+          status: string
+          target_quantity: number
+          task_type: string
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_quantity?: number
+          created_at?: string | null
+          date?: string
+          department?: string
+          event_id?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          priority?: number
+          recipe_id?: string | null
+          reserve_item_id?: string | null
+          started_at?: string | null
+          status?: string
+          target_quantity?: number
+          task_type?: string
+          unit?: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_quantity?: number
+          created_at?: string | null
+          date?: string
+          department?: string
+          event_id?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          priority?: number
+          recipe_id?: string | null
+          reserve_item_id?: string | null
+          started_at?: string | null
+          status?: string
+          target_quantity?: number
+          task_type?: string
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_tasks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_tasks_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_tasks_reserve_item_id_fkey"
+            columns: ["reserve_item_id"]
+            isOneToOne: false
+            referencedRelation: "reserve_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
