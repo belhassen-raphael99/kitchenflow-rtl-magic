@@ -1,4 +1,4 @@
-import { StockProduction } from '@/data/kitchenOpsData';
+import { StockProduction } from '@/types';
 import {
   Dialog,
   DialogContent,

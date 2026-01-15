@@ -1,123 +1,250 @@
 import { useApp } from '@/context/AppContext';
-import { Calendar, AlertTriangle, Layers } from 'lucide-react';
+import { useWarehouse } from '@/hooks/useWarehouse';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  CalendarDays, 
+  Package, 
+  AlertTriangle, 
+  Users,
+  ChefHat,
+  Clock,
+  TrendingUp,
+  Warehouse,
+  BookOpen,
+  Calendar
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const DashboardPage = () => {
-  const { events, warehouse, reserve, setCurrentPage } = useApp();
+  const { clientInfo } = useApp();
+  const { items: warehouseItems, loading: warehouseLoading } = useWarehouse();
 
-  // Calculate KPIs
-  const thisWeekEvents = events.length;
-  const totalGuests = events.reduce((sum, e) => sum + e.guests, 0);
-  const lowStockItems = warehouse.filter(item => item.status === 'low' || item.status === 'critical').length;
-  const reserveTotal = reserve.reduce((sum, r) => sum + r.quantity, 0);
+  // Real KPIs from warehouse data
+  const lowStockItems = warehouseItems.filter(item => item.status === 'low').length;
+  const criticalStockItems = warehouseItems.filter(item => item.status === 'critical').length;
+  const totalItems = warehouseItems.length;
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6" dir="rtl">
       {/* Hero Banner */}
-      <div className="gradient-hero rounded-3xl p-6 md:p-8 text-primary-foreground shadow-elevated">
-        <div className="max-w-lg">
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-            <span>בוקר טוב, שף! 👨‍🍳</span>
-          </h1>
-          <p className="mt-3 text-primary-foreground/90">
-            יש לך {events.filter(e => e.date === '2026-01-01').length} אירועים היום ו-{reserve.length} הכנות דחופות לרזרבה.
-          </p>
-          
-          <div className="flex flex-wrap gap-3 mt-6">
-            <Button
-              onClick={() => setCurrentPage('agenda')}
-              variant="secondary"
-              className="bg-card text-foreground hover:bg-card/90 rounded-xl px-6"
-            >
-              לוח אירועים
-            </Button>
-            <Button
-              onClick={() => setCurrentPage('reserve')}
-              variant="outline"
-              className="bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20 rounded-xl px-6"
-            >
-              ניהול רזרבה
-            </Button>
+      <div className="bg-gradient-to-l from-primary/90 to-primary rounded-2xl p-8 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">
+              שלום! 👋
+            </h1>
+            <p className="text-white/80 text-lg">
+              ברוכים הבאים ל{clientInfo.name} - {clientInfo.tagline}
+            </p>
           </div>
+          <div className="text-6xl">{clientInfo.logo}</div>
+        </div>
+        
+        {/* Quick Actions */}
+        <div className="flex gap-3 mt-6">
+          <Button asChild variant="secondary" className="gap-2">
+            <Link to="/warehouse">
+              <Warehouse className="w-4 h-4" />
+              מחסן
+            </Link>
+          </Button>
+          <Button asChild variant="secondary" className="gap-2">
+            <Link to="/kitchen-ops">
+              <ChefHat className="w-4 h-4" />
+              פוסט מטבח
+            </Link>
+          </Button>
+          <Button asChild variant="secondary" className="gap-2">
+            <Link to="/agenda">
+              <Calendar className="w-4 h-4" />
+              יומן אירועים
+            </Link>
+          </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Events this week */}
-        <div 
-          className="bg-card rounded-2xl p-5 shadow-soft hover:shadow-card transition-shadow cursor-pointer animate-fade-in-up stagger-1"
-          onClick={() => setCurrentPage('agenda')}
-        >
-          <div className="flex items-start justify-between">
-            <div className="w-12 h-12 rounded-xl bg-kpi-events/10 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-kpi-events" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm text-muted-foreground">אירועים השבוע</p>
-              <p className="text-3xl font-bold text-foreground mt-1">{thisWeekEvents}</p>
-              <p className="text-sm text-muted-foreground mt-1">סה"כ {totalGuests} סועדים</p>
-            </div>
-          </div>
-        </div>
+      {/* KPIs Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Warehouse Status - Real Data */}
+        <Card className="border-r-4 border-r-primary">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              פריטים במחסן
+            </CardTitle>
+            <Package className="w-5 h-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            {warehouseLoading ? (
+              <div className="animate-pulse h-8 bg-muted rounded" />
+            ) : (
+              <>
+                <p className="text-3xl font-bold">{totalItems}</p>
+                <p className="text-xs text-muted-foreground">סה״כ פריטים</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Stock Alerts */}
-        <div 
-          className="bg-card rounded-2xl p-5 shadow-soft hover:shadow-card transition-shadow cursor-pointer animate-fade-in-up stagger-2"
-          onClick={() => setCurrentPage('warehouse')}
-        >
-          <div className="flex items-start justify-between">
-            <div className="w-12 h-12 rounded-xl bg-kpi-alerts/10 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-kpi-alerts" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm text-muted-foreground">התראות מחסן</p>
-              <p className="text-3xl font-bold text-foreground mt-1">{lowStockItems}</p>
-              <p className="text-sm text-muted-foreground mt-1">מוצרים מתחת למינימום</p>
-            </div>
-          </div>
-        </div>
+        {/* Stock Alerts - Real Data */}
+        <Card className={`border-r-4 ${criticalStockItems > 0 ? 'border-r-destructive' : lowStockItems > 0 ? 'border-r-amber-500' : 'border-r-green-500'}`}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              התראות מלאי
+            </CardTitle>
+            <AlertTriangle className={`w-5 h-5 ${criticalStockItems > 0 ? 'text-destructive' : lowStockItems > 0 ? 'text-amber-500' : 'text-green-500'}`} />
+          </CardHeader>
+          <CardContent>
+            {warehouseLoading ? (
+              <div className="animate-pulse h-8 bg-muted rounded" />
+            ) : (
+              <>
+                <p className="text-3xl font-bold">{criticalStockItems + lowStockItems}</p>
+                <div className="flex gap-2 mt-1">
+                  {criticalStockItems > 0 && (
+                    <Badge variant="destructive" className="text-xs">
+                      {criticalStockItems} קריטי
+                    </Badge>
+                  )}
+                  {lowStockItems > 0 && (
+                    <Badge className="bg-amber-500 text-xs">
+                      {lowStockItems} נמוך
+                    </Badge>
+                  )}
+                  {criticalStockItems === 0 && lowStockItems === 0 && (
+                    <Badge className="bg-green-500 text-xs">מלאי תקין</Badge>
+                  )}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Reserve Status */}
-        <div 
-          className="bg-card rounded-2xl p-5 shadow-soft hover:shadow-card transition-shadow cursor-pointer animate-fade-in-up stagger-3"
-          onClick={() => setCurrentPage('reserve')}
-        >
-          <div className="flex items-start justify-between">
-            <div className="w-12 h-12 rounded-xl bg-kpi-reserve/10 flex items-center justify-center">
-              <Layers className="w-6 h-6 text-kpi-reserve" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm text-muted-foreground">מצב רזרבה</p>
-              <p className="text-3xl font-bold text-foreground mt-1">85%</p>
-              <p className="text-sm text-muted-foreground mt-1">בצקים וקישים מוכנים</p>
-            </div>
-          </div>
-        </div>
+        {/* Events - No Data Yet */}
+        <Card className="border-r-4 border-r-muted">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              אירועים השבוע
+            </CardTitle>
+            <CalendarDays className="w-5 h-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-muted-foreground">—</p>
+            <p className="text-xs text-muted-foreground">לא מחובר לנתונים</p>
+          </CardContent>
+        </Card>
+
+        {/* Guests - No Data Yet */}
+        <Card className="border-r-4 border-r-muted">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              אורחים השבוע
+            </CardTitle>
+            <Users className="w-5 h-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-muted-foreground">—</p>
+            <p className="text-xs text-muted-foreground">לא מחובר לנתונים</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Quick Actions or Recent Activity could go here */}
-      <div className="bg-card rounded-2xl p-6 shadow-soft animate-fade-in-up stagger-4">
-        <h3 className="font-semibold text-foreground mb-4">אירועים קרובים</h3>
-        <div className="space-y-3">
-          {events.slice(0, 3).map(event => (
-            <div 
-              key={event.id}
-              className="flex items-center justify-between p-3 bg-background rounded-xl hover:bg-accent transition-colors"
-            >
+      {/* Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Upcoming Events - Placeholder */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                אירועים קרובים
+              </CardTitle>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/agenda">הכל →</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <CalendarDays className="w-16 h-16 text-muted-foreground/30 mb-4" />
+              <p className="text-muted-foreground font-medium">אין אירועים</p>
+              <p className="text-sm text-muted-foreground">
+                יש ליצור את טבלת האירועים בבסיס הנתונים
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-4">
+                <Link to="/agenda">צפה ביומן</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Stats */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              סטטוס מערכת
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Warehouse Status */}
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">{event.time}</span>
-                <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-lg">
-                  {event.date}
-                </span>
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Warehouse className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">מחסן</p>
+                  <p className="text-sm text-muted-foreground">מחובר לנתונים</p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-medium text-foreground">{event.name}</p>
-                <p className="text-sm text-muted-foreground">{event.guests} סועדים</p>
-              </div>
+              <Badge className="bg-green-500">פעיל</Badge>
             </div>
-          ))}
-        </div>
+
+            {/* Recipes Status */}
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">ספר מתכונים</p>
+                  <p className="text-sm text-muted-foreground">דרוש חיבור לנתונים</p>
+                </div>
+              </div>
+              <Badge variant="secondary">לא פעיל</Badge>
+            </div>
+
+            {/* Events Status */}
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+                  <CalendarDays className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">יומן אירועים</p>
+                  <p className="text-sm text-muted-foreground">דרוש חיבור לנתונים</p>
+                </div>
+              </div>
+              <Badge variant="secondary">לא פעיל</Badge>
+            </div>
+
+            {/* Kitchen Ops Status */}
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+                  <ChefHat className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium">פוסט מטבח</p>
+                  <p className="text-sm text-muted-foreground">דרוש חיבור לנתונים</p>
+                </div>
+              </div>
+              <Badge variant="secondary">לא פעיל</Badge>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
