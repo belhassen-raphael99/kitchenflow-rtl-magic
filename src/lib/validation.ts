@@ -226,6 +226,26 @@ export const supplierSchema = z.object({
   contact_info: textSchema.optional(),
 });
 
+// Schéma pour client (Hebrew)
+export const clientSchema = z.object({
+  name: z.string().min(2, 'שם חייב להכיל לפחות 2 תווים'),
+  phone: z.string().optional(),
+  email: z.string().email('אימייל לא תקין').optional().or(z.literal('')),
+  address: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+// Schéma pour événement (Hebrew)
+export const eventSchema = z.object({
+  name: z.string().min(2, 'שם האירוע חייב להכיל לפחות 2 תווים'),
+  date: z.date({ required_error: 'יש לבחור תאריך' }),
+  time: z.string().regex(/^\d{2}:\d{2}$/, 'פורמט שעה לא תקין'),
+  client_id: z.string().uuid().optional(),
+  guests: z.number().min(0, 'מספר האורחים חייב להיות חיובי'),
+  status: z.enum(['pending', 'in-progress', 'completed', 'cancelled']),
+  notes: z.string().optional(),
+});
+
 // ============================================
 // HELPERS
 // ============================================
