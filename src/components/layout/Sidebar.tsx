@@ -12,12 +12,11 @@ import {
   Monitor,
   Menu,
   X,
-  Shield
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-
-import { Users } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 const navItems = [
   { id: '/', label: 'דשבורד', icon: LayoutDashboard },
@@ -34,7 +33,7 @@ const adminNavItems = [
 
 export const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen, toggleFullscreen, clientInfo } = useApp();
-  const { user, role, signOut, isAdmin } = useAuth();
+  const { signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -78,12 +77,17 @@ export const Sidebar = () => {
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between">
             {/* Close button - mobile only */}
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              {/* Notification Bell */}
+              {sidebarOpen && <NotificationBell />}
+            </div>
 
             {/* Logo */}
             <div className="flex items-center gap-3">
