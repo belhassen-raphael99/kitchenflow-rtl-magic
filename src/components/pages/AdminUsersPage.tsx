@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2 } from 'lucide-react';
+import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2, Copy, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { z } from 'zod';
 
 const inviteSchema = z.object({
@@ -58,6 +58,13 @@ interface UserWithRole {
   role: 'admin' | 'employee';
 }
 
+interface CreatedUserCredentials {
+  email: string;
+  password: string;
+  fullName: string;
+  emailSent: boolean;
+}
+
 export const AdminUsersPage = () => {
   const { isAdmin, user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
@@ -65,6 +72,10 @@ export const AdminUsersPage = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  
+  // Credentials modal state
+  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
+  const [createdUserCredentials, setCreatedUserCredentials] = useState<CreatedUserCredentials | null>(null);
   
   // Invite form state
   const [email, setEmail] = useState('');
@@ -134,8 +145,15 @@ export const AdminUsersPage = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast({ title: 'הצלחה!', description: `המשתמש ${email} נוצר בהצלחה` });
+      // Close invite dialog and open credentials dialog
       setInviteDialogOpen(false);
+      setCreatedUserCredentials({
+        email: data.credentials?.email || email,
+        password: data.credentials?.password || password,
+        fullName: data.credentials?.fullName || fullName,
+        emailSent: data.emailSent || false,
+      });
+      setCredentialsDialogOpen(true);
       resetForm();
       fetchUsers();
     } catch (error: any) {
@@ -143,6 +161,17 @@ export const AdminUsersPage = () => {
     } finally {
       setInviting(false);
     }
+  };
+
+  const copyCredentials = async () => {
+    if (!createdUserCredentials) return;
+    
+    const text = `פרטי התחברות למערכת קסרולה:
+אימייל: ${createdUserCredentials.email}
+סיסמה: ${createdUserCredentials.password}`;
+    
+    await navigator.clipboard.writeText(text);
+    toast({ title: 'הועתק!', description: 'פרטי ההתחברות הועתקו ללוח' });
   };
 
   const handleRoleChange = async (userId: string, newRole: 'admin' | 'employee') => {
@@ -447,6 +476,79 @@ export const AdminUsersPage = () => {
           </Table>
         )}
       </div>
+
+      {/* Credentials Dialog - Shows after successful user creation */}
+      <Dialog open={credentialsDialogOpen} onOpenChange={setCredentialsDialogOpen}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              משתמש נוצר בהצלחה!
+            </DialogTitle>
+            <DialogDescription>
+              שמור את פרטי ההתחברות או העתק אותם כדי לשלוח למשתמש
+            </DialogDescription>
+          </DialogHeader>
+          
+          {createdUserCredentials && (
+            <div className="space-y-4 mt-4">
+              {/* User Info */}
+              <div className="text-center mb-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <User className="w-8 h-8 text-primary" />
+                </div>
+                <p className="font-semibold text-lg">{createdUserCredentials.fullName}</p>
+              </div>
+
+              {/* Credentials Box */}
+              <div className="bg-muted rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">אימייל:</span>
+                  <span className="font-mono font-medium">{createdUserCredentials.email}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Key className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">סיסמה:</span>
+                  <span className="font-mono font-medium">{createdUserCredentials.password}</span>
+                </div>
+              </div>
+
+              {/* Copy Button */}
+              <Button onClick={copyCredentials} variant="outline" className="w-full">
+                <Copy className="w-4 h-4 ml-2" />
+                העתק פרטי התחברות
+              </Button>
+
+              {/* Email Status */}
+              {createdUserCredentials.emailSent ? (
+                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <span className="text-sm text-green-700 dark:text-green-400">
+                    אימייל עם פרטי ההתחברות נשלח בהצלחה
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-700 dark:text-amber-400">
+                    <p className="font-medium">לא נשלח אימייל</p>
+                    <p>יש להעביר את פרטי ההתחברות למשתמש באופן ידני</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <Button 
+                onClick={() => setCredentialsDialogOpen(false)} 
+                className="w-full"
+              >
+                סגור
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
