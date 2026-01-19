@@ -234,17 +234,22 @@ Deno.serve(async (req) => {
     }
 
     // 7. EMAIL NOTIFICATION (optionnel)
+    let emailSent = false;
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    const resendFromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'Casserole <onboarding@resend.dev>';
+    
     if (resendApiKey) {
       try {
-        await fetch('https://api.resend.com/emails', {
+        console.log(`[EMAIL] Attempting to send email to ${email} from ${resendFromEmail}`);
+        
+        const emailResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${resendApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'Casserole <onboarding@resend.dev>',
+            from: resendFromEmail,
             to: [email],
             subject: 'ברוכים הבאים לקסרולה!',
             html: `
@@ -262,23 +267,37 @@ Deno.serve(async (req) => {
             `,
           }),
         });
+
+        const emailResult = await emailResponse.json();
+        
+        if (emailResponse.ok && emailResult.id) {
+          emailSent = true;
+          console.log(`[EMAIL] Successfully sent email to ${email}, id: ${emailResult.id}`);
+        } else {
+          console.error(`[EMAIL] Failed to send email:`, emailResult);
+        }
       } catch (emailError) {
-        console.error('Email error:', emailError);
+        console.error('[EMAIL] Error sending email:', emailError);
         // Don't fail the operation
       }
+    } else {
+      console.log('[EMAIL] RESEND_API_KEY not configured, skipping email');
     }
 
     // 8. AUDIT LOG - Succès
     auditLog('INVITE_USER_SUCCESS', callerUser.id, { 
       targetUserId: newUser.user.id, 
       targetEmail: email, 
-      role 
+      role,
+      emailSent 
     });
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        user: { id: newUser.user.id, email: newUser.user.email } 
+        user: { id: newUser.user.id, email: newUser.user.email },
+        credentials: { email, password, fullName },
+        emailSent
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
