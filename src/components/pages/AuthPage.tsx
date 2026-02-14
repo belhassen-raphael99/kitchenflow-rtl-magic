@@ -12,7 +12,7 @@ import { FoodBackground } from '@/components/layout/FoodBackground';
 
 const authSchema = z.object({
   email: z.string().email('כתובת אימייל לא תקינה'),
-  password: z.string().min(6, 'הסיסמה חייבת להיות לפחות 6 תווים'),
+  password: z.string().min(12, 'הסיסמה חייבת להיות לפחות 12 תווים'),
 });
 
 const emailSchema = z.object({
@@ -20,8 +20,14 @@ const emailSchema = z.object({
 });
 
 const passwordSchema = z.object({
-  password: z.string().min(6, 'הסיסמה חייבת להיות לפחות 6 תווים'),
-  confirmPassword: z.string().min(6, 'הסיסמה חייבת להיות לפחות 6 תווים'),
+  password: z.string()
+    .min(12, 'הסיסמה חייבת להיות לפחות 12 תווים')
+    .max(128, 'הסיסמה לא יכולה לעבור 128 תווים')
+    .regex(/[a-z]/, 'חייבת להכיל אות קטנה')
+    .regex(/[A-Z]/, 'חייבת להכיל אות גדולה')
+    .regex(/[0-9]/, 'חייבת להכיל ספרה')
+    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'חייבת להכיל תו מיוחד'),
+  confirmPassword: z.string().min(12, 'הסיסמה חייבת להיות לפחות 12 תווים'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'הסיסמאות לא תואמות',
   path: ['confirmPassword'],
