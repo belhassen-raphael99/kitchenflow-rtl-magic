@@ -44,8 +44,13 @@ const adminNavItems = [
 
 export const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen, toggleFullscreen, clientInfo } = useApp();
-  const { signOut, isAdmin } = useAuth();
+  const { signOut, isAdmin, user, role } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const userEmail = user?.email || '';
+  const userInitials = userEmail ? userEmail.substring(0, 2).toUpperCase() : '??';
+  const roleLabel = role === 'admin' ? 'מנהל' : 'עובד';
   const location = useLocation();
 
   const handleNavClick = (path: string) => {
