@@ -198,43 +198,57 @@ export const Sidebar = () => {
           </div>
         </nav>
 
-        {/* Footer actions */}
-        <div className="p-3 border-t border-sidebar-border space-y-2">
-          <button
-            onClick={toggleFullscreen}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200",
-              "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
-              !sidebarOpen && "lg:justify-center lg:px-0"
-            )}
-          >
-            <Maximize className="w-6 h-6 md:w-5 md:h-5 shrink-0" />
-            <span className={cn(
-              "text-base md:text-sm",
-              !sidebarOpen && "lg:hidden"
-            )}>
-              מסך מלא
-            </span>
-          </button>
-          
-          <button
-            onClick={handleLogout}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200",
-              "text-destructive hover:bg-destructive/10",
-              "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
-              !sidebarOpen && "lg:justify-center lg:px-0"
-            )}
-          >
-            <LogOut className="w-6 h-6 md:w-5 md:h-5 shrink-0" />
-            <span className={cn(
-              "text-base md:text-sm",
-              !sidebarOpen && "lg:hidden"
-            )}>
-              התנתק
-            </span>
-          </button>
+        {/* User profile footer */}
+        <div className="p-3 border-t border-sidebar-border">
+          <DropdownMenu dir="rtl">
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200",
+                  "hover:bg-sidebar-accent active:scale-[0.98]",
+                  "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
+                  !sidebarOpen && "lg:justify-center lg:px-0"
+                )}
+              >
+                <Avatar className="h-9 w-9 shrink-0 border-2 border-primary/20">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+                {sidebarOpen && (
+                  <div className="flex-1 min-w-0 text-right animate-fade-in">
+                    <p className="text-sm font-medium text-foreground truncate">{userEmail}</p>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mt-0.5">
+                      {roleLabel}
+                    </Badge>
+                  </div>
+                )}
+                {sidebarOpen && (
+                  <ChevronsUpDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col gap-1 text-right">
+                  <p className="text-sm font-medium">{userEmail}</p>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 w-fit mr-auto">
+                    {roleLabel}
+                  </Badge>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={toggleFullscreen} className="cursor-pointer gap-2">
+                <Maximize className="w-4 h-4" />
+                <span>מסך מלא</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer gap-2 text-destructive focus:text-destructive">
+                <LogOut className="w-4 h-4" />
+                <span>התנתק</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
 
