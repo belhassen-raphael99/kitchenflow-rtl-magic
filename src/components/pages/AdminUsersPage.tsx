@@ -622,7 +622,75 @@ export const AdminUsersPage = () => {
         )}
       </div>
 
-      {/* Credentials Dialog - Shows after successful user creation */}
+      {/* Demo Access Section */}
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+              <Link2 className="w-5 h-5 text-amber-700" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">גישת דמו</h2>
+              <p className="text-sm text-muted-foreground">צור קישורי דמו לגישה מוגבלת למערכת</p>
+            </div>
+          </div>
+          <Button onClick={handleGenerateDemoLink} disabled={generatingToken} className="gap-2">
+            {generatingToken ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+            צור קישור דמו
+          </Button>
+        </div>
+
+        {demoTokensLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        ) : demoTokens.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">אין קישורי דמו</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">אימייל</TableHead>
+                <TableHead className="text-right">נוצר</TableHead>
+                <TableHead className="text-right">פג תוקף</TableHead>
+                <TableHead className="text-right">שומש</TableHead>
+                <TableHead className="text-right">פעולות</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {demoTokens.map((dt) => (
+                <TableRow key={dt.id}>
+                  <TableCell>{dt.email || 'לא נוצל'}</TableCell>
+                  <TableCell>{new Date(dt.created_at).toLocaleDateString('he-IL')}</TableCell>
+                  <TableCell>{new Date(dt.expires_at).toLocaleDateString('he-IL')}</TableCell>
+                  <TableCell>
+                    <Badge variant={dt.used ? 'default' : 'secondary'}>
+                      {dt.used ? '✅' : '❌'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => copyDemoLink(dt.token)} title="העתק קישור">
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleRevokeDemoToken(dt.id)}
+                        title="בטל קישור"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+
       <Dialog open={credentialsDialogOpen} onOpenChange={setCredentialsDialogOpen}>
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>
