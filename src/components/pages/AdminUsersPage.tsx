@@ -72,6 +72,7 @@ interface CreatedUserCredentials {
 
 export const AdminUsersPage = () => {
   const { isAdmin, user: currentUser } = useAuth();
+  const { startImpersonation, isImpersonating } = useImpersonation();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
