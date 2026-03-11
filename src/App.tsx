@@ -10,6 +10,7 @@ import { ReservePage } from './components/pages/ReservePage';
 import { WarehousePage } from './components/pages/WarehousePage';
 import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
 import { AdminUsersPage } from './components/pages/AdminUsersPage';
+import { SeedDataPage } from './components/pages/SeedDataPage';
 import { Toaster } from '@/components/ui/toaster';
 import { FoodBackground } from './components/layout/FoodBackground';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
