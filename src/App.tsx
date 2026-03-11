@@ -14,6 +14,7 @@ import { AdminUsersPage } from './components/pages/AdminUsersPage';
 import { Toaster } from '@/components/ui/toaster';
 import { FoodBackground } from './components/layout/FoodBackground';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AdminRoute } from '@/components/auth/AdminRoute';
 import { AuthRoute } from '@/components/auth/AuthRoute';
 
 const AppRoutes = () => {
