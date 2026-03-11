@@ -126,7 +126,7 @@ export const AuthPage = () => {
     }
 
     // Validate inputs for login
-    const validation = authSchema.safeParse({ email, password });
+    const validation = loginSchema.safeParse({ email, password });
     if (!validation.success) {
       const error = validation.error.errors[0];
       toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
