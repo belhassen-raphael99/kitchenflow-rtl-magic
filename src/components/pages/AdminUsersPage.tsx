@@ -46,7 +46,11 @@ import { z } from 'zod';
 const inviteSchema = z.object({
   email: z.string().email('כתובת אימייל לא תקינה'),
   fullName: z.string().min(2, 'שם מלא חייב להיות לפחות 2 תווים'),
-  password: z.string().min(6, 'הסיסמה חייבת להיות לפחות 6 תווים'),
+  password: z.string()
+    .min(12, 'הסיסמה חייבת להיות לפחות 12 תווים')
+    .regex(/[A-Z]/, 'חייבת לכלול לפחות אות גדולה אחת')
+    .regex(/[0-9]/, 'חייבת לכלול לפחות ספרה אחת')
+    .regex(/[^A-Za-z0-9]/, 'חייבת לכלול לפחות תו מיוחד אחד'),
   role: z.enum(['admin', 'employee']),
 });
 
