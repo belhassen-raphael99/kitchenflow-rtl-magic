@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useImpersonation } from '@/hooks/useImpersonation';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +41,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2, Copy, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2, Copy, CheckCircle2, AlertTriangle, Eye, KeyRound } from 'lucide-react';
 import { z } from 'zod';
 
 const inviteSchema = z.object({
@@ -71,6 +72,7 @@ interface CreatedUserCredentials {
 
 export const AdminUsersPage = () => {
   const { isAdmin, user: currentUser } = useAuth();
+  const { startImpersonation, isImpersonating } = useImpersonation();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -261,6 +263,22 @@ export const AdminUsersPage = () => {
     }
   };
 
+  const handleResetPassword = async (userEmail: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast({ title: 'הצלחה!', description: `אימייל איפוס סיסמה נשלח ל-${userEmail}` });
+    } catch (error: any) {
+      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleImpersonate = async (userId: string, userEmail: string) => {
+    await startImpersonation(userId, userEmail);
+  };
+
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
@@ -438,40 +456,104 @@ export const AdminUsersPage = () => {
                   </TableCell>
                   <TableCell>
                     {user.id !== currentUser?.id && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            disabled={deletingUserId === user.id}
-                          >
-                            {deletingUserId === user.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent dir="rtl">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>מחיקת משתמש</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              האם אתה בטוח שברצונך למחוק את {user.full_name || user.email}? 
-                              פעולה זו תמחק את המשתמש לצמיתות ולא ניתן לבטלה.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="flex-row-reverse gap-2">
-                            <AlertDialogCancel>ביטול</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      <div className="flex items-center gap-1">
+                        {/* Impersonate - only for non-admin users */}
+                        {user.role !== 'admin' && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="התחבר כמשתמש"
+                                disabled={isImpersonating}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>מצב התחזות</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  אתה עומד להיכנס למצב התחזות כ-<strong>{user.email}</strong>.
+                                  <br />כל הפעולות יירשמו ביומן הביקורת.
+                                  <br />המצב יסתיים אוטומטית לאחר 30 דקות.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="flex-row-reverse gap-2">
+                                <AlertDialogCancel>ביטול</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleImpersonate(user.id, user.email)}
+                                >
+                                  אישור — התחבר כמשתמש
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+
+                        {/* Reset password */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="איפוס סיסמה"
                             >
-                              מחק משתמש
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <KeyRound className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent dir="rtl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>איפוס סיסמה</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                האם לשלוח אימייל איפוס סיסמה ל-{user.email}?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex-row-reverse gap-2">
+                              <AlertDialogCancel>ביטול</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleResetPassword(user.email)}>
+                                שלח איפוס
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+
+                        {/* Delete user */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              disabled={deletingUserId === user.id}
+                            >
+                              {deletingUserId === user.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent dir="rtl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>מחיקת משתמש</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                האם אתה בטוח שברצונך למחוק את {user.full_name || user.email}? 
+                                פעולה זו תמחק את המשתמש לצמיתות ולא ניתן לבטלה.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex-row-reverse gap-2">
+                              <AlertDialogCancel>ביטול</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                מחק משתמש
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>

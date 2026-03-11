@@ -9,16 +9,15 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const { sidebarOpen } = useApp();
+  const isImpersonating = localStorage.getItem('impersonation_active') === 'true';
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background font-heebo">
+    <div dir="rtl" className={cn("min-h-screen bg-background font-heebo", isImpersonating && "pt-10")}>
       <Sidebar />
       <main
         className={cn(
           "min-h-screen transition-all duration-300",
-          // Desktop: margin for sidebar
           sidebarOpen ? "lg:mr-72" : "lg:mr-20",
-          // Mobile/Tablet: padding top for floating menu button
           "pt-20 lg:pt-0"
         )}
       >
