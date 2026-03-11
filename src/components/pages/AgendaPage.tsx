@@ -83,7 +83,7 @@ export const AgendaPage = () => {
           </h1>
           <p className="text-muted-foreground">{formattedDate}</p>
         </div>
-        {isAdmin && (
+        {canWrite && (
           <Button className="gap-2" onClick={handleNewEvent}>
             <Plus className="w-4 h-4" />
             אירוע חדש
