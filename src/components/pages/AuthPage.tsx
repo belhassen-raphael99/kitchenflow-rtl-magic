@@ -10,9 +10,9 @@ import { Loader2, Mail, Lock, LogIn, KeyRound, CheckCircle } from 'lucide-react'
 import { z } from 'zod';
 import { FoodBackground } from '@/components/layout/FoodBackground';
 
-const authSchema = z.object({
+const loginSchema = z.object({
   email: z.string().email('כתובת אימייל לא תקינה'),
-  password: z.string().min(12, 'הסיסמה חייבת להיות לפחות 12 תווים'),
+  password: z.string().min(1, 'נא להזין סיסמה'),
 });
 
 const emailSchema = z.object({
@@ -126,7 +126,7 @@ export const AuthPage = () => {
     }
 
     // Validate inputs for login
-    const validation = authSchema.safeParse({ email, password });
+    const validation = loginSchema.safeParse({ email, password });
     if (!validation.success) {
       const error = validation.error.errors[0];
       toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
