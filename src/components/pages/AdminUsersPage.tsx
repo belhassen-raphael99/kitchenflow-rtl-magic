@@ -98,6 +98,55 @@ export const AdminUsersPage = () => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'employee'>('employee');
 
+  // Demo tokens state
+  const [demoTokens, setDemoTokens] = useState<DemoToken[]>([]);
+  const [demoTokensLoading, setDemoTokensLoading] = useState(false);
+  const [generatingToken, setGeneratingToken] = useState(false);
+
+  const fetchDemoTokens = useCallback(async () => {
+    setDemoTokensLoading(true);
+    const { data } = await supabase
+      .from('demo_tokens')
+      .select('id, token, email, created_at, expires_at, used')
+      .order('created_at', { ascending: false });
+    setDemoTokens((data as DemoToken[]) || []);
+    setDemoTokensLoading(false);
+  }, []);
+
+  const handleGenerateDemoLink = async () => {
+    setGeneratingToken(true);
+    const { data, error } = await supabase
+      .from('demo_tokens')
+      .insert({ created_by: currentUser?.id })
+      .select('token')
+      .single();
+
+    if (error) {
+      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } else if (data) {
+      const url = `${window.location.origin}/demo?ref=${data.token}`;
+      await navigator.clipboard.writeText(url);
+      toast({ title: 'הקישור הועתק ללוח!', description: url });
+      fetchDemoTokens();
+    }
+    setGeneratingToken(false);
+  };
+
+  const handleRevokeDemoToken = async (tokenId: string) => {
+    const { error } = await supabase.from('demo_tokens').delete().eq('id', tokenId);
+    if (error) {
+      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'הצלחה', description: 'הקישור בוטל' });
+      fetchDemoTokens();
+    }
+  };
+
+  const copyDemoLink = async (token: string) => {
+    const url = `${window.location.origin}/demo?ref=${token}`;
+    await navigator.clipboard.writeText(url);
+    toast({ title: 'הועתק!', description: 'הקישור הועתק ללוח' });
+  };
   const fetchUsers = async () => {
     setLoading(true);
     try {
