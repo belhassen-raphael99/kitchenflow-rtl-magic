@@ -26,7 +26,7 @@ import { ProductionTaskDialog } from '@/components/kitchen/ProductionTaskDialog'
 import { cn } from '@/lib/utils';
 
 export const KitchenOpsPage = () => {
-  const { isAdmin } = useAuth();
+  const { canWrite } = useAuth();
   const {
     tasks,
     loading,
