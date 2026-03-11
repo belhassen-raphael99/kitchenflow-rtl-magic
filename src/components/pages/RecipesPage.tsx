@@ -168,7 +168,7 @@ export const RecipesPage = () => {
               <p className="text-sm text-muted-foreground max-w-md mb-6">
                 התחל ליצור מתכונים לספר המתכונים שלך
               </p>
-              {isAdmin && (
+              {canWrite && (
                 <Button onClick={() => setRecipeDialogOpen(true)}>
                   <Plus className="w-4 h-4 ml-2" />
                   צור מתכון ראשון

@@ -201,7 +201,7 @@ export const ReservePage = () => {
                   <p className="text-sm text-muted-foreground max-w-md mb-6">
                     התחל להוסיף פריטים מוכנים למלאי הייצור
                   </p>
-                  {isAdmin && (
+                  {canWrite && (
                     <Button onClick={() => setItemDialogOpen(true)}>
                       <Plus className="w-4 h-4 ml-2" />
                       צור פריט ראשון

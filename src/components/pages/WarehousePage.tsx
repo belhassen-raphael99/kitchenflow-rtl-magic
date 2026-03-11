@@ -173,7 +173,7 @@ export const WarehousePage = () => {
                   )}
                 >
                   <div className="flex items-center justify-center gap-2">
-                    {isAdmin && (
+                    {canWrite && (
                       <>
                         <Button variant="ghost" size="sm" onClick={() => handleStockUpdate(item)} className="h-8 px-2">עדכון מלאי</Button>
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(item)} className="h-8 w-8">

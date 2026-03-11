@@ -214,7 +214,7 @@ export const KitchenOpsPage = () => {
                   <p className="text-sm text-muted-foreground max-w-sm mb-4">
                     ניתן ליצור משימות חדשות או לייצר אוטומטית מאירועים מתוכננים
                   </p>
-                  {isAdmin && (
+                  {canWrite && (
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={handleGenerateTasks}>
                         <RefreshCw className="w-4 h-4 ml-2" />
