@@ -25,7 +25,7 @@ import { RecipeDetailDialog } from '@/components/recipes/RecipeDetailDialog';
 import { DeleteRecipeDialog } from '@/components/recipes/DeleteRecipeDialog';
 
 export const RecipesPage = () => {
-  const { isAdmin } = useAuth();
+  const { canWrite } = useAuth();
   const { 
     recipes, 
     loading, 
