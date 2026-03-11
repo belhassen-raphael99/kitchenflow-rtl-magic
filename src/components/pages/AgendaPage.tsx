@@ -142,7 +142,7 @@ export const AgendaPage = () => {
                   אין אירועים ביום זה
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-md mb-6">
-                  {isAdmin
+                  {canWrite
                     ? 'לחץ על "אירוע חדש" כדי להוסיף אירוע לתאריך זה.'
                     : 'אין אירועים מתוכננים לתאריך זה.'}
                 </p>
