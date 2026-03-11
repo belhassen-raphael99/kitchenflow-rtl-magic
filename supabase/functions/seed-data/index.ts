@@ -18,29 +18,41 @@ serve(async (req) => {
     const { suppliers, categories, warehouseItems, recipes, reserveItems } = await req.json();
     const summary: Record<string, number> = {};
 
-    // 1. Insert suppliers
-    const { data: suppData } = await supabase.from('suppliers').upsert(
+    // 1. Upsert suppliers
+    await supabase.from('suppliers').upsert(
       suppliers.map((s: any) => ({ name: s.name })),
       { onConflict: 'name', ignoreDuplicates: true }
-    ).select();
+    );
     const { data: allSuppliers } = await supabase.from('suppliers').select('id, name');
     const supplierMap = new Map(allSuppliers?.map((s: any) => [s.name, s.id]) || []);
     summary.suppliers = allSuppliers?.length || 0;
 
-    // 2. Insert categories
-    const { data: catData } = await supabase.from('categories').upsert(
+    // 2. Upsert categories
+    await supabase.from('categories').upsert(
       categories.map((c: any) => ({ name: c.name, color: c.color })),
       { onConflict: 'name', ignoreDuplicates: true }
-    ).select();
+    );
     const { data: allCategories } = await supabase.from('categories').select('id, name');
     const categoryMap = new Map(allCategories?.map((c: any) => [c.name, c.id]) || []);
     summary.categories = allCategories?.length || 0;
 
-    // 3. Insert warehouse items in batches
+    // 3. Get existing names to skip duplicates
+    const { data: existingWh } = await supabase.from('warehouse_items').select('id, name');
+    const existingWhNames = new Set(existingWh?.map((w: any) => w.name) || []);
+    const whMap = new Map(existingWh?.map((w: any) => [w.name, w.id]) || []);
+
+    const { data: existingRecipes } = await supabase.from('recipes').select('id, name');
+    const existingRecipeNames = new Set(existingRecipes?.map((r: any) => r.name) || []);
+
+    const { data: existingReserve } = await supabase.from('reserve_items').select('id, name');
+    const existingReserveNames = new Set(existingReserve?.map((r: any) => r.name) || []);
+
+    // 4. Insert only new warehouse items
+    const newWhItems = warehouseItems.filter((item: any) => !existingWhNames.has(item.name));
     let whCount = 0;
     const batchSize = 50;
-    for (let i = 0; i < warehouseItems.length; i += batchSize) {
-      const batch = warehouseItems.slice(i, i + batchSize).map((item: any) => ({
+    for (let i = 0; i < newWhItems.length; i += batchSize) {
+      const batch = newWhItems.slice(i, i + batchSize).map((item: any) => ({
         name: item.name,
         code: item.code || null,
         category_id: categoryMap.get(item.category) || null,
@@ -56,16 +68,19 @@ serve(async (req) => {
       if (error) console.error('Warehouse batch error:', error.message);
       whCount += data?.length || 0;
     }
-    summary.warehouse_items = whCount;
+    summary.warehouse_items_added = whCount;
+    summary.warehouse_items_skipped = warehouseItems.length - newWhItems.length;
 
-    // Get all warehouse items for ingredient matching
+    // Refresh warehouse map for ingredient matching
     const { data: allWh } = await supabase.from('warehouse_items').select('id, name');
-    const whMap = new Map(allWh?.map((w: any) => [w.name, w.id]) || []);
+    const fullWhMap = new Map(allWh?.map((w: any) => [w.name, w.id]) || []);
 
-    // 4. Insert recipes and ingredients
+    // 5. Insert only new recipes and their ingredients
     let recipeCount = 0;
     let ingredientCount = 0;
     for (const recipe of recipes) {
+      if (existingRecipeNames.has(recipe.name)) continue;
+
       const { data: recData, error: recErr } = await supabase.from('recipes').insert({
         name: recipe.name,
         category: recipe.category,
@@ -82,20 +97,22 @@ serve(async (req) => {
           name: ing.name,
           quantity: ing.quantity || 0,
           unit: ing.unit || 'גרם',
-          warehouse_item_id: whMap.get(ing.name) || null,
+          warehouse_item_id: fullWhMap.get(ing.name) || null,
         }));
         const { data: ingData, error: ingErr } = await supabase.from('recipe_ingredients').insert(ingredients).select('id');
         if (ingErr) console.error('Ingredient error:', recipe.name, ingErr.message);
         ingredientCount += ingData?.length || 0;
       }
     }
-    summary.recipes = recipeCount;
+    summary.recipes_added = recipeCount;
+    summary.recipes_skipped = recipes.length - recipeCount;
     summary.recipe_ingredients = ingredientCount;
 
-    // 5. Insert reserve items
+    // 6. Insert only new reserve items
+    const newReserveItems = reserveItems.filter((item: any) => !existingReserveNames.has(item.name));
     let resCount = 0;
-    for (let i = 0; i < reserveItems.length; i += batchSize) {
-      const batch = reserveItems.slice(i, i + batchSize).map((item: any) => ({
+    for (let i = 0; i < newReserveItems.length; i += batchSize) {
+      const batch = newReserveItems.slice(i, i + batchSize).map((item: any) => ({
         name: item.name,
         location: item.location || null,
         storage_type: item.storage_type || 'frozen',
@@ -107,7 +124,8 @@ serve(async (req) => {
       if (error) console.error('Reserve batch error:', error.message);
       resCount += data?.length || 0;
     }
-    summary.reserve_items = resCount;
+    summary.reserve_items_added = resCount;
+    summary.reserve_items_skipped = reserveItems.length - newReserveItems.length;
 
     return new Response(JSON.stringify({ success: true, summary }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
