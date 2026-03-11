@@ -22,7 +22,7 @@ export const AgendaPage = () => {
 
   const { events, loading: eventsLoading, getEventsForDate, getDatesWithEvents, createEvent, updateEvent, deleteEvent } = useEvents();
   const { clients, loading: clientsLoading, createClient } = useClients();
-  const { isAdmin } = useAuth();
+  const { isAdmin, canWrite } = useAuth();
 
   const formattedDate = format(selectedDate, 'dd MMMM yyyy', { locale: he });
   const eventsForSelectedDate = getEventsForDate(selectedDate);
