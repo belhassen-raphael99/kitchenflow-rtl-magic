@@ -106,7 +106,7 @@ export const ReservePage = () => {
           </h1>
           <p className="text-muted-foreground">ניהול מוצרים מוכנים למלאי</p>
         </div>
-        {isAdmin && (
+        {canWrite && (
           <Button className="gap-2" onClick={() => setItemDialogOpen(true)}>
             <Plus className="w-4 h-4" />
             פריט חדש
