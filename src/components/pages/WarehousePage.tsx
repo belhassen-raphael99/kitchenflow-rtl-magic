@@ -10,7 +10,7 @@ import { StockUpdateDialog } from '@/components/warehouse/StockUpdateDialog';
 
 export const WarehousePage = () => {
   const { items, categories, suppliers, loading, refetch, page, setPage, totalPages, totalCount, search, setSearch, categoryFilter, setCategoryFilter } = useWarehouse();
-  const { isAdmin } = useAuth();
+  const { canWrite } = useAuth();
   const [showItemDialog, setShowItemDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<WarehouseItem | null>(null);
