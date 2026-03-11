@@ -70,6 +70,15 @@ interface CreatedUserCredentials {
   emailSent: boolean;
 }
 
+interface DemoToken {
+  id: string;
+  token: string;
+  email: string | null;
+  created_at: string;
+  expires_at: string;
+  used: boolean;
+}
+
 export const AdminUsersPage = () => {
   const { isAdmin, user: currentUser } = useAuth();
   const { startImpersonation, isImpersonating } = useImpersonation();
