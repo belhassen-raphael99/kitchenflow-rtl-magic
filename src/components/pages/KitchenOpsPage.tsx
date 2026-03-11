@@ -124,7 +124,7 @@ export const KitchenOpsPage = () => {
             </PopoverContent>
           </Popover>
 
-          {isAdmin && (
+          {canWrite && (
             <>
               <Button
                 variant="outline"
