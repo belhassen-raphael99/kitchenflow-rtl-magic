@@ -161,7 +161,7 @@ export const AgendaPage = () => {
                     event={event}
                     onEdit={handleEditEvent}
                     onDelete={handleDeleteEvent}
-                    isAdmin={isAdmin}
+                    isAdmin={canWrite}
                   />
                 ))}
               </div>
