@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2, Copy, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2, Copy, CheckCircle2, AlertTriangle, Eye, KeyRound } from 'lucide-react';
 import { z } from 'zod';
 
 const inviteSchema = z.object({
