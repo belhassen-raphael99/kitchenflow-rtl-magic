@@ -22,7 +22,7 @@ import { QuantityDialog } from '@/components/reserve/QuantityDialog';
 import { DeleteReserveItemDialog } from '@/components/reserve/DeleteReserveItemDialog';
 
 export const ReservePage = () => {
-  const { isAdmin } = useAuth();
+  const { canWrite } = useAuth();
   const {
     items,
     loading,
