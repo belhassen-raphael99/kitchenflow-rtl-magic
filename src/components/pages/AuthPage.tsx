@@ -360,11 +360,24 @@ export const AuthPage = () => {
                 </Button>
               </form>
 
-              <p className="text-center text-sm text-muted-foreground mt-6">
-                גישה למערכת בהזמנה בלבד.
-                <br />
-                פנה למנהל המערכת לקבלת חשבון.
-              </p>
+              <div className="text-center mt-6 space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  גישה למערכת בהזמנה בלבד.
+                  <br />
+                  פנה למנהל המערכת לקבלת חשבון.
+                </p>
+                <div className="border-t border-border pt-3">
+                  <p className="text-sm text-muted-foreground mb-2">רוצה לראות את המערכת?</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => navigate('/demo')}
+                  >
+                    🎯 כניסה לסביבת דמו
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </div>
