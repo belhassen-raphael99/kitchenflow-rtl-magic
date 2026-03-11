@@ -263,6 +263,22 @@ export const AdminUsersPage = () => {
     }
   };
 
+  const handleResetPassword = async (userEmail: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast({ title: 'הצלחה!', description: `אימייל איפוס סיסמה נשלח ל-${userEmail}` });
+    } catch (error: any) {
+      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleImpersonate = async (userId: string, userEmail: string) => {
+    await startImpersonation(userId, userEmail);
+  };
+
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
