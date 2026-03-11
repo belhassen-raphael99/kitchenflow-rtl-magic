@@ -146,7 +146,7 @@ export const AgendaPage = () => {
                     ? 'לחץ על "אירוע חדש" כדי להוסיף אירוע לתאריך זה.'
                     : 'אין אירועים מתוכננים לתאריך זה.'}
                 </p>
-                {isAdmin && (
+                {canWrite && (
                   <Button onClick={handleNewEvent} variant="outline" className="gap-2">
                     <Plus className="w-4 h-4" />
                     הוסף אירוע
