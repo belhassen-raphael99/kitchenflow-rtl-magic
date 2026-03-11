@@ -46,21 +46,60 @@ export const AuthPage = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  // Listen for password recovery event
+  // Handle recovery token from URL hash and auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
+    let isMounted = true;
+
+    const handleRecovery = async () => {
+      // Check URL hash for recovery tokens (e.g., #access_token=...&type=recovery)
+      const hash = window.location.hash;
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const type = hashParams.get('type');
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        if (type === 'recovery' && accessToken) {
+          try {
+            const { error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken ?? '',
+            });
+            if (!error && isMounted) {
+              setViewMode('reset-password');
+              // Clean the URL hash
+              window.history.replaceState(null, '', window.location.pathname);
+            } else if (error && isMounted) {
+              toast({ title: 'שגיאה', description: 'הקישור פג תוקף. בקש קישור חדש.', variant: 'destructive' });
+              setViewMode('login');
+            }
+          } catch {
+            if (isMounted) setViewMode('login');
+          }
+          return;
+        }
+      }
+
+      // Check URL search params (e.g., ?type=recovery)
+      const type = searchParams.get('type');
+      if (type === 'recovery') {
+        if (isMounted) setViewMode('reset-password');
+      }
+    };
+
+    // Listen for PASSWORD_RECOVERY event from Supabase
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' && isMounted) {
         setViewMode('reset-password');
       }
     });
 
-    // Check URL for recovery mode
-    const type = searchParams.get('type');
-    if (type === 'recovery') {
-      setViewMode('reset-password');
-    }
+    handleRecovery();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
