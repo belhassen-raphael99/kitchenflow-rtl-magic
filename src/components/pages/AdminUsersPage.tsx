@@ -187,8 +187,9 @@ export const AdminUsersPage = () => {
   useEffect(() => {
     if (isAdmin) {
       fetchUsers();
+      fetchDemoTokens();
     }
-  }, [isAdmin]);
+  }, [isAdmin, fetchDemoTokens]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
