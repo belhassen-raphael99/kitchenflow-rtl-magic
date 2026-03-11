@@ -60,7 +60,7 @@ export function useReserve() {
     const { data, error } = await supabase
       .from('reserve_items')
       .select(`
-        *,
+        id, name, quantity, min_stock, storage_type, unit, expiry_date, location, notes, recipe_id, created_at, updated_at,
         recipe:recipes(id, name)
       `)
       .order('name');
