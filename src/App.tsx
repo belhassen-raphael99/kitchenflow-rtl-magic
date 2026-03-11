@@ -91,11 +91,11 @@ const AppRoutes = () => {
       <Route
         path="/admin/users"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <AppLayout>
               <AdminUsersPage />
             </AppLayout>
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
