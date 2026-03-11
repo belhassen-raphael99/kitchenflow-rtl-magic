@@ -120,14 +120,14 @@ export const AuthPage = () => {
         if (error) {
           toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
         } else {
+          toast({ title: 'הצלחה!', description: 'הסיסמה עודכנה בהצלחה. התחבר עם הסיסמה החדשה.' });
+          // Sign out and go back to login
+          await supabase.auth.signOut();
+          setViewMode('login');
+          setPassword('');
+          setConfirmPassword('');
           setResetSuccess(true);
-          toast({ title: 'הצלחה!', description: 'הסיסמה עודכנה בהצלחה' });
-          setTimeout(() => {
-            setViewMode('login');
-            setResetSuccess(false);
-            setPassword('');
-            setConfirmPassword('');
-          }, 2000);
+          setTimeout(() => setResetSuccess(false), 3000);
         }
       } finally {
         setLoading(false);
