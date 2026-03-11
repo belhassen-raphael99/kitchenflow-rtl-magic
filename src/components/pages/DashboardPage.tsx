@@ -1,5 +1,4 @@
 import { useApp } from '@/context/AppContext';
-import { useWarehouse } from '@/hooks/useWarehouse';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
