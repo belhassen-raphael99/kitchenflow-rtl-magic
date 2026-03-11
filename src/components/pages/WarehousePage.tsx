@@ -10,7 +10,7 @@ import { StockUpdateDialog } from '@/components/warehouse/StockUpdateDialog';
 
 export const WarehousePage = () => {
   const { items, categories, suppliers, loading, refetch, page, setPage, totalPages, totalCount, search, setSearch, categoryFilter, setCategoryFilter } = useWarehouse();
-  const { isAdmin } = useAuth();
+  const { canWrite } = useAuth();
   const [showItemDialog, setShowItemDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<WarehouseItem | null>(null);
@@ -90,7 +90,7 @@ export const WarehousePage = () => {
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          {isAdmin && (
+          {canWrite && (
             <Button onClick={handleAddNew} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">
               <Plus className="w-4 h-4 ml-2" />
               קליטת סחורה
@@ -173,7 +173,7 @@ export const WarehousePage = () => {
                   )}
                 >
                   <div className="flex items-center justify-center gap-2">
-                    {isAdmin && (
+                    {canWrite && (
                       <>
                         <Button variant="ghost" size="sm" onClick={() => handleStockUpdate(item)} className="h-8 px-2">עדכון מלאי</Button>
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(item)} className="h-8 w-8">

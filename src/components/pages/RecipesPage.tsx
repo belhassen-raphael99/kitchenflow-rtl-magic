@@ -25,7 +25,7 @@ import { RecipeDetailDialog } from '@/components/recipes/RecipeDetailDialog';
 import { DeleteRecipeDialog } from '@/components/recipes/DeleteRecipeDialog';
 
 export const RecipesPage = () => {
-  const { isAdmin } = useAuth();
+  const { canWrite } = useAuth();
   const { 
     recipes, 
     loading, 
@@ -89,7 +89,7 @@ export const RecipesPage = () => {
           </h1>
           <p className="text-muted-foreground">ניהול מתכונים ומחירים</p>
         </div>
-        {isAdmin && (
+        {canWrite && (
           <Button className="gap-2" onClick={() => setRecipeDialogOpen(true)}>
             <Plus className="w-4 h-4" />
             מתכון חדש
@@ -168,7 +168,7 @@ export const RecipesPage = () => {
               <p className="text-sm text-muted-foreground max-w-md mb-6">
                 התחל ליצור מתכונים לספר המתכונים שלך
               </p>
-              {isAdmin && (
+              {canWrite && (
                 <Button onClick={() => setRecipeDialogOpen(true)}>
                   <Plus className="w-4 h-4 ml-2" />
                   צור מתכון ראשון

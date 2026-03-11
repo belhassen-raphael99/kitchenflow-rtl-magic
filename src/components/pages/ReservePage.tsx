@@ -22,7 +22,7 @@ import { QuantityDialog } from '@/components/reserve/QuantityDialog';
 import { DeleteReserveItemDialog } from '@/components/reserve/DeleteReserveItemDialog';
 
 export const ReservePage = () => {
-  const { isAdmin } = useAuth();
+  const { canWrite } = useAuth();
   const {
     items,
     loading,
@@ -106,7 +106,7 @@ export const ReservePage = () => {
           </h1>
           <p className="text-muted-foreground">ניהול מוצרים מוכנים למלאי</p>
         </div>
-        {isAdmin && (
+        {canWrite && (
           <Button className="gap-2" onClick={() => setItemDialogOpen(true)}>
             <Plus className="w-4 h-4" />
             פריט חדש
@@ -201,7 +201,7 @@ export const ReservePage = () => {
                   <p className="text-sm text-muted-foreground max-w-md mb-6">
                     התחל להוסיף פריטים מוכנים למלאי הייצור
                   </p>
-                  {isAdmin && (
+                  {canWrite && (
                     <Button onClick={() => setItemDialogOpen(true)}>
                       <Plus className="w-4 h-4 ml-2" />
                       צור פריט ראשון

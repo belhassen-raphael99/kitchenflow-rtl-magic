@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useImpersonation } from '@/hooks/useImpersonation';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2, Copy, CheckCircle2, AlertTriangle, Eye, KeyRound } from 'lucide-react';
+import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2, Copy, CheckCircle2, AlertTriangle, Eye, KeyRound, Link2 } from 'lucide-react';
 import { z } from 'zod';
 
 const inviteSchema = z.object({
@@ -70,6 +70,15 @@ interface CreatedUserCredentials {
   emailSent: boolean;
 }
 
+interface DemoToken {
+  id: string;
+  token: string;
+  email: string | null;
+  created_at: string;
+  expires_at: string;
+  used: boolean;
+}
+
 export const AdminUsersPage = () => {
   const { isAdmin, user: currentUser } = useAuth();
   const { startImpersonation, isImpersonating } = useImpersonation();
@@ -89,6 +98,55 @@ export const AdminUsersPage = () => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'employee'>('employee');
 
+  // Demo tokens state
+  const [demoTokens, setDemoTokens] = useState<DemoToken[]>([]);
+  const [demoTokensLoading, setDemoTokensLoading] = useState(false);
+  const [generatingToken, setGeneratingToken] = useState(false);
+
+  const fetchDemoTokens = useCallback(async () => {
+    setDemoTokensLoading(true);
+    const { data } = await supabase
+      .from('demo_tokens')
+      .select('id, token, email, created_at, expires_at, used')
+      .order('created_at', { ascending: false });
+    setDemoTokens((data as DemoToken[]) || []);
+    setDemoTokensLoading(false);
+  }, []);
+
+  const handleGenerateDemoLink = async () => {
+    setGeneratingToken(true);
+    const { data, error } = await supabase
+      .from('demo_tokens')
+      .insert({ created_by: currentUser?.id })
+      .select('token')
+      .single();
+
+    if (error) {
+      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } else if (data) {
+      const url = `${window.location.origin}/demo?ref=${data.token}`;
+      await navigator.clipboard.writeText(url);
+      toast({ title: 'הקישור הועתק ללוח!', description: url });
+      fetchDemoTokens();
+    }
+    setGeneratingToken(false);
+  };
+
+  const handleRevokeDemoToken = async (tokenId: string) => {
+    const { error } = await supabase.from('demo_tokens').delete().eq('id', tokenId);
+    if (error) {
+      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'הצלחה', description: 'הקישור בוטל' });
+      fetchDemoTokens();
+    }
+  };
+
+  const copyDemoLink = async (token: string) => {
+    const url = `${window.location.origin}/demo?ref=${token}`;
+    await navigator.clipboard.writeText(url);
+    toast({ title: 'הועתק!', description: 'הקישור הועתק ללוח' });
+  };
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -129,8 +187,9 @@ export const AdminUsersPage = () => {
   useEffect(() => {
     if (isAdmin) {
       fetchUsers();
+      fetchDemoTokens();
     }
-  }, [isAdmin]);
+  }, [isAdmin, fetchDemoTokens]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -563,7 +622,75 @@ export const AdminUsersPage = () => {
         )}
       </div>
 
-      {/* Credentials Dialog - Shows after successful user creation */}
+      {/* Demo Access Section */}
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+              <Link2 className="w-5 h-5 text-amber-700" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">גישת דמו</h2>
+              <p className="text-sm text-muted-foreground">צור קישורי דמו לגישה מוגבלת למערכת</p>
+            </div>
+          </div>
+          <Button onClick={handleGenerateDemoLink} disabled={generatingToken} className="gap-2">
+            {generatingToken ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+            צור קישור דמו
+          </Button>
+        </div>
+
+        {demoTokensLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        ) : demoTokens.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">אין קישורי דמו</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">אימייל</TableHead>
+                <TableHead className="text-right">נוצר</TableHead>
+                <TableHead className="text-right">פג תוקף</TableHead>
+                <TableHead className="text-right">שומש</TableHead>
+                <TableHead className="text-right">פעולות</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {demoTokens.map((dt) => (
+                <TableRow key={dt.id}>
+                  <TableCell>{dt.email || 'לא נוצל'}</TableCell>
+                  <TableCell>{new Date(dt.created_at).toLocaleDateString('he-IL')}</TableCell>
+                  <TableCell>{new Date(dt.expires_at).toLocaleDateString('he-IL')}</TableCell>
+                  <TableCell>
+                    <Badge variant={dt.used ? 'default' : 'secondary'}>
+                      {dt.used ? '✅' : '❌'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => copyDemoLink(dt.token)} title="העתק קישור">
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleRevokeDemoToken(dt.id)}
+                        title="בטל קישור"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+
       <Dialog open={credentialsDialogOpen} onOpenChange={setCredentialsDialogOpen}>
         <DialogContent className="sm:max-w-md" dir="rtl">
           <DialogHeader>

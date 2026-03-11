@@ -26,7 +26,7 @@ import { ProductionTaskDialog } from '@/components/kitchen/ProductionTaskDialog'
 import { cn } from '@/lib/utils';
 
 export const KitchenOpsPage = () => {
-  const { isAdmin } = useAuth();
+  const { canWrite } = useAuth();
   const {
     tasks,
     loading,
@@ -124,7 +124,7 @@ export const KitchenOpsPage = () => {
             </PopoverContent>
           </Popover>
 
-          {isAdmin && (
+          {canWrite && (
             <>
               <Button
                 variant="outline"
@@ -214,7 +214,7 @@ export const KitchenOpsPage = () => {
                   <p className="text-sm text-muted-foreground max-w-sm mb-4">
                     ניתן ליצור משימות חדשות או לייצר אוטומטית מאירועים מתוכננים
                   </p>
-                  {isAdmin && (
+                  {canWrite && (
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={handleGenerateTasks}>
                         <RefreshCw className="w-4 h-4 ml-2" />

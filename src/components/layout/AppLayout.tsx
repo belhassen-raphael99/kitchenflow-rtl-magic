@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
+import { DemoBanner } from './DemoBanner';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -9,10 +11,12 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const { sidebarOpen } = useApp();
+  const { isDemo } = useAuth();
   const isImpersonating = localStorage.getItem('impersonation_active') === 'true';
 
   return (
-    <div dir="rtl" className={cn("min-h-screen bg-background font-heebo", isImpersonating && "pt-10")}>
+    <div dir="rtl" className={cn("min-h-screen bg-background font-heebo", (isImpersonating || isDemo) && "pt-10")}>
+      {isDemo && <DemoBanner />}
       <Sidebar />
       <main
         className={cn(

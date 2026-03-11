@@ -22,7 +22,7 @@ export const AgendaPage = () => {
 
   const { events, loading: eventsLoading, getEventsForDate, getDatesWithEvents, createEvent, updateEvent, deleteEvent } = useEvents();
   const { clients, loading: clientsLoading, createClient } = useClients();
-  const { isAdmin } = useAuth();
+  const { isAdmin, canWrite } = useAuth();
 
   const formattedDate = format(selectedDate, 'dd MMMM yyyy', { locale: he });
   const eventsForSelectedDate = getEventsForDate(selectedDate);
@@ -83,7 +83,7 @@ export const AgendaPage = () => {
           </h1>
           <p className="text-muted-foreground">{formattedDate}</p>
         </div>
-        {isAdmin && (
+        {canWrite && (
           <Button className="gap-2" onClick={handleNewEvent}>
             <Plus className="w-4 h-4" />
             אירוע חדש
@@ -142,11 +142,11 @@ export const AgendaPage = () => {
                   אין אירועים ביום זה
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-md mb-6">
-                  {isAdmin
+                  {canWrite
                     ? 'לחץ על "אירוע חדש" כדי להוסיף אירוע לתאריך זה.'
                     : 'אין אירועים מתוכננים לתאריך זה.'}
                 </p>
-                {isAdmin && (
+                {canWrite && (
                   <Button onClick={handleNewEvent} variant="outline" className="gap-2">
                     <Plus className="w-4 h-4" />
                     הוסף אירוע
@@ -161,7 +161,7 @@ export const AgendaPage = () => {
                     event={event}
                     onEdit={handleEditEvent}
                     onDelete={handleDeleteEvent}
-                    isAdmin={isAdmin}
+                    isAdmin={canWrite}
                   />
                 ))}
               </div>

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-export type AppRole = 'admin' | 'employee';
+export type AppRole = 'admin' | 'employee' | 'demo';
 
 interface AuthState {
   user: User | null;
@@ -20,7 +20,6 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setAuthState(prev => ({
@@ -29,7 +28,6 @@ export function useAuth() {
           user: session?.user ?? null,
         }));
 
-        // Fetch role after auth state change
         if (session?.user) {
           setTimeout(() => {
             fetchUserRole(session.user.id);
@@ -40,7 +38,6 @@ export function useAuth() {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthState(prev => ({
         ...prev,
@@ -99,6 +96,7 @@ export function useAuth() {
   };
 
   const signOut = async () => {
+    localStorage.removeItem('demo_session_start');
     const { error } = await supabase.auth.signOut();
     return { error };
   };
@@ -110,6 +108,8 @@ export function useAuth() {
     loading: authState.loading,
     isAdmin: authState.role === 'admin',
     isEmployee: authState.role === 'employee',
+    isDemo: authState.role === 'demo',
+    canWrite: authState.role === 'admin',
     signUp,
     signIn,
     signOut,

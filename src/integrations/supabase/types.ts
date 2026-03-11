@@ -110,6 +110,44 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_tokens: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          expires_at: string | null
+          id: string
+          token: string
+          used: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          token?: string
+          used?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string
+          token?: string
+          used?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_items: {
         Row: {
           created_at: string | null
@@ -698,7 +736,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "employee"
+      app_role: "admin" | "employee" | "demo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -826,7 +864,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "employee"],
+      app_role: ["admin", "employee", "demo"],
     },
   },
 } as const
