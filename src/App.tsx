@@ -97,16 +97,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/admin/seed"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <SeedDataPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
