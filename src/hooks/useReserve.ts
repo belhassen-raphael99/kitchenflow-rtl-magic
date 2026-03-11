@@ -81,7 +81,7 @@ export function useReserve() {
   const fetchLogs = useCallback(async (reserveItemId?: string) => {
     let query = supabase
       .from('production_logs')
-      .select('*')
+      .select('id, reserve_item_id, action, quantity, previous_quantity, new_quantity, user_id, notes, created_at')
       .order('created_at', { ascending: false })
       .limit(100);
 
