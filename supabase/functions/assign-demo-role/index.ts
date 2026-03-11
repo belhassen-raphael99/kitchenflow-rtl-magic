@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     const { user_id } = body ? await req.json() : { user_id: user.id };
     const targetUserId = user_id || user.id;
 
-    // Check if user already has a role (idempotent)
+    // Check if user already has a role
     const { data: existingRole } = await supabase
       .from('user_roles')
       .select('id, role')
@@ -48,13 +48,32 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingRole) {
-      // User already has a role, don't overwrite
-      return new Response(JSON.stringify({ success: true, existing: true }), {
+      // If already demo or admin, don't change
+      if (existingRole.role === 'demo' || existingRole.role === 'admin') {
+        return new Response(JSON.stringify({ success: true, existing: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // If employee (assigned by trigger), update to demo
+      const { error: updateError } = await supabase
+        .from('user_roles')
+        .update({ role: 'demo' })
+        .eq('user_id', targetUserId);
+
+      if (updateError) {
+        return new Response(JSON.stringify({ error: updateError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, updated: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Assign demo role
+    // No role exists — assign demo
     const { error: insertError } = await supabase
       .from('user_roles')
       .insert({ user_id: targetUserId, role: 'demo' });

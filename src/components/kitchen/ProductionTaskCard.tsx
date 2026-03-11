@@ -151,7 +151,7 @@ export const ProductionTaskCard = ({
         </div>
 
         {/* Actions */}
-        {isAdmin && task.status !== 'completed' && task.status !== 'cancelled' && (
+        {task.status !== 'completed' && task.status !== 'cancelled' && (
           <div className="flex gap-2 pt-2 border-t">
             {task.status === 'pending' && (
               <Button
