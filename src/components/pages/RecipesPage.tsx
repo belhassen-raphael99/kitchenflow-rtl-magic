@@ -89,7 +89,7 @@ export const RecipesPage = () => {
           </h1>
           <p className="text-muted-foreground">ניהול מתכונים ומחירים</p>
         </div>
-        {isAdmin && (
+        {canWrite && (
           <Button className="gap-2" onClick={() => setRecipeDialogOpen(true)}>
             <Plus className="w-4 h-4" />
             מתכון חדש
