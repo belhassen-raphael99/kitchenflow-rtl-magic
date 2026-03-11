@@ -10,6 +10,8 @@ import { ReservePage } from './components/pages/ReservePage';
 import { WarehousePage } from './components/pages/WarehousePage';
 import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
 import { AdminUsersPage } from './components/pages/AdminUsersPage';
+import { DemoPage } from './components/pages/DemoPage';
+import { DemoExpiredPage } from './components/pages/DemoExpiredPage';
 
 import { Toaster } from '@/components/ui/toaster';
 import { FoodBackground } from './components/layout/FoodBackground';
@@ -29,6 +31,8 @@ const AppRoutes = () => {
           </AuthRoute>
         }
       />
+      <Route path="/demo" element={<DemoPage />} />
+      <Route path="/demo-expired" element={<DemoExpiredPage />} />
       <Route
         path="/"
         element={
