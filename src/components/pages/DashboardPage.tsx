@@ -19,25 +19,23 @@ import { Link } from 'react-router-dom';
 
 export const DashboardPage = () => {
   const { clientInfo } = useApp();
-  const { items: warehouseItems, loading: warehouseLoading } = useWarehouse();
-  const { totalRecipes, eventsThisWeek, guestsThisWeek, activeTasks, loading: statsLoading } = useDashboardStats();
-
-  const lowStockItems = warehouseItems.filter(item => item.status === 'low').length;
-  const criticalStockItems = warehouseItems.filter(item => item.status === 'critical').length;
-  const totalItems = warehouseItems.length;
+  const { 
+    totalRecipes, eventsThisWeek, guestsThisWeek, activeTasks,
+    totalWarehouseItems, lowStockItems, criticalStockItems, loading: statsLoading 
+  } = useDashboardStats();
 
   const SkeletonValue = () => <div className="animate-pulse h-6 sm:h-8 bg-muted rounded" />;
 
   return (
     <div className="space-y-4 sm:space-y-6" dir="rtl">
       {/* Hero Banner */}
-      <div className="bg-gradient-to-l from-primary/90 to-primary rounded-xl sm:rounded-2xl p-4 sm:p-8 text-white">
+      <div className="bg-gradient-to-l from-primary/90 to-primary rounded-xl sm:rounded-2xl p-4 sm:p-8 text-primary-foreground">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             <h1 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">
               שלום! 👋
             </h1>
-            <p className="text-white/80 text-sm sm:text-lg leading-snug">
+            <p className="text-primary-foreground/80 text-sm sm:text-lg leading-snug">
               ברוכים הבאים ל{clientInfo.name} - {clientInfo.tagline}
             </p>
           </div>
@@ -75,9 +73,9 @@ export const DashboardPage = () => {
             <Package className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
           </CardHeader>
           <CardContent className="p-3 sm:p-6 pt-0">
-            {warehouseLoading ? <SkeletonValue /> : (
+            {statsLoading ? <SkeletonValue /> : (
               <>
-                <p className="text-2xl sm:text-3xl font-bold">{totalItems}</p>
+                <p className="text-2xl sm:text-3xl font-bold">{totalWarehouseItems}</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">סה״כ פריטים</p>
               </>
             )}
@@ -91,7 +89,7 @@ export const DashboardPage = () => {
             <AlertTriangle className={`w-4 h-4 sm:w-5 sm:h-5 ${criticalStockItems > 0 ? 'text-destructive' : lowStockItems > 0 ? 'text-amber-500' : 'text-green-500'}`} />
           </CardHeader>
           <CardContent className="p-3 sm:p-6 pt-0">
-            {warehouseLoading ? <SkeletonValue /> : (
+            {statsLoading ? <SkeletonValue /> : (
               <>
                 <p className="text-2xl sm:text-3xl font-bold">{criticalStockItems + lowStockItems}</p>
                 <div className="flex flex-wrap gap-1 sm:gap-2 mt-1">
@@ -194,7 +192,7 @@ export const DashboardPage = () => {
                 </div>
                 <div>
                   <p className="font-medium text-sm sm:text-base">מחסן</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">{totalItems} פריטים</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{totalWarehouseItems} פריטים</p>
                 </div>
               </div>
               <Badge className="bg-green-500 text-[10px] sm:text-xs">פעיל</Badge>
