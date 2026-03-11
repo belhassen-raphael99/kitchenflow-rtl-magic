@@ -1,32 +1,41 @@
-import { Package, Plus, CheckCircle, AlertTriangle, AlertCircle, Loader2, Pencil } from 'lucide-react';
+import { Package, Plus, CheckCircle, AlertTriangle, AlertCircle, Loader2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useWarehouse, WarehouseItem } from '@/hooks/useWarehouse';
-import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { WarehouseItemDialog } from '@/components/warehouse/WarehouseItemDialog';
 import { StockUpdateDialog } from '@/components/warehouse/StockUpdateDialog';
 
 export const WarehousePage = () => {
-  const { items, categories, suppliers, loading, refetch } = useWarehouse();
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { items, categories, suppliers, loading, refetch, page, setPage, totalPages, totalCount, search, setSearch, categoryFilter, setCategoryFilter } = useWarehouse();
+  const { isAdmin } = useAuth();
   const [showItemDialog, setShowItemDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<WarehouseItem | null>(null);
   const [stockItem, setStockItem] = useState<WarehouseItem | null>(null);
+  const [searchInput, setSearchInput] = useState(search);
 
-  const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = !selectedCategory || item.category_id === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, setSearch, setPage]);
 
-  // Count alerts
+  const handleCategoryChange = (catId: string | null) => {
+    setCategoryFilter(catId);
+    setPage(0);
+  };
+
+  // Count alerts from current page items (approximation - real count from all items)
   const lowStockCount = items.filter(i => i.status === 'low').length;
   const criticalStockCount = items.filter(i => i.status === 'critical').length;
 
-  if (loading) {
+  if (loading && items.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -37,29 +46,13 @@ export const WarehousePage = () => {
   const getStatusDisplay = (status: string) => {
     switch (status) {
       case 'ok':
-        return {
-          color: 'text-green-600 bg-green-50',
-          icon: CheckCircle,
-          label: 'תקין',
-        };
+        return { color: 'text-green-600 bg-green-50', icon: CheckCircle, label: 'תקין' };
       case 'low':
-        return {
-          color: 'text-orange-600 bg-orange-50',
-          icon: AlertTriangle,
-          label: 'מלאי נמוך',
-        };
+        return { color: 'text-orange-600 bg-orange-50', icon: AlertTriangle, label: 'מלאי נמוך' };
       case 'critical':
-        return {
-          color: 'text-red-600 bg-red-50',
-          icon: AlertCircle,
-          label: 'קריטי',
-        };
+        return { color: 'text-red-600 bg-red-50', icon: AlertCircle, label: 'קריטי' };
       default:
-        return {
-          color: 'text-muted-foreground bg-muted',
-          icon: CheckCircle,
-          label: status,
-        };
+        return { color: 'text-muted-foreground bg-muted', icon: CheckCircle, label: status };
     }
   };
 
@@ -97,19 +90,18 @@ export const WarehousePage = () => {
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <Button 
-            onClick={handleAddNew}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
-          >
-            <Plus className="w-4 h-4 ml-2" />
-            קליטת סחורה
-          </Button>
+          {isAdmin && (
+            <Button onClick={handleAddNew} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">
+              <Plus className="w-4 h-4 ml-2" />
+              קליטת סחורה
+            </Button>
+          )}
           <div className="text-right">
             <div className="flex items-center gap-2 justify-end">
               <h1 className="text-2xl font-bold text-foreground">מחסן ראשי (חומרי גלם)</h1>
               <Package className="w-6 h-6 text-primary" />
             </div>
-            <p className="text-muted-foreground">{items.length} מוצרים</p>
+            <p className="text-muted-foreground">{totalCount} מוצרים</p>
           </div>
         </div>
 
@@ -119,17 +111,13 @@ export const WarehousePage = () => {
             {criticalStockCount > 0 && (
               <div className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
                 <AlertCircle className="w-5 h-5 text-red-600" />
-                <span className="text-red-700 font-medium">
-                  {criticalStockCount} מוצרים במלאי קריטי
-                </span>
+                <span className="text-red-700 font-medium">{criticalStockCount} מוצרים במלאי קריטי</span>
               </div>
             )}
             {lowStockCount > 0 && (
               <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-200 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-orange-600" />
-                <span className="text-orange-700 font-medium">
-                  {lowStockCount} מוצרים במלאי נמוך
-                </span>
+                <span className="text-orange-700 font-medium">{lowStockCount} מוצרים במלאי נמוך</span>
               </div>
             )}
           </div>
@@ -139,25 +127,14 @@ export const WarehousePage = () => {
         <div className="flex gap-4 flex-wrap">
           <Input
             placeholder="חיפוש מוצר..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="max-w-xs text-right"
           />
           <div className="flex gap-2 flex-wrap">
-            <Button
-              variant={selectedCategory === null ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory(null)}
-            >
-              הכל
-            </Button>
+            <Button variant={categoryFilter === null ? "default" : "outline"} size="sm" onClick={() => handleCategoryChange(null)}>הכל</Button>
             {categories.map(cat => (
-              <Button
-                key={cat.id}
-                variant={selectedCategory === cat.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(cat.id)}
-              >
+              <Button key={cat.id} variant={categoryFilter === cat.id ? "default" : "outline"} size="sm" onClick={() => handleCategoryChange(cat.id)}>
                 {cat.name}
               </Button>
             ))}
@@ -175,76 +152,82 @@ export const WarehousePage = () => {
           <div className="text-right">שם מוצר</div>
         </div>
 
-        <div className="divide-y divide-border max-h-[60vh] overflow-y-auto">
-          {filteredItems.map((item) => {
-            const statusDisplay = getStatusDisplay(item.status);
-            const StatusIcon = statusDisplay.icon;
-            
-            return (
-              <div
-                key={item.id}
-                className={cn(
-                  "grid grid-cols-5 gap-4 p-4 hover:bg-accent/30 transition-colors",
-                  item.status === 'critical' && 'bg-red-50/50',
-                  item.status === 'low' && 'bg-orange-50/50'
-                )}
-              >
-                {/* Actions */}
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleStockUpdate(item)}
-                    className="h-8 px-2"
-                  >
-                    עדכון מלאי
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(item)}
-                    className="h-8 w-8"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                </div>
+        <div className="divide-y divide-border">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : items.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">לא נמצאו מוצרים</div>
+          ) : (
+            items.map((item) => {
+              const statusDisplay = getStatusDisplay(item.status);
+              const StatusIcon = statusDisplay.icon;
+              return (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "grid grid-cols-5 gap-4 p-4 hover:bg-accent/30 transition-colors",
+                    item.status === 'critical' && 'bg-red-50/50',
+                    item.status === 'low' && 'bg-orange-50/50'
+                  )}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    {isAdmin && (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => handleStockUpdate(item)} className="h-8 px-2">עדכון מלאי</Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)} className="h-8 w-8">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
 
-                {/* Status */}
-                <div className="flex items-center justify-center">
-                  <div className={cn("flex items-center gap-1 px-2 py-1 rounded-full", statusDisplay.color)}>
-                    <span className="text-xs font-medium">{statusDisplay.label}</span>
-                    <StatusIcon className="w-4 h-4" />
+                  <div className="flex items-center justify-center">
+                    <div className={cn("flex items-center gap-1 px-2 py-1 rounded-full", statusDisplay.color)}>
+                      <span className="text-xs font-medium">{statusDisplay.label}</span>
+                      <StatusIcon className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="text-center flex items-center justify-center">
+                    <span className={cn("font-bold", item.status === 'critical' && 'text-red-600', item.status === 'low' && 'text-orange-600', item.status === 'ok' && 'text-foreground')}>
+                      {item.quantity}
+                    </span>
+                    <span className="text-muted-foreground mr-1 text-sm">{item.unit}</span>
+                  </div>
+
+                  <div className="flex justify-center items-center">
+                    <span className={cn("px-3 py-1 rounded-lg text-sm", getCategoryColor(item.category?.name))}>
+                      {item.category?.name || '-'}
+                    </span>
+                  </div>
+
+                  <div className="text-right font-semibold text-foreground flex items-center justify-end">
+                    {item.name}
                   </div>
                 </div>
-
-                {/* Quantity */}
-                <div className="text-center flex items-center justify-center">
-                  <span className={cn(
-                    "font-bold",
-                    item.status === 'critical' && 'text-red-600',
-                    item.status === 'low' && 'text-orange-600',
-                    item.status === 'ok' && 'text-foreground'
-                  )}>
-                    {item.quantity}
-                  </span>
-                  <span className="text-muted-foreground mr-1 text-sm">{item.unit}</span>
-                </div>
-
-                {/* Category */}
-                <div className="flex justify-center items-center">
-                  <span className={cn("px-3 py-1 rounded-lg text-sm", getCategoryColor(item.category?.name))}>
-                    {item.category?.name || '-'}
-                  </span>
-                </div>
-
-                {/* Name */}
-                <div className="text-right font-semibold text-foreground flex items-center justify-end">
-                  {item.name}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-4 border-t border-border bg-muted/30">
+            <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)} className="gap-1">
+              <ChevronRight className="w-4 h-4" />
+              הקודם
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              עמוד {page + 1} מתוך {totalPages}
+            </span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(page + 1)} className="gap-1">
+              הבא
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Dialogs */}

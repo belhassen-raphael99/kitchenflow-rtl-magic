@@ -60,7 +60,7 @@ export function useReserve() {
     const { data, error } = await supabase
       .from('reserve_items')
       .select(`
-        *,
+        id, name, quantity, min_stock, storage_type, unit, expiry_date, location, notes, recipe_id, created_at, updated_at,
         recipe:recipes(id, name)
       `)
       .order('name');
@@ -81,7 +81,7 @@ export function useReserve() {
   const fetchLogs = useCallback(async (reserveItemId?: string) => {
     let query = supabase
       .from('production_logs')
-      .select('*')
+      .select('id, reserve_item_id, action, quantity, previous_quantity, new_quantity, user_id, notes, created_at')
       .order('created_at', { ascending: false })
       .limit(100);
 

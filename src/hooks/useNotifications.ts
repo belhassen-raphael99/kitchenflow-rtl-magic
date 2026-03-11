@@ -28,7 +28,7 @@ export function useNotifications() {
   const fetchNotifications = useCallback(async () => {
     const { data, error } = await supabase
       .from('notifications')
-      .select('*')
+      .select('id, title, message, severity, is_read, type, created_at, user_id, related_id, related_table, read_at')
       .order('created_at', { ascending: false })
       .limit(50);
 

@@ -30,7 +30,7 @@ export const useClients = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('clients')
-        .select('*')
+        .select('id, name, phone, email, address, notes, created_at, updated_at')
         .order('name', { ascending: true });
 
       if (error) throw error;
