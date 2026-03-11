@@ -90,7 +90,7 @@ export const WarehousePage = () => {
       {/* Header */}
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          {isAdmin && (
+          {canWrite && (
             <Button onClick={handleAddNew} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">
               <Plus className="w-4 h-4 ml-2" />
               קליטת סחורה
