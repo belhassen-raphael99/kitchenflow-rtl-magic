@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Mail, Lock, LogIn, KeyRound, CheckCircle } from 'lucide-react';
+import { Loader2, Mail, Lock, LogIn, KeyRound, CheckCircle, Link2, Smartphone, Chrome } from 'lucide-react';
 import { z } from 'zod';
 import { FoodBackground } from '@/components/layout/FoodBackground';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Separator } from '@/components/ui/separator';
 
 const loginSchema = z.object({
   email: z.string().email('כתובת אימייל לא תקינה'),
@@ -33,7 +35,7 @@ const passwordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-type ViewMode = 'login' | 'forgot-password' | 'reset-password';
+type ViewMode = 'login' | 'forgot-password' | 'reset-password' | 'magic-link' | 'otp-send' | 'otp-verify' | 'security-question-recovery';
 
 export const AuthPage = () => {
   const [searchParams] = useSearchParams();
@@ -43,15 +45,17 @@ export const AuthPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [securityQuestion, setSecurityQuestion] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
+  const [recoveryUserId, setRecoveryUserId] = useState('');
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  // Handle recovery token from URL hash and auth state changes
   useEffect(() => {
     let isMounted = true;
 
     const handleRecovery = async () => {
-      // Check URL hash for recovery tokens (e.g., #access_token=...&type=recovery)
       const hash = window.location.hash;
       if (hash) {
         const hashParams = new URLSearchParams(hash.substring(1));
@@ -67,7 +71,6 @@ export const AuthPage = () => {
             });
             if (!error && isMounted) {
               setViewMode('reset-password');
-              // Clean the URL hash
               window.history.replaceState(null, '', window.location.pathname);
             } else if (error && isMounted) {
               toast({ title: 'שגיאה', description: 'הקישור פג תוקף. בקש קישור חדש.', variant: 'destructive' });
@@ -80,14 +83,12 @@ export const AuthPage = () => {
         }
       }
 
-      // Check URL search params (e.g., ?type=recovery)
       const type = searchParams.get('type');
       if (type === 'recovery') {
         if (isMounted) setViewMode('reset-password');
       }
     };
 
-    // Listen for PASSWORD_RECOVERY event from Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY' && isMounted) {
         setViewMode('reset-password');
@@ -104,24 +105,20 @@ export const AuthPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (viewMode === 'reset-password') {
       const validation = passwordSchema.safeParse({ password, confirmPassword });
       if (!validation.success) {
-        const error = validation.error.errors[0];
-        toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+        toast({ title: 'שגיאה', description: validation.error.errors[0].message, variant: 'destructive' });
         return;
       }
-
       setLoading(true);
       try {
         const { error } = await supabase.auth.updateUser({ password });
-        
         if (error) {
           toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
         } else {
           toast({ title: 'הצלחה!', description: 'הסיסמה עודכנה בהצלחה. התחבר עם הסיסמה החדשה.' });
-          // Sign out and go back to login
           await supabase.auth.signOut();
           setViewMode('login');
           setPassword('');
@@ -134,28 +131,22 @@ export const AuthPage = () => {
       }
       return;
     }
-    
+
     if (viewMode === 'forgot-password') {
       const validation = emailSchema.safeParse({ email });
       if (!validation.success) {
-        const error = validation.error.errors[0];
-        toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+        toast({ title: 'שגיאה', description: validation.error.errors[0].message, variant: 'destructive' });
         return;
       }
-
       setLoading(true);
       try {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/auth?type=recovery`,
         });
-        
         if (error) {
           toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
         } else {
-          toast({ 
-            title: 'נשלח בהצלחה!', 
-            description: 'בדוק את תיבת האימייל שלך לקישור לאיפוס הסיסמה' 
-          });
+          toast({ title: 'נשלח בהצלחה!', description: 'בדוק את תיבת האימייל שלך לקישור לאיפוס הסיסמה' });
           setViewMode('login');
         }
       } finally {
@@ -164,16 +155,14 @@ export const AuthPage = () => {
       return;
     }
 
-    // Validate inputs for login
+    // Login
     const validation = loginSchema.safeParse({ email, password });
     if (!validation.success) {
-      const error = validation.error.errors[0];
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+      toast({ title: 'שגיאה', description: validation.error.errors[0].message, variant: 'destructive' });
       return;
     }
 
     setLoading(true);
-
     try {
       const { error } = await signIn(email, password);
       if (error) {
@@ -191,12 +180,479 @@ export const AuthPage = () => {
     }
   };
 
+  const handleMagicLink = async () => {
+    const validation = emailSchema.safeParse({ email });
+    if (!validation.success) {
+      toast({ title: 'שגיאה', description: validation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin, shouldCreateUser: false },
+      });
+      if (error) throw error;
+      toast({ title: 'נשלח!', description: 'קישור כניסה נשלח לאימייל שלך' });
+    } catch (err: any) {
+      toast({ title: 'שגיאה', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    const validation = emailSchema.safeParse({ email });
+    if (!validation.success) {
+      toast({ title: 'שגיאה', description: validation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      });
+      if (error) throw error;
+      toast({ title: 'נשלח!', description: 'קוד חד-פעמי נשלח לאימייל שלך' });
+      setViewMode('otp-verify');
+    } catch (err: any) {
+      toast({ title: 'שגיאה', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) {
+      toast({ title: 'שגיאה', description: 'נא להזין קוד בן 6 ספרות', variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'email',
+      });
+      if (error) throw error;
+      toast({ title: 'ברוך הבא!', description: 'התחברת בהצלחה' });
+      navigate('/');
+    } catch (err: any) {
+      toast({ title: 'שגיאה', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) {
+      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    }
+  };
+
+  const handleSecurityQuestionLookup = async () => {
+    const validation = emailSchema.safeParse({ email });
+    if (!validation.success) {
+      toast({ title: 'שגיאה', description: validation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      // Look up user profile by email to find security question
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (!profile) {
+        toast({ title: 'שגיאה', description: 'לא נמצא משתמש עם אימייל זה', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      const { data: sq } = await supabase
+        .from('security_questions')
+        .select('question')
+        .eq('user_id', profile.id)
+        .maybeSingle();
+
+      if (!sq) {
+        toast({ title: 'שגיאה', description: 'לא הוגדרה שאלת אבטחה עבור חשבון זה', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      setSecurityQuestion(sq.question);
+      setRecoveryUserId(profile.id);
+      setViewMode('security-question-recovery');
+    } catch (err: any) {
+      toast({ title: 'שגיאה', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifySecurityAnswer = async () => {
+    if (securityAnswer.trim().length < 3) {
+      toast({ title: 'שגיאה', description: 'נא להזין תשובה', variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data: hashData, error: hashError } = await supabase.functions.invoke('hash-security-answer', {
+        body: { answer: securityAnswer.trim() },
+      });
+
+      if (hashError || !hashData?.hash) throw new Error('שגיאה באימות');
+
+      const { data: sq } = await supabase
+        .from('security_questions')
+        .select('answer_hash')
+        .eq('user_id', recoveryUserId)
+        .maybeSingle();
+
+      if (!sq || sq.answer_hash !== hashData.hash) {
+        toast({ title: 'שגיאה', description: 'התשובה שגויה', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      // Answer correct — send a recovery email
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?type=recovery`,
+      });
+      if (error) throw error;
+      toast({ title: 'הצלחה!', description: 'התשובה נכונה! קישור לאיפוס סיסמה נשלח לאימייל שלך' });
+      setViewMode('login');
+    } catch (err: any) {
+      toast({ title: 'שגיאה', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderRecoveryOptions = () => (
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <KeyRound className="w-12 h-12 text-primary mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-foreground">שכחת סיסמה?</h2>
+        <p className="text-sm text-muted-foreground">איך תרצה לאפס את הסיסמה?</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="recovery-email">אימייל</Label>
+        <div className="relative">
+          <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            id="recovery-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="pr-10 text-right"
+            placeholder="example@email.com"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Button
+          onClick={() => {
+            const v = emailSchema.safeParse({ email });
+            if (!v.success) {
+              toast({ title: 'שגיאה', description: v.error.errors[0].message, variant: 'destructive' });
+              return;
+            }
+            setLoading(true);
+            supabase.auth.resetPasswordForEmail(email, {
+              redirectTo: `${window.location.origin}/auth?type=recovery`,
+            }).then(({ error }) => {
+              if (error) toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+              else {
+                toast({ title: 'נשלח!', description: 'קישור לאיפוס נשלח לאימייל שלך' });
+                setViewMode('login');
+              }
+              setLoading(false);
+            });
+          }}
+          className="w-full gap-2"
+          variant="outline"
+          disabled={loading}
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+          קבל קישור לאימייל
+        </Button>
+
+        <Button
+          onClick={() => {
+            const v = emailSchema.safeParse({ email });
+            if (!v.success) {
+              toast({ title: 'שגיאה', description: v.error.errors[0].message, variant: 'destructive' });
+              return;
+            }
+            handleSendOtp();
+          }}
+          className="w-full gap-2"
+          variant="outline"
+          disabled={loading}
+        >
+          <Smartphone className="w-4 h-4" />
+          קבל קוד OTP לאימייל
+        </Button>
+
+        <Button
+          onClick={handleSecurityQuestionLookup}
+          className="w-full gap-2"
+          variant="outline"
+          disabled={loading}
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+          ענה על שאלת האבטחה
+        </Button>
+      </div>
+
+      <Button
+        type="button"
+        variant="ghost"
+        className="w-full"
+        onClick={() => setViewMode('login')}
+      >
+        חזור להתחברות
+      </Button>
+    </div>
+  );
+
+  const renderSecurityQuestionRecovery = () => (
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <KeyRound className="w-12 h-12 text-primary mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-foreground">שאלת אבטחה</h2>
+        <p className="text-sm text-muted-foreground">{securityQuestion}</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="sq-answer">תשובה</Label>
+        <Input
+          id="sq-answer"
+          value={securityAnswer}
+          onChange={(e) => setSecurityAnswer(e.target.value)}
+          placeholder="הכנס את התשובה"
+          className="text-right"
+        />
+      </div>
+
+      <Button onClick={handleVerifySecurityAnswer} className="w-full" disabled={loading}>
+        {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+        אמת תשובה
+      </Button>
+
+      <Button variant="ghost" className="w-full" onClick={() => setViewMode('forgot-password')}>
+        חזור
+      </Button>
+    </div>
+  );
+
+  const renderOtpVerify = () => (
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <Smartphone className="w-12 h-12 text-primary mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-foreground">הכנס קוד</h2>
+        <p className="text-sm text-muted-foreground">קוד בן 6 ספרות נשלח ל-{email}</p>
+      </div>
+
+      <div className="flex justify-center" dir="ltr">
+        <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
+      </div>
+
+      <Button onClick={handleVerifyOtp} className="w-full" disabled={loading}>
+        {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+        אמת קוד
+      </Button>
+
+      <Button variant="ghost" className="w-full" onClick={() => setViewMode('login')}>
+        חזור להתחברות
+      </Button>
+    </div>
+  );
+
+  const renderResetPassword = () => (
+    <>
+      <div className="text-center mb-6">
+        {resetSuccess ? (
+          <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+        ) : (
+          <KeyRound className="w-12 h-12 text-primary mx-auto mb-3" />
+        )}
+        <h2 className="text-lg font-semibold text-foreground">
+          {resetSuccess ? 'הסיסמה עודכנה!' : 'הגדר סיסמה חדשה'}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {resetSuccess ? 'מעביר אותך לדף ההתחברות...' : 'הכנס את הסיסמה החדשה שלך'}
+        </p>
+      </div>
+      {!resetSuccess && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="password">סיסמה חדשה</Label>
+            <div className="relative">
+              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="pr-10 text-right" placeholder="לפחות 12 תווים" required />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="confirmPassword">אשר סיסמה</Label>
+            <div className="relative">
+              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pr-10 text-right" placeholder="הכנס שוב את הסיסמה" required />
+            </div>
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+            עדכן סיסמה
+          </Button>
+        </form>
+      )}
+    </>
+  );
+
+  const renderLogin = () => (
+    <>
+      <div className="text-center mb-6">
+        <LogIn className="w-12 h-12 text-primary mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-foreground">התחברות</h2>
+        <p className="text-sm text-muted-foreground">הכנס את פרטי ההתחברות שלך</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <Label htmlFor="email">אימייל</Label>
+          <div className="relative">
+            <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="pr-10 text-right" placeholder="example@email.com" required />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="password">סיסמה</Label>
+          <div className="relative">
+            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="pr-10 text-right" placeholder="הכנס סיסמה" required />
+          </div>
+        </div>
+
+        <button type="button" onClick={() => setViewMode('forgot-password')} className="text-sm text-primary hover:underline block">
+          שכחת סיסמה?
+        </button>
+
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+          התחבר
+        </Button>
+      </form>
+
+      {/* Alternative login methods */}
+      <div className="mt-6">
+        <div className="relative">
+          <Separator />
+          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-xs text-muted-foreground">
+            או
+          </span>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <Button variant="outline" className="w-full gap-2" onClick={handleMagicLink} disabled={loading}>
+            <Link2 className="w-4 h-4" />
+            כניסה בקישור קסום
+          </Button>
+          <Button variant="outline" className="w-full gap-2" onClick={() => {
+            if (!email) {
+              setViewMode('otp-send');
+            } else {
+              handleSendOtp();
+            }
+          }} disabled={loading}>
+            <Smartphone className="w-4 h-4" />
+            כניסה בקוד חד-פעמי
+          </Button>
+          <Button variant="outline" className="w-full gap-2" onClick={handleGoogleLogin}>
+            <Chrome className="w-4 h-4" />
+            כניסה עם Google
+          </Button>
+        </div>
+      </div>
+
+      <div className="text-center mt-6 space-y-3">
+        <p className="text-sm text-muted-foreground">
+          גישה למערכת בהזמנה בלבד.
+          <br />
+          פנה למנהל המערכת לקבלת חשבון.
+        </p>
+        <div className="border-t border-border pt-3">
+          <p className="text-sm text-muted-foreground mb-2">רוצה לראות את המערכת?</p>
+          <Button type="button" variant="outline" className="w-full gap-2" onClick={() => navigate('/demo')}>
+            🎯 כניסה לסביבת דמו
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+
+  const renderOtpSend = () => (
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <Smartphone className="w-12 h-12 text-primary mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-foreground">כניסה בקוד חד-פעמי</h2>
+        <p className="text-sm text-muted-foreground">הכנס את האימייל שלך לקבלת קוד</p>
+      </div>
+      <div>
+        <Label htmlFor="otp-email">אימייל</Label>
+        <div className="relative">
+          <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input id="otp-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="pr-10 text-right" placeholder="example@email.com" required />
+        </div>
+      </div>
+      <Button onClick={handleSendOtp} className="w-full" disabled={loading}>
+        {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+        שלח קוד
+      </Button>
+      <Button variant="ghost" className="w-full" onClick={() => setViewMode('login')}>
+        חזור להתחברות
+      </Button>
+    </div>
+  );
+
+  const renderContent = () => {
+    switch (viewMode) {
+      case 'reset-password': return renderResetPassword();
+      case 'forgot-password': return renderRecoveryOptions();
+      case 'magic-link': return null;
+      case 'otp-send': return renderOtpSend();
+      case 'otp-verify': return renderOtpVerify();
+      case 'security-question-recovery': return renderSecurityQuestionRecovery();
+      default: return renderLogin();
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 relative" dir="rtl">
       <FoodBackground />
       <div className="w-full max-w-md relative z-10">
         <div className="bg-card rounded-2xl shadow-xl p-8 border border-border">
-          {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">🍳</span>
@@ -204,182 +660,7 @@ export const AuthPage = () => {
             <h1 className="text-2xl font-bold text-foreground">קסרולה</h1>
             <p className="text-muted-foreground">ניהול קייטרינג חכם</p>
           </div>
-
-          {viewMode === 'reset-password' ? (
-            <>
-              {/* Reset Password View */}
-              <div className="text-center mb-6">
-                {resetSuccess ? (
-                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                ) : (
-                  <KeyRound className="w-12 h-12 text-primary mx-auto mb-3" />
-                )}
-                <h2 className="text-lg font-semibold text-foreground">
-                  {resetSuccess ? 'הסיסמה עודכנה!' : 'הגדר סיסמה חדשה'}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {resetSuccess ? 'מעביר אותך לדף ההתחברות...' : 'הכנס את הסיסמה החדשה שלך'}
-                </p>
-              </div>
-
-              {!resetSuccess && (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="password">סיסמה חדשה</Label>
-                    <div className="relative">
-                      <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pr-10 text-right"
-                        placeholder="לפחות 6 תווים"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="confirmPassword">אשר סיסמה</Label>
-                    <div className="relative">
-                      <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="pr-10 text-right"
-                        placeholder="הכנס שוב את הסיסמה"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-                    עדכן סיסמה
-                  </Button>
-                </form>
-              )}
-            </>
-          ) : viewMode === 'forgot-password' ? (
-            <>
-              {/* Forgot Password View */}
-              <div className="text-center mb-6">
-                <KeyRound className="w-12 h-12 text-primary mx-auto mb-3" />
-                <h2 className="text-lg font-semibold text-foreground">שכחת סיסמה?</h2>
-                <p className="text-sm text-muted-foreground">הכנס את האימייל שלך ונשלח לך קישור לאיפוס</p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">אימייל</Label>
-                  <div className="relative">
-                    <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pr-10 text-right"
-                      placeholder="example@email.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-                  שלח קישור לאיפוס
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => setViewMode('login')}
-                >
-                  חזור להתחברות
-                </Button>
-              </form>
-            </>
-          ) : (
-            <>
-              {/* Login View Only - No Signup */}
-              <div className="text-center mb-6">
-                <LogIn className="w-12 h-12 text-primary mx-auto mb-3" />
-                <h2 className="text-lg font-semibold text-foreground">התחברות</h2>
-                <p className="text-sm text-muted-foreground">הכנס את פרטי ההתחברות שלך</p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">אימייל</Label>
-                  <div className="relative">
-                    <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pr-10 text-right"
-                      placeholder="example@email.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="password">סיסמה</Label>
-                  <div className="relative">
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pr-10 text-right"
-                      placeholder="הכנס סיסמה"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setViewMode('forgot-password')}
-                  className="text-sm text-primary hover:underline block"
-                >
-                  שכחת סיסמה?
-                </button>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-                  התחבר
-                </Button>
-              </form>
-
-              <div className="text-center mt-6 space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  גישה למערכת בהזמנה בלבד.
-                  <br />
-                  פנה למנהל המערכת לקבלת חשבון.
-                </p>
-                <div className="border-t border-border pt-3">
-                  <p className="text-sm text-muted-foreground mb-2">רוצה לראות את המערכת?</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={() => navigate('/demo')}
-                  >
-                    🎯 כניסה לסביבת דמו
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
+          {renderContent()}
         </div>
       </div>
     </div>
