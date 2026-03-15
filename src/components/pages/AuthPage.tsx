@@ -498,7 +498,7 @@ export const AuthPage = () => {
     <>
       <div className="text-center mb-6">
         {resetSuccess ? (
-          <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+          <CheckCircle className="w-12 h-12 text-primary mx-auto mb-3" />
         ) : (
           <KeyRound className="w-12 h-12 text-primary mx-auto mb-3" />
         )}
