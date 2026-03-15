@@ -52,7 +52,7 @@ export const LoginMethodsTab = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ login_methods: methods as unknown as Record<string, unknown> })
+        .update({ login_methods: methods as any })
         .eq('id', user.id);
 
       if (error) throw error;
