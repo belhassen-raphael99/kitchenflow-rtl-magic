@@ -217,13 +217,14 @@ export const Sidebar = () => {
                 )}
               >
                 <Avatar className="h-9 w-9 shrink-0 border-2 border-primary/20">
+                  <AvatarImage src={avatar_url || undefined} alt="Profile" />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
                 {sidebarOpen && (
                   <div className="flex-1 min-w-0 text-right animate-fade-in">
-                    <p className="text-sm font-medium text-foreground truncate">{userEmail}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mt-0.5">
                       {roleLabel}
                     </Badge>
@@ -237,13 +238,18 @@ export const Sidebar = () => {
             <DropdownMenuContent side="top" align="end" className="w-56">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col gap-1 text-right">
-                  <p className="text-sm font-medium">{userEmail}</p>
+                  <p className="text-sm font-medium">{displayName}</p>
+                  <p className="text-xs text-muted-foreground">{userEmail}</p>
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0 w-fit mr-auto">
                     {roleLabel}
                   </Badge>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleNavClick('/settings')} className="cursor-pointer gap-2">
+                <Settings className="w-4 h-4" />
+                <span>הגדרות</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleFullscreen} className="cursor-pointer gap-2">
                 <Maximize className="w-4 h-4" />
                 <span>מסך מלא</span>
