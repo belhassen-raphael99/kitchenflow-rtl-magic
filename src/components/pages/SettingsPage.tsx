@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Shield } from 'lucide-react';
+import { User, Shield, KeyRound, ShieldQuestion } from 'lucide-react';
 import { ProfileTab } from '@/components/settings/ProfileTab';
 import { SecurityTab } from '@/components/settings/SecurityTab';
+import { LoginMethodsTab } from '@/components/settings/LoginMethodsTab';
+import { SecurityQuestionTab } from '@/components/settings/SecurityQuestionTab';
 import { cn } from '@/lib/utils';
 
 export const SettingsPage = () => {
@@ -25,7 +27,6 @@ export const SettingsPage = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Vertical tabs */}
           <TabsList className={cn(
             "flex md:flex-col h-auto bg-card border border-border rounded-xl p-2 gap-1",
             "md:w-48 w-full shrink-0"
@@ -44,15 +45,34 @@ export const SettingsPage = () => {
               <Shield className="w-4 h-4" />
               אבטחה
             </TabsTrigger>
+            <TabsTrigger
+              value="login-methods"
+              className="justify-start gap-2 w-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg px-4 py-3"
+            >
+              <KeyRound className="w-4 h-4" />
+              כניסה
+            </TabsTrigger>
+            <TabsTrigger
+              value="security-question"
+              className="justify-start gap-2 w-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg px-4 py-3"
+            >
+              <ShieldQuestion className="w-4 h-4" />
+              שאלת אבטחה
+            </TabsTrigger>
           </TabsList>
 
-          {/* Tab content */}
           <div className="flex-1 min-w-0">
             <TabsContent value="profile" className="mt-0">
               <ProfileTab />
             </TabsContent>
             <TabsContent value="security" className="mt-0">
               <SecurityTab />
+            </TabsContent>
+            <TabsContent value="login-methods" className="mt-0">
+              <LoginMethodsTab />
+            </TabsContent>
+            <TabsContent value="security-question" className="mt-0">
+              <SecurityQuestionTab />
             </TabsContent>
           </div>
         </div>
