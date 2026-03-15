@@ -46,19 +46,32 @@ export const DemoPage = () => {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
-    });
-    setLoading(false);
 
-    if (error) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
-      return;
+    try {
+      // Use edge function to bypass signup restrictions
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('demo-otp-signup', {
+        body: { email, token: refToken },
+      });
+
+      if (fnError) {
+        toast({ title: 'שגיאה', description: fnError.message || 'שגיאה בשליחת הקוד', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      if (fnData?.error) {
+        toast({ title: 'שגיאה', description: fnData.error, variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      setStep('otp');
+      toast({ title: 'קוד נשלח!', description: 'בדוק את תיבת האימייל שלך' });
+    } catch (err) {
+      toast({ title: 'שגיאה', description: 'שגיאה בלתי צפויה', variant: 'destructive' });
     }
 
-    setStep('otp');
-    toast({ title: 'קוד נשלח!', description: 'בדוק את תיבת האימייל שלך' });
+    setLoading(false);
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
