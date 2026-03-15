@@ -12,6 +12,7 @@ import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
 import { AdminUsersPage } from './components/pages/AdminUsersPage';
 import { DemoPage } from './components/pages/DemoPage';
 import { DemoExpiredPage } from './components/pages/DemoExpiredPage';
+import { NotFoundPage } from './components/pages/NotFoundPage';
 
 import { Toaster } from '@/components/ui/toaster';
 import { FoodBackground } from './components/layout/FoodBackground';
