@@ -1,5 +1,6 @@
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -13,12 +14,13 @@ import {
   Menu,
   X,
   Users,
-  ChevronsUpDown
+  ChevronsUpDown,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -45,12 +47,16 @@ const adminNavItems = [
 export const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen, toggleFullscreen, clientInfo } = useApp();
   const { signOut, isAdmin, user, role } = useAuth();
+  const { full_name, avatar_url } = useUserProfile();
   const navigate = useNavigate();
   const location = useLocation();
 
   const userEmail = user?.email || '';
-  const userInitials = userEmail ? userEmail.substring(0, 2).toUpperCase() : '??';
-  const roleLabel = role === 'admin' ? 'מנהל' : 'עובד';
+  const displayName = full_name || userEmail;
+  const userInitials = full_name
+    ? full_name.substring(0, 2).toUpperCase()
+    : userEmail ? userEmail.substring(0, 2).toUpperCase() : '??';
+  const roleLabel = role === 'admin' ? 'מנהל' : role === 'demo' ? 'דמו' : 'עובד';
 
   const handleNavClick = (path: string) => {
     navigate(path);
@@ -211,13 +217,14 @@ export const Sidebar = () => {
                 )}
               >
                 <Avatar className="h-9 w-9 shrink-0 border-2 border-primary/20">
+                  <AvatarImage src={avatar_url || undefined} alt="Profile" />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
                 {sidebarOpen && (
                   <div className="flex-1 min-w-0 text-right animate-fade-in">
-                    <p className="text-sm font-medium text-foreground truncate">{userEmail}</p>
+                    <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mt-0.5">
                       {roleLabel}
                     </Badge>
@@ -231,13 +238,18 @@ export const Sidebar = () => {
             <DropdownMenuContent side="top" align="end" className="w-56">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col gap-1 text-right">
-                  <p className="text-sm font-medium">{userEmail}</p>
+                  <p className="text-sm font-medium">{displayName}</p>
+                  <p className="text-xs text-muted-foreground">{userEmail}</p>
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0 w-fit mr-auto">
                     {roleLabel}
                   </Badge>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleNavClick('/settings')} className="cursor-pointer gap-2">
+                <Settings className="w-4 h-4" />
+                <span>הגדרות</span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleFullscreen} className="cursor-pointer gap-2">
                 <Maximize className="w-4 h-4" />
                 <span>מסך מלא</span>
