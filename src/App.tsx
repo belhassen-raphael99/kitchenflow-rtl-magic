@@ -105,6 +105,16 @@ const AppRoutes = () => {
           </AdminRoute>
         }
       />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <SettingsPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
