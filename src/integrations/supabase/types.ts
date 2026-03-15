@@ -414,6 +414,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          login_methods: Json | null
           updated_at: string
         }
         Insert: {
@@ -422,6 +423,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          login_methods?: Json | null
           updated_at?: string
         }
         Update: {
@@ -430,6 +432,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          login_methods?: Json | null
           updated_at?: string
         }
         Relationships: []
@@ -606,6 +609,41 @@ export type Database = {
             columns: ["recipe_id"]
             isOneToOne: false
             referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_questions: {
+        Row: {
+          answer_hash: string
+          created_at: string | null
+          id: string
+          question: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          answer_hash: string
+          created_at?: string | null
+          id?: string
+          question: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          answer_hash?: string
+          created_at?: string | null
+          id?: string
+          question?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_questions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
