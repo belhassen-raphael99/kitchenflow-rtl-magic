@@ -10,6 +10,7 @@ import { ReservePage } from './components/pages/ReservePage';
 import { WarehousePage } from './components/pages/WarehousePage';
 import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
 import { AdminUsersPage } from './components/pages/AdminUsersPage';
+import { SettingsPage } from './components/pages/SettingsPage';
 import { DemoPage } from './components/pages/DemoPage';
 import { DemoExpiredPage } from './components/pages/DemoExpiredPage';
 import { NotFoundPage } from './components/pages/NotFoundPage';
