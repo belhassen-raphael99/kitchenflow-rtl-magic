@@ -117,6 +117,7 @@ export type Database = {
           email: string | null
           expires_at: string | null
           id: string
+          otp_attempts: number | null
           token: string
           used: boolean | null
         }
@@ -126,6 +127,7 @@ export type Database = {
           email?: string | null
           expires_at?: string | null
           id?: string
+          otp_attempts?: number | null
           token?: string
           used?: boolean | null
         }
@@ -135,6 +137,7 @@ export type Database = {
           email?: string | null
           expires_at?: string | null
           id?: string
+          otp_attempts?: number | null
           token?: string
           used?: boolean | null
         }

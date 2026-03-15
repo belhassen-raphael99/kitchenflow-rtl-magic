@@ -1,0 +1,1 @@
+ALTER TABLE public.demo_tokens ADD COLUMN IF NOT EXISTS otp_attempts integer DEFAULT 0;
