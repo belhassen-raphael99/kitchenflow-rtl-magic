@@ -20,10 +20,12 @@ import {
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useKitchenOps, Department, TaskStatus } from '@/hooks/useKitchenOps';
+import { useReserve } from '@/hooks/useReserve';
 import { useAuth } from '@/hooks/useAuth';
 import { ProductionTaskCard } from '@/components/kitchen/ProductionTaskCard';
 import { ProductionTaskDialog } from '@/components/kitchen/ProductionTaskDialog';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 export const KitchenOpsPage = () => {
   const { canWrite } = useAuth();
