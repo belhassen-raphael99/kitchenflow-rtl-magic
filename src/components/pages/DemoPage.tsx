@@ -17,7 +17,7 @@ export const DemoPage = () => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tokenValid, setTokenValid] = useState<boolean | null>(refToken ? null : true);
+  const [tokenValid, setTokenValid] = useState<boolean | null>(refToken ? null : false);
 
   // Validate ref token on mount
   useEffect(() => {

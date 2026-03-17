@@ -84,12 +84,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Now send the actual OTP email via signInWithOtp using service role
-    // generateLink creates the user if needed, now send OTP
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const anonClient = createClient(supabaseUrl, anonKey);
-    
-    const { error: sendError } = await anonClient.auth.signInWithOtp({
+    // 4. Send OTP email using service role client (bypasses all restrictions)
+    const { error: sendError } = await supabaseAdmin.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: false },
     });
