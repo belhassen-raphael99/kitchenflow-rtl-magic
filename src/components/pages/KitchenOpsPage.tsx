@@ -38,6 +38,7 @@ export const KitchenOpsPage = () => {
     generateTasksFromEvents,
     getProgress,
   } = useKitchenOps();
+  const { items: reserveItems, consume } = useReserve();
 
   const [selectedDepartment, setSelectedDepartment] = useState<Department>('kitchen');
   const [selectedDate, setSelectedDate] = useState(new Date());
