@@ -45,7 +45,7 @@ const eventSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/, 'פורמט שעה לא תקין'),
   client_id: z.string().optional(),
   guests: z.coerce.number().min(0, 'מספר האורחים חייב להיות חיובי'),
-  status: z.enum(['pending', 'in-progress', 'completed', 'cancelled']),
+  status: z.enum(['pending', 'confirmed', 'in-progress', 'completed', 'cancelled']),
   notes: z.string().optional(),
 });
 
