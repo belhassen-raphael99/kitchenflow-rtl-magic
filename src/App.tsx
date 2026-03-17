@@ -18,6 +18,7 @@ import { NotFoundPage } from './components/pages/NotFoundPage';
 import { Toaster } from '@/components/ui/toaster';
 import { FoodBackground } from './components/layout/FoodBackground';
 import { ImpersonationBanner } from './components/layout/ImpersonationBanner';
+import { DemoTour } from './components/onboarding/DemoTour';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AdminRoute } from '@/components/auth/AdminRoute';
 import { AuthRoute } from '@/components/auth/AuthRoute';
@@ -127,6 +128,7 @@ function App() {
         <FoodBackground />
         <ImpersonationBanner />
         <AppRoutes />
+        <DemoTour />
         <Toaster />
       </AppProvider>
     </BrowserRouter>
