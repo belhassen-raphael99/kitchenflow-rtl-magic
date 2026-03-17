@@ -15,5 +15,8 @@ verify_jwt = false
 [functions.assign-demo-role]
 verify_jwt = false
 
+[functions.demo-auto-login]
+verify_jwt = false
+
 [functions.demo-otp-signup]
 verify_jwt = false
