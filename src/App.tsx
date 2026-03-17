@@ -128,6 +128,7 @@ function App() {
         <FoodBackground />
         <ImpersonationBanner />
         <AppRoutes />
+        <DemoTour />
         <Toaster />
       </AppProvider>
     </BrowserRouter>
