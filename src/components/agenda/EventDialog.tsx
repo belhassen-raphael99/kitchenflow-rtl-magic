@@ -53,6 +53,7 @@ type EventFormValues = z.infer<typeof eventSchema>;
 
 const statusOptions: { value: EventStatus; label: string }[] = [
   { value: 'pending', label: 'ממתין' },
+  { value: 'confirmed', label: 'מאושר' },
   { value: 'in-progress', label: 'בתהליך' },
   { value: 'completed', label: 'הושלם' },
   { value: 'cancelled', label: 'בוטל' },
