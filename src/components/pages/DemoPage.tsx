@@ -5,35 +5,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Loader2, Mail, KeyRound, ChefHat } from 'lucide-react';
+import { Loader2, Mail, KeyRound, ChefHat, Play, CheckCircle2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-export const DemoPage = () => {
+// === OTP Flow (with ref token) ===
+const OtpFlow = ({ refToken }: { refToken: string }) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const refToken = searchParams.get('ref');
-
   const [step, setStep] = useState<'email' | 'otp'>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tokenValid, setTokenValid] = useState<boolean | null>(refToken ? null : false);
+  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
 
-  // Validate ref token on mount
   useEffect(() => {
-    if (!refToken) return;
     const validate = async () => {
       const { data } = await supabase
         .from('demo_tokens')
         .select('id, expires_at, used')
         .eq('token', refToken)
         .maybeSingle();
-
-      if (!data || data.used || new Date(data.expires_at) < new Date()) {
-        setTokenValid(false);
-      } else {
-        setTokenValid(true);
-      }
+      setTokenValid(!(!data || data.used || new Date(data.expires_at!) < new Date()));
     };
     validate();
   }, [refToken]);
@@ -44,74 +35,41 @@ export const DemoPage = () => {
       toast({ title: 'שגיאה', description: 'כתובת אימייל לא תקינה', variant: 'destructive' });
       return;
     }
-
     setLoading(true);
-
     try {
-      // Use edge function to bypass signup restrictions
       const { data: fnData, error: fnError } = await supabase.functions.invoke('demo-otp-signup', {
         body: { email, token: refToken },
       });
-
-      if (fnError) {
-        toast({ title: 'שגיאה', description: fnError.message || 'שגיאה בשליחת הקוד', variant: 'destructive' });
+      if (fnError || fnData?.error) {
+        toast({ title: 'שגיאה', description: fnError?.message || fnData?.error || 'שגיאה בשליחת הקוד', variant: 'destructive' });
         setLoading(false);
         return;
       }
-
-      if (fnData?.error) {
-        toast({ title: 'שגיאה', description: fnData.error, variant: 'destructive' });
-        setLoading(false);
-        return;
-      }
-
       setStep('otp');
       toast({ title: 'קוד נשלח!', description: 'בדוק את תיבת האימייל שלך' });
-    } catch (err) {
+    } catch {
       toast({ title: 'שגיאה', description: 'שגיאה בלתי צפויה', variant: 'destructive' });
     }
-
     setLoading(false);
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.length !== 6) return;
-
     setLoading(true);
-    const { data: verifyData, error } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'email',
-    });
-    
+    const { data: verifyData, error } = await supabase.auth.verifyOtp({ email, token: otp, type: 'email' });
     if (error) {
       setLoading(false);
       toast({ title: 'שגיאה', description: 'קוד שגוי או פג תוקף', variant: 'destructive' });
       return;
     }
-
-    // Assign demo role via edge function
     try {
-      const { error: fnError } = await supabase.functions.invoke('assign-demo-role', {
-        body: { user_id: verifyData.user?.id },
-      });
-      if (fnError) console.error('assign-demo-role error:', fnError);
+      await supabase.functions.invoke('assign-demo-role', { body: { user_id: verifyData.user?.id } });
     } catch (err) {
       console.error('Failed to assign demo role:', err);
     }
-
-    // Mark ref token as used if present
-    if (refToken) {
-      await supabase
-        .from('demo_tokens')
-        .update({ used: true, email })
-        .eq('token', refToken);
-    }
-
-    // Set demo session start
+    await supabase.from('demo_tokens').update({ used: true, email }).eq('token', refToken);
     localStorage.setItem('demo_session_start', Date.now().toString());
-
     setLoading(false);
     navigate('/');
   };
@@ -124,7 +82,7 @@ export const DemoPage = () => {
     );
   }
 
-  if (tokenValid === false) {
+  if (!tokenValid) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
         <Card className="w-full max-w-md text-center">
@@ -159,15 +117,7 @@ export const DemoPage = () => {
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div className="relative">
                 <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pr-10"
-                  dir="ltr"
-                  required
-                />
+                <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pr-10" dir="ltr" required />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
@@ -192,12 +142,7 @@ export const DemoPage = () => {
                 {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
                 כניסה לדמו
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => { setStep('email'); setOtp(''); }}
-              >
+              <Button type="button" variant="ghost" className="w-full" onClick={() => { setStep('email'); setOtp(''); }}>
                 שלח קוד מחדש
               </Button>
             </form>
@@ -206,4 +151,106 @@ export const DemoPage = () => {
       </Card>
     </div>
   );
+};
+
+// === Public Demo Landing (no token) ===
+const PublicDemoLanding = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('demo-auto-login');
+
+      if (error || data?.error) {
+        toast({ title: 'שגיאה', description: 'שגיאה זמנית — נסה שוב', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      const { access_token, refresh_token } = data;
+      await supabase.auth.setSession({ access_token, refresh_token });
+      localStorage.setItem('demo_session_start', Date.now().toString());
+      navigate('/');
+    } catch {
+      toast({ title: 'שגיאה', description: 'שגיאה זמנית — נסה שוב', variant: 'destructive' });
+      setLoading(false);
+    }
+  };
+
+  const features = [
+    'ניהול אירועים',
+    'מתכונים ומצרכים',
+    'מחסן וספקים',
+    'ניהול ייצור',
+    'דשבורד בזמן אמת',
+    'ממשק בעברית',
+  ];
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4" dir="rtl">
+      <Card className="w-full max-w-lg">
+        <CardHeader className="text-center pb-2">
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <ChefHat className="w-10 h-10 text-primary" />
+          </div>
+          <CardTitle className="text-3xl font-bold">קסרולה 🍲</CardTitle>
+          <CardDescription className="text-lg mt-2">
+            מערכת ERP מקצועית לניהול קייטרינג
+          </CardDescription>
+          <p className="text-sm text-muted-foreground mt-1">
+            ניהול אירועים, מתכונים, מחסן וייצור — הכל במקום אחד
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="bg-accent/50 rounded-xl p-5 text-center space-y-3">
+            <div className="flex items-center justify-center gap-2 text-primary font-semibold text-lg">
+              <Play className="w-5 h-5" />
+              סביבת דמו — צפייה בלבד
+            </div>
+            <p className="text-sm text-muted-foreground">
+              גלה את כל יכולות המערכת ללא הרשמה
+            </p>
+            <Button
+              onClick={handleDemoLogin}
+              disabled={loading}
+              size="lg"
+              className="w-full text-lg h-12 bg-green-600 hover:bg-green-700"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                  מתחבר לסביבת הדמו...
+                </>
+              ) : (
+                'כניסה לדמו ←'
+              )}
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {features.map((feature) => (
+              <div key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                {feature}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// === Main DemoPage ===
+export const DemoPage = () => {
+  const [searchParams] = useSearchParams();
+  const refToken = searchParams.get('ref');
+
+  if (refToken) {
+    return <OtpFlow refToken={refToken} />;
+  }
+
+  return <PublicDemoLanding />;
 };
