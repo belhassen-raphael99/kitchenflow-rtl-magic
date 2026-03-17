@@ -68,6 +68,16 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/delivery"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <DeliveryPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/agenda"
         element={
           <ProtectedRoute>
