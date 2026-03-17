@@ -78,8 +78,56 @@ export const KitchenOpsPage = () => {
 
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
     const task = tasks.find(t => t.id === taskId);
-    const completedQuantity = status === 'completed' ? task?.target_quantity : undefined;
+    if (!task) return;
+
+    const completedQuantity = status === 'completed' ? task.target_quantity : undefined;
     await updateTaskStatus(taskId, status, completedQuantity);
+
+    // Auto-deduct from reserve when task is completed
+    if (status === 'completed' && task.name) {
+      // Find matching reserve item by name
+      const matchingReserve = reserveItems.find(ri => 
+        task.name.includes(ri.name) || ri.name.includes(task.name.split(' ')[0])
+      );
+      if (matchingReserve && matchingReserve.quantity > 0) {
+        const deductQty = Math.min(task.target_quantity, matchingReserve.quantity);
+        await consume(matchingReserve.id, deductQty, `נצרך עבור: ${task.name}`);
+      }
+
+      // Also try to deduct from warehouse for recipe ingredients
+      if (task.recipe_id) {
+        const { data: ingredients } = await supabase
+          .from('recipe_ingredients')
+          .select('name, quantity, unit, warehouse_item_id')
+          .eq('recipe_id', task.recipe_id);
+        
+        if (ingredients) {
+          for (const ing of ingredients) {
+            if (ing.warehouse_item_id) {
+              const scaledQty = ing.quantity * task.target_quantity;
+              // Deduct from warehouse
+              const { data: warehouseItem } = await supabase
+                .from('warehouse_items')
+                .select('quantity')
+                .eq('id', ing.warehouse_item_id)
+                .single();
+              
+              if (warehouseItem) {
+                const newQty = Math.max(0, warehouseItem.quantity - scaledQty);
+                await supabase
+                  .from('warehouse_items')
+                  .update({ 
+                    quantity: newQty,
+                    status: newQty === 0 ? 'out' : newQty <= 5 ? 'low' : 'ok'
+                  })
+                  .eq('id', ing.warehouse_item_id);
+              }
+            }
+          }
+        }
+      }
+    }
+
     await fetchTasks(selectedDate, selectedDepartment);
   };
 
