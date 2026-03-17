@@ -15,7 +15,8 @@ import {
   X,
   Users,
   ChevronsUpDown,
-  Settings
+  Settings,
+  Truck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
