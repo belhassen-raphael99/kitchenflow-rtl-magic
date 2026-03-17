@@ -154,30 +154,36 @@ export type Database = {
       event_items: {
         Row: {
           created_at: string | null
+          department: string | null
           event_id: string
           id: string
           name: string
           notes: string | null
           quantity: number
           recipe_id: string | null
+          servings: number | null
         }
         Insert: {
           created_at?: string | null
+          department?: string | null
           event_id: string
           id?: string
           name: string
           notes?: string | null
           quantity?: number
           recipe_id?: string | null
+          servings?: number | null
         }
         Update: {
           created_at?: string | null
+          department?: string | null
           event_id?: string
           id?: string
           name?: string
           notes?: string | null
           quantity?: number
           recipe_id?: string | null
+          servings?: number | null
         }
         Relationships: [
           {
@@ -191,11 +197,19 @@ export type Database = {
       }
       events: {
         Row: {
+          client_email: string | null
           client_id: string | null
+          client_name: string | null
+          client_phone: string | null
           created_at: string | null
           date: string
+          delivery_address: string | null
+          delivery_time: string | null
+          event_type: string | null
           guests: number
           id: string
+          invoice_amount: number | null
+          invoice_status: string | null
           name: string
           notes: string | null
           status: string
@@ -203,11 +217,19 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          client_email?: string | null
           client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
           created_at?: string | null
           date: string
+          delivery_address?: string | null
+          delivery_time?: string | null
+          event_type?: string | null
           guests?: number
           id?: string
+          invoice_amount?: number | null
+          invoice_status?: string | null
           name: string
           notes?: string | null
           status?: string
@@ -215,11 +237,19 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          client_email?: string | null
           client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
           created_at?: string | null
           date?: string
+          delivery_address?: string | null
+          delivery_time?: string | null
+          event_type?: string | null
           guests?: number
           id?: string
+          invoice_amount?: number | null
+          invoice_status?: string | null
           name?: string
           notes?: string | null
           status?: string

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { format, parseISO, isSameDay } from 'date-fns';
+import { format, parseISO, isSameDay, differenceInDays } from 'date-fns';
+import { EventWizardData } from '@/components/agenda/EventWizard';
 
-export type EventStatus = 'pending' | 'in-progress' | 'completed' | 'cancelled';
+export type EventStatus = 'pending' | 'confirmed' | 'in-progress' | 'completed' | 'cancelled';
 
 export interface EventWithClient {
   id: string;
@@ -16,6 +17,14 @@ export interface EventWithClient {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  client_name: string | null;
+  client_phone: string | null;
+  client_email: string | null;
+  delivery_address: string | null;
+  delivery_time: string | null;
+  invoice_amount: number | null;
+  invoice_status: string | null;
+  event_type: string | null;
   clients: {
     id: string;
     name: string;
@@ -76,42 +85,97 @@ export const useEvents = () => {
     return uniqueDates.map(dateStr => parseISO(dateStr));
   }, [events]);
 
-  const createEvent = async (eventData: EventFormData): Promise<boolean> => {
+  const createEventFromWizard = async (data: EventWizardData): Promise<{ success: boolean; departments: string[] }> => {
     try {
-      const { data, error } = await supabase
+      // 1. Create or link client
+      let clientId = data.client_id;
+      if (!clientId && data.client_name) {
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert({
+            name: data.client_name,
+            phone: data.client_phone || null,
+            email: data.client_email || null,
+          })
+          .select()
+          .single();
+        if (!clientError && newClient) clientId = newClient.id;
+      }
+
+      // 2. Create the event
+      const eventName = `${data.event_type} — ${data.client_name}`;
+      const { data: newEvent, error: eventError } = await supabase
         .from('events')
         .insert({
-          name: eventData.name,
-          date: format(eventData.date, 'yyyy-MM-dd'),
-          time: eventData.time,
-          client_id: eventData.client_id || null,
-          guests: eventData.guests,
-          status: eventData.status,
-          notes: eventData.notes || null,
+          name: eventName,
+          date: format(data.date, 'yyyy-MM-dd'),
+          time: data.time,
+          guests: data.guests,
+          status: 'pending',
+          notes: data.notes || null,
+          client_id: clientId || null,
+          client_name: data.client_name,
+          client_phone: data.client_phone || null,
+          client_email: data.client_email || null,
+          delivery_address: data.delivery_address || null,
+          delivery_time: data.delivery_time || null,
+          event_type: data.event_type,
+          invoice_status: 'sent',
         })
-        .select(`
-          *,
-          clients (
-            id,
-            name,
-            phone
-          )
-        `)
+        .select()
         .single();
 
-      if (error) throw error;
+      if (eventError) throw eventError;
 
-      setEvents(prev => [...prev, data as EventWithClient].sort((a, b) => {
-        const dateCompare = a.date.localeCompare(b.date);
-        if (dateCompare !== 0) return dateCompare;
-        return a.time.localeCompare(b.time);
-      }));
+      // 3. Insert event items
+      if (data.items.length > 0) {
+        const itemRows = data.items.map(item => ({
+          event_id: newEvent.id,
+          name: item.recipe_name,
+          quantity: item.quantity,
+          recipe_id: item.recipe_id,
+          department: item.department,
+          notes: item.notes || null,
+        }));
+        await supabase.from('event_items').insert(itemRows);
+      }
+
+      // 4. Create production tasks per department
+      const departments = [...new Set(data.items.map(i => i.department))];
+      const daysUntil = differenceInDays(data.date, new Date());
+
+      if (departments.length > 0) {
+        const taskRows = departments.map(dept => ({
+          event_id: newEvent.id,
+          date: format(data.date, 'yyyy-MM-dd'),
+          department: dept === 'מטבח' ? 'kitchen' : dept === 'מאפייה' ? 'bakery' : 'kitchen',
+          status: 'pending',
+          name: `הכנות ל${data.event_type} — ${data.client_name}`,
+          notes: `${dept} | ${data.guests} אורחים | ${data.items.filter(i => i.department === dept).length} מנות`,
+          priority: daysUntil <= 3 ? 3 : 1,
+          target_quantity: data.items.filter(i => i.department === dept).reduce((sum, i) => sum + i.quantity, 0),
+          unit: 'מנות',
+          task_type: 'event',
+        }));
+        await supabase.from('production_tasks').insert(taskRows);
+      }
+
+      // 5. Send notification
+      await supabase.from('notifications').insert({
+        title: '🎉 הזמנה חדשה התקבלה',
+        message: `${data.event_type} — ${data.client_name} | ${format(data.date, 'dd/MM/yyyy')} | ${data.guests} אורחים`,
+        severity: 'info',
+        type: 'new_order',
+      });
+
+      await fetchEvents();
 
       toast({
         title: 'אירוע נוצר בהצלחה',
-        description: `${eventData.name} נוסף ליומן`,
+        description: `${eventName} נוסף ליומן`,
       });
-      return true;
+
+      return { success: true, departments };
     } catch (error: any) {
       console.error('Error creating event:', error);
       toast({
@@ -119,7 +183,7 @@ export const useEvents = () => {
         description: error.message,
         variant: 'destructive',
       });
-      return false;
+      return { success: false, departments: [] };
     }
   };
 
@@ -137,52 +201,31 @@ export const useEvents = () => {
       if (eventData.status !== undefined) updateData.status = eventData.status;
       if (eventData.notes !== undefined) updateData.notes = eventData.notes || null;
 
-      const { error } = await supabase
-        .from('events')
-        .update(updateData)
-        .eq('id', id);
-
+      const { error } = await supabase.from('events').update(updateData).eq('id', id);
       if (error) throw error;
-
-      // Refetch to get updated client data
       await fetchEvents();
-
-      toast({
-        title: 'אירוע עודכן בהצלחה',
-      });
+      toast({ title: 'אירוע עודכן בהצלחה' });
       return true;
     } catch (error: any) {
       console.error('Error updating event:', error);
-      toast({
-        title: 'שגיאה בעדכון אירוע',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'שגיאה בעדכון אירוע', description: error.message, variant: 'destructive' });
       return false;
     }
   };
 
   const deleteEvent = async (id: string): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('events')
-        .delete()
-        .eq('id', id);
-
+      // Delete related items and tasks first
+      await supabase.from('event_items').delete().eq('event_id', id);
+      await supabase.from('production_tasks').delete().eq('event_id', id);
+      const { error } = await supabase.from('events').delete().eq('id', id);
       if (error) throw error;
-
       setEvents(prev => prev.filter(event => event.id !== id));
-      toast({
-        title: 'אירוע נמחק בהצלחה',
-      });
+      toast({ title: 'אירוע נמחק בהצלחה' });
       return true;
     } catch (error: any) {
       console.error('Error deleting event:', error);
-      toast({
-        title: 'שגיאה במחיקת אירוע',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'שגיאה במחיקת אירוע', description: error.message, variant: 'destructive' });
       return false;
     }
   };
@@ -197,7 +240,7 @@ export const useEvents = () => {
     fetchEvents,
     getEventsForDate,
     getDatesWithEvents,
-    createEvent,
+    createEventFromWizard,
     updateEvent,
     deleteEvent,
   };
