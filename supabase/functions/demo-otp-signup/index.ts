@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.89.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 Deno.serve(async (req) => {
@@ -84,12 +84,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Now send the actual OTP email via signInWithOtp using service role
-    // generateLink creates the user if needed, now send OTP
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const anonClient = createClient(supabaseUrl, anonKey);
-    
-    const { error: sendError } = await anonClient.auth.signInWithOtp({
+    // 4. Send OTP email using service role client (bypasses all restrictions)
+    const { error: sendError } = await supabaseAdmin.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: false },
     });
