@@ -281,7 +281,7 @@ export const KitchenOpsPage = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div data-demo-tour="kitchen-tasks" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Stock Production Column */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">

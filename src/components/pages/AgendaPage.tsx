@@ -119,7 +119,7 @@ export const AgendaPage = () => {
       {viewMode === 'calendar' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar */}
-          <Card className="lg:col-span-1">
+          <Card data-demo-tour="agenda-calendar" className="lg:col-span-1">
             <CardContent className="p-4">
               <Calendar
                 mode="single"
