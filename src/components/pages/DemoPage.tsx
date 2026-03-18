@@ -161,6 +161,10 @@ const PublicDemoLanding = () => {
   const handleDemoLogin = async () => {
     setLoading(true);
     try {
+      await supabase.auth.signOut();
+      localStorage.clear();
+      sessionStorage.clear();
+
       const { data, error } = await supabase.functions.invoke('demo-auto-login');
 
       if (error || data?.error) {
@@ -172,7 +176,8 @@ const PublicDemoLanding = () => {
       const { access_token, refresh_token } = data;
       await supabase.auth.setSession({ access_token, refresh_token });
       localStorage.setItem('demo_session_start', Date.now().toString());
-      navigate('/');
+      localStorage.setItem('show_demo_onboarding', 'true');
+      navigate('/', { replace: true });
     } catch {
       toast({ title: 'שגיאה', description: 'שגיאה זמנית — נסה שוב', variant: 'destructive' });
       setLoading(false);

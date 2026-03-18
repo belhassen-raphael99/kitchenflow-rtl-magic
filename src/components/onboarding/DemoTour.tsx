@@ -1,178 +1,454 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { X, ChevronLeft, ChevronRight, SkipForward } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, SkipForward, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+
+type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 
 interface TourStep {
-  route: string;
   title: string;
-  description: string;
+  description: string[];
   icon: string;
+  route?: string;
+  selector?: string;
+  placement?: TooltipPlacement;
+  centered?: boolean;
+  accentLabel?: string;
 }
 
-const tourSteps: TourStep[] = [
+const TOUR_STEPS: TourStep[] = [
   {
-    route: '/',
-    title: 'דשבורד ראשי',
+    title: 'ברוכים הבאים לדמו של קסרולה! 👋',
+    icon: '🍲',
+    centered: true,
+    accentLabel: '1/7',
+    description: [
+      'קסרולה היא מערכת ERP לניהול עסקי קייטרינג — מהזמנת הלקוח ועד להכנה במטבח, הכל במקום אחד.',
+      'בסיור זה נעבור על 6 תכונות מרכזיות של המערכת.',
+      'הסיור אורך כ-2 דקות.',
+    ],
+  },
+  {
+    title: '💡 הדשבורד',
     icon: '📊',
-    description: 'כאן תראה סיכום של כל הפעילות: אירועים קרובים, התראות מלאי, משימות ייצור פעילות ומצב המערכת בזמן אמת.',
+    route: '/',
+    selector: '[data-demo-tour="dashboard-kpis"]',
+    placement: 'bottom',
+    accentLabel: '2/7',
+    description: [
+      'כאן תראו את כל המידע החשוב במבט אחד:',
+      '• מספר האירועים השבוע',
+      '• סך האורחים',
+      '• התראות מלאי',
+      '• האירוע הקרוב ביותר',
+    ],
   },
   {
-    route: '/agenda',
-    title: 'יומן אירועים',
+    title: '📅 היומן',
     icon: '📅',
-    description: 'ניהול כל האירועים והקייטרינג. תוכל לראות הזמנות לפי תאריך, פרטי לקוח, פריטי הזמנה ומשימות ייצור שנוצרו אוטומטית לכל אירוע.',
+    route: '/agenda',
+    selector: '[data-demo-tour="agenda-calendar"]',
+    placement: 'left',
+    accentLabel: '3/7',
+    description: [
+      'כל הזמנה חדשה מופיעה כאן אוטומטית.',
+      'לחצו על אירוע כלשהו כדי לראות את הפרטים המלאים:',
+      'פרטי הלקוח, המנות שהוזמנו, וסטטוס ההכנה.',
+    ],
   },
   {
-    route: '/kitchen-ops',
-    title: 'פוסט מטבח',
+    title: '👨‍🍳 ניהול ייצור',
     icon: '👨‍🍳',
-    description: 'לוח המשימות של המטבח והקונדיטוריה. כאן הצוות רואה מה צריך להכין, לפי תאריך ומחלקה. כשמסמנים משימה כ"הושלם" — המלאי מתעדכן אוטומטית.',
+    route: '/kitchen-ops',
+    selector: '[data-demo-tour="kitchen-tasks"]',
+    placement: 'top',
+    accentLabel: '4/7',
+    description: [
+      'כשנוצרת הזמנה — משימות ייצור נוצרות אוטומטית',
+      'לכל מחלקה: מטבח, מאפייה וקונדיטוריה.',
+      'כל עובד רואה את המשימות שלו ומעדכן סטטוס.',
+    ],
   },
   {
-    route: '/delivery',
-    title: 'משלוחים',
-    icon: '🚚',
-    description: 'כשכל המשימות של אירוע הושלמו, ההזמנה מופיעה כאן כ"מוכנה למשלוח". לחץ "שלח" כדי לסמן שהליוור יצא לדרך. תוכל לראות את פרטי הלקוח, הכתובת והטלפון.',
-  },
-  {
-    route: '/recipes',
-    title: 'ספר מתכונים',
-    icon: '📖',
-    description: 'כל המתכונים עם מרכיבים, הוראות הכנה ועלויות. המתכונים מקושרים לפריטי ההזמנה ולמשימות הייצור.',
-  },
-  {
-    route: '/warehouse',
-    title: 'מחסן',
+    title: '📦 מחסן',
     icon: '📦',
-    description: 'ניהול מלאי חומרי גלם — כמויות, ספקים, מחירים והתראות מלאי נמוך. כשמלאי יורד מתחת למינימום, תקבל התראה.',
+    route: '/warehouse',
+    selector: '[data-demo-tour="warehouse-stock"]',
+    placement: 'top',
+    accentLabel: '5/7',
+    description: [
+      'כל חומרי הגלם עם מחיר, יחידה וספק.',
+      'פריטים שמתקרבים למינימום מקבלים התראה אוטומטית.',
+    ],
   },
   {
-    route: '/reserve',
-    title: 'רזרבה',
-    icon: '🧊',
-    description: 'מעקב אחר מוצרים מוכנים ברזרבה (קפואים/מצוננים). כשמייצרים פריט, הכמות עולה. כשצורכים — יורדת.',
+    title: '📖 מתכונים',
+    icon: '📖',
+    route: '/recipes',
+    selector: '[data-demo-tour="recipes-grid"]',
+    placement: 'top',
+    accentLabel: '6/7',
+    description: [
+      '98 מתכונים מחולקים ל-3 מחלקות.',
+      'כל מתכון כולל רשימת מצרכים עם כמויות מדויקות.',
+    ],
+  },
+  {
+    title: 'זהו! עכשיו תורך לגלות 🚀',
+    icon: '🎉',
+    centered: true,
+    accentLabel: '7/7',
+    description: [
+      'סביבה זו היא דמו בלבד — צפייה בלבד.',
+      'כל הנתונים הם לדוגמה בלבד.',
+      'פותח על ידי רפאל בלחסן.',
+    ],
   },
 ];
+
+const TOOLTIP_WIDTH = 360;
+const MOBILE_BREAKPOINT = 768;
+
+const getTooltipPosition = (rect: DOMRect | null, placement: TooltipPlacement = 'bottom') => {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const width = Math.min(TOOLTIP_WIDTH, viewportWidth - 32);
+  const height = 260;
+  const gap = 18;
+
+  if (!rect || viewportWidth < MOBILE_BREAKPOINT) {
+    return {
+      width,
+      left: Math.max(16, (viewportWidth - width) / 2),
+      top: Math.max(88, viewportHeight - height - 24),
+    };
+  }
+
+  let top = rect.bottom + gap;
+  let left = rect.left;
+
+  if (placement === 'top') {
+    top = rect.top - height - gap;
+    left = rect.left + rect.width / 2 - width / 2;
+  }
+
+  if (placement === 'bottom') {
+    top = rect.bottom + gap;
+    left = rect.left + rect.width / 2 - width / 2;
+  }
+
+  if (placement === 'left') {
+    top = rect.top + rect.height / 2 - height / 2;
+    left = rect.left - width - gap;
+  }
+
+  if (placement === 'right') {
+    top = rect.top + rect.height / 2 - height / 2;
+    left = rect.right + gap;
+  }
+
+  if (top + height > viewportHeight - 16) {
+    top = Math.max(88, viewportHeight - height - 16);
+  }
+
+  if (top < 88) {
+    top = 88;
+  }
+
+  if (left + width > viewportWidth - 16) {
+    left = viewportWidth - width - 16;
+  }
+
+  if (left < 16) {
+    left = 16;
+  }
+
+  return { top, left, width };
+};
 
 export const DemoTour = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isDemo } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+
+  const step = TOUR_STEPS[currentStep];
 
   useEffect(() => {
-    const isDemoSession = localStorage.getItem('demo_session_start');
-    const tourDismissed = sessionStorage.getItem('demo_tour_dismissed');
-    if (isDemoSession && !tourDismissed) {
-      setVisible(true);
+    if (!isDemo) {
+      setIsOpen(false);
+      setCurrentStep(0);
+      return;
     }
-  }, []);
+
+    const shouldShow = localStorage.getItem('show_demo_onboarding');
+    if (shouldShow === 'true') {
+      const timeout = window.setTimeout(() => {
+        setCurrentStep(0);
+        setIsOpen(true);
+        localStorage.removeItem('show_demo_onboarding');
+      }, 800);
+
+      return () => window.clearTimeout(timeout);
+    }
+  }, [isDemo]);
 
   useEffect(() => {
-    if (!visible) return;
-    const stepIndex = tourSteps.findIndex(s => s.route === location.pathname);
-    if (stepIndex >= 0) {
-      setCurrentStep(stepIndex);
-    }
-  }, [location.pathname, visible]);
+    if (!isOpen) return;
 
-  const handleSkip = () => {
-    sessionStorage.setItem('demo_tour_dismissed', 'true');
-    setDismissed(true);
-    setVisible(false);
+    const stepRoute = TOUR_STEPS[currentStep].route;
+    if (stepRoute && location.pathname !== stepRoute) {
+      navigate(stepRoute, { replace: true });
+    }
+  }, [currentStep, isOpen, location.pathname, navigate]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const syncTarget = () => {
+      if (!step.selector) {
+        setTargetRect(null);
+        return true;
+      }
+
+      const element = document.querySelector(step.selector) as HTMLElement | null;
+      if (!element) return false;
+
+      const rect = element.getBoundingClientRect();
+      setTargetRect(rect);
+      return true;
+    };
+
+    let attempts = 0;
+    const hasImmediateTarget = syncTarget();
+    let intervalId: number | undefined;
+
+    if (!hasImmediateTarget && step.selector) {
+      intervalId = window.setInterval(() => {
+        attempts += 1;
+        const found = syncTarget();
+        if (found || attempts > 30) {
+          window.clearInterval(intervalId);
+        }
+      }, 120);
+    }
+
+    const handleResize = () => syncTarget();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [currentStep, isOpen, location.pathname, step.selector]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || currentStep !== TOUR_STEPS.length - 1) return;
+
+    confetti({
+      particleCount: 140,
+      spread: 90,
+      origin: { y: 0.65 },
+      zIndex: 9991,
+    });
+  }, [currentStep, isOpen]);
+
+  const tooltipStyle = useMemo(() => {
+    if (step.centered) return undefined;
+    return getTooltipPosition(targetRect, step.placement);
+  }, [step.centered, step.placement, targetRect]);
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setTargetRect(null);
   };
 
   const handleNext = () => {
-    if (currentStep < tourSteps.length - 1) {
-      const nextStep = currentStep + 1;
-      setCurrentStep(nextStep);
-      navigate(tourSteps[nextStep].route);
-    } else {
-      handleSkip();
+    if (currentStep === TOUR_STEPS.length - 1) {
+      handleClose();
+      navigate('/', { replace: true });
+      return;
     }
+
+    setCurrentStep((prev) => prev + 1);
   };
 
   const handlePrev = () => {
-    if (currentStep > 0) {
-      const prevStep = currentStep - 1;
-      setCurrentStep(prevStep);
-      navigate(tourSteps[prevStep].route);
-    }
+    if (currentStep === 0) return;
+    setCurrentStep((prev) => prev - 1);
   };
 
-  if (!visible || dismissed) return null;
-
-  const step = tourSteps[currentStep];
+  if (!isOpen || !isDemo) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-[420px] z-50 animate-in slide-in-from-bottom-4" dir="rtl">
-      <Card className="border-primary/30 shadow-xl bg-card/95 backdrop-blur-sm">
-        <CardContent className="p-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">{step.icon}</span>
-              <h3 className="font-bold text-base">{step.title}</h3>
-            </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleSkip}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+    <div className="fixed inset-0 z-[9990]" dir="rtl" aria-modal="true" role="dialog">
+      <div className="absolute inset-0 bg-foreground/70 backdrop-blur-[2px]" />
 
-          {/* Description */}
-          <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-            {step.description}
-          </p>
+      {!step.centered && targetRect && (
+        <div
+          className="pointer-events-none fixed rounded-3xl border-2 border-primary shadow-[0_0_30px_hsl(var(--primary)/0.45)] transition-all duration-300"
+          style={{
+            top: targetRect.top - 8,
+            left: targetRect.left - 8,
+            width: targetRect.width + 16,
+            height: targetRect.height + 16,
+            boxShadow: '0 0 0 9999px hsl(var(--foreground) / 0.72), 0 0 30px hsl(var(--primary) / 0.45)',
+          }}
+        />
+      )}
 
-          {/* Progress dots */}
-          <div className="flex items-center justify-center gap-1.5 mb-3">
-            {tourSteps.map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'w-2 h-2 rounded-full transition-all',
-                  i === currentStep ? 'bg-primary w-4' : 'bg-muted-foreground/30'
-                )}
-              />
-            ))}
-          </div>
+      {step.centered ? (
+        <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
+          <Card className="w-full max-w-2xl border-primary/30 bg-background/95 shadow-2xl backdrop-blur">
+            <CardContent className="p-6 sm:p-8">
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div className="space-y-3 text-right">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+                    <Sparkles className="w-4 h-4" />
+                    {step.accentLabel}
+                  </div>
+                  <div className="flex items-center justify-end gap-3">
+                    <h2 className="text-2xl sm:text-4xl font-bold leading-tight">{step.title}</h2>
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-3xl">
+                      {step.icon}
+                    </div>
+                  </div>
+                </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={handleSkip} className="text-xs gap-1">
-              <SkipForward className="w-3 h-3" />
-              דלג על ההדרכה
-            </Button>
-            <div className="flex gap-2">
-              {currentStep > 0 && (
-                <Button variant="outline" size="sm" onClick={handlePrev} className="gap-1">
-                  <ChevronRight className="w-3 h-3" />
-                  הקודם
+                <Button variant="ghost" size="icon" className="shrink-0" onClick={handleClose}>
+                  <X className="w-4 h-4" />
                 </Button>
+              </div>
+
+              <div className="space-y-3 text-base text-muted-foreground leading-relaxed">
+                {step.description.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+
+              {currentStep === TOUR_STEPS.length - 1 ? (
+                <div className="mt-8 space-y-5">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Button asChild variant="outline" className="gap-2">
+                      <a href="https://www.linkedin.com/in/rafael-belassen" target="_blank" rel="noopener noreferrer">
+                        LinkedIn
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </Button>
+                    <Button asChild variant="outline" className="gap-2">
+                      <a href="mailto:rafael.belassen@gmail.com">
+                        צור קשר
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <Button variant="ghost" onClick={handlePrev} className="gap-2">
+                      <ChevronRight className="w-4 h-4" />
+                      הקודם
+                    </Button>
+                    <Button onClick={handleNext} className="gap-2">
+                      סיים וגלה את המערכת
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <Button variant="ghost" onClick={handleClose} className="gap-2">
+                    <SkipForward className="w-4 h-4" />
+                    דלג על הסיור
+                  </Button>
+                  <Button onClick={handleNext} className="gap-2">
+                    בואו נתחיל
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                </div>
               )}
-              <Button size="sm" onClick={handleNext} className="gap-1">
-                {currentStep < tourSteps.length - 1 ? (
-                  <>
-                    הבא
-                    <ChevronLeft className="w-3 h-3" />
-                  </>
-                ) : (
-                  'סיום'
-                )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card
+          className={cn(
+            'fixed border-primary/30 bg-background/95 shadow-2xl backdrop-blur transition-all duration-300',
+            !targetRect && 'left-4 right-4 top-24'
+          )}
+          style={tooltipStyle}
+        >
+          <CardContent className="p-5">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div className="space-y-2 text-right">
+                <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  {step.accentLabel}
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <h3 className="text-lg font-bold">{step.title}</h3>
+                  <span className="text-2xl">{step.icon}</span>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" className="shrink-0" onClick={handleClose}>
+                <X className="w-4 h-4" />
               </Button>
             </div>
-          </div>
 
-          {/* Step counter */}
-          <p className="text-[10px] text-muted-foreground text-center mt-2">
-            {currentStep + 1} / {tourSteps.length}
-          </p>
-        </CardContent>
-      </Card>
+            <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
+              {step.description.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
+
+            <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
+              <Button variant="ghost" onClick={handleClose} className="gap-2 text-xs sm:text-sm">
+                <SkipForward className="w-4 h-4" />
+                דלג על הסיור
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handlePrev} disabled={currentStep === 0} className="gap-1">
+                  <ChevronRight className="w-4 h-4" />
+                  הקודם
+                </Button>
+                <Button onClick={handleNext} className="gap-1">
+                  הבא
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

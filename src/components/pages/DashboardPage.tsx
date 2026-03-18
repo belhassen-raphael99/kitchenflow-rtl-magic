@@ -50,7 +50,7 @@ export const DashboardPage = () => {
       </div>
 
       {/* KPIs Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+      <div data-demo-tour="dashboard-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card className="border-r-4 border-r-primary">
           <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-6">
             <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">פריטים במחסן</CardTitle>
