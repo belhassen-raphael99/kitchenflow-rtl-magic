@@ -25,6 +25,7 @@ import {
   ChefHat,
   Eye,
   Package,
+  Printer,
 } from 'lucide-react';
 import { format, parseISO, isToday, isTomorrow, differenceInDays } from 'date-fns';
 import { he } from 'date-fns/locale';
