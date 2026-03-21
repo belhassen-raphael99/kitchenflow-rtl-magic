@@ -135,6 +135,13 @@ export const Sidebar = () => {
           </div>
         </div>
 
+        {/* Global Search */}
+        {sidebarOpen && (
+          <div className="px-3 pb-2">
+            <GlobalSearch />
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className="flex-1 p-3 overflow-y-auto">
           <div className="space-y-1">
