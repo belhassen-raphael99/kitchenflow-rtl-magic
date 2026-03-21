@@ -30,7 +30,7 @@ export const GlobalSearch = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const search = useCallback(async (q: string) => {
     if (q.length < 2) { setResults([]); return; }
