@@ -215,3 +215,32 @@
 .stagger-2 { animation-delay: 0.2s; }
 .stagger-3 { animation-delay: 0.3s; }
 .stagger-4 { animation-delay: 0.4s; }
+
+/* Print styles */
+@media print {
+  .sidebar, .navbar, .no-print, .demo-banner,
+  aside, button[class*="fixed"], .demo-tour-overlay {
+    display: none !important;
+  }
+  
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .print-content {
+    width: 100%;
+    font-size: 13px;
+    direction: rtl;
+    font-family: 'Heebo', Arial, sans-serif;
+  }
+  
+  .page-break {
+    page-break-before: always;
+  }
+  
+  body {
+    background: white !important;
+    background-image: none !important;
+  }
+}
