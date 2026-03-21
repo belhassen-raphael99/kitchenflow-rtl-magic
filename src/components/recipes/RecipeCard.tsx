@@ -12,6 +12,7 @@ import {
 import { Recipe } from '@/hooks/useRecipes';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { recipeImages } from '@/assets/recipes';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -44,9 +45,9 @@ export const RecipeCard = ({ recipe, onEdit, onDelete, onClick }: RecipeCardProp
               {recipe.category}
             </Badge>
           </div>
-          {recipe.image_url ? (
+          {(recipe.image_url || recipeImages[recipe.id]) ? (
             <img 
-              src={recipe.image_url} 
+              src={recipe.image_url || recipeImages[recipe.id]} 
               alt={recipe.name}
               className="w-16 h-16 rounded-lg object-cover"
             />
