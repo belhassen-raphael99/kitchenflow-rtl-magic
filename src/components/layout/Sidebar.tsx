@@ -54,6 +54,7 @@ export const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen, toggleFullscreen, clientInfo } = useApp();
   const { signOut, isAdmin, user, role } = useAuth();
   const { full_name, avatar_url } = useUserProfile();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
