@@ -38,7 +38,8 @@ import {
 
 const navItems = [
   { id: '/', label: 'דשבורד', icon: LayoutDashboard },
-  { id: '/kitchen-ops', label: 'פוסט מטבח', icon: Monitor, section: 'תפעול' },
+  { id: '/chef', label: 'דשבורד שף', icon: ChefHat, section: 'תפעול' },
+  { id: '/kitchen-ops', label: 'פוסט מטבח', icon: Monitor },
   { id: '/delivery', label: 'משלוחים', icon: Truck },
   { id: '/agenda', label: 'יומן אירועים', icon: Calendar },
   { id: '/recipes', label: 'ספר מתכונים', icon: ChefHat },

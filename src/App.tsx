@@ -10,6 +10,7 @@ import { ReservePage } from './components/pages/ReservePage';
 import { WarehousePage } from './components/pages/WarehousePage';
 import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
 import { DeliveryPage } from './components/pages/DeliveryPage';
+import { ChefDashboardPage } from './components/pages/ChefDashboardPage';
 import { AdminUsersPage } from './components/pages/AdminUsersPage';
 import { SettingsPage } from './components/pages/SettingsPage';
 import { DemoPage } from './components/pages/DemoPage';
@@ -73,6 +74,16 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <AppLayout>
               <DeliveryPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chef"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ChefDashboardPage />
             </AppLayout>
           </ProtectedRoute>
         }

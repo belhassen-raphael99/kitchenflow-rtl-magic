@@ -204,6 +204,7 @@ export type Database = {
           created_at: string | null
           date: string
           delivery_address: string | null
+          delivery_proof_url: string | null
           delivery_time: string | null
           event_type: string | null
           guests: number
@@ -224,6 +225,7 @@ export type Database = {
           created_at?: string | null
           date: string
           delivery_address?: string | null
+          delivery_proof_url?: string | null
           delivery_time?: string | null
           event_type?: string | null
           guests?: number
@@ -244,6 +246,7 @@ export type Database = {
           created_at?: string | null
           date?: string
           delivery_address?: string | null
+          delivery_proof_url?: string | null
           delivery_time?: string | null
           event_type?: string | null
           guests?: number
@@ -351,6 +354,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      production_schedule: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          department: string
+          id: string
+          min_quantity: number | null
+          notes: string | null
+          product_name: string
+          storage_type: string | null
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          department: string
+          id?: string
+          min_quantity?: number | null
+          notes?: string | null
+          product_name: string
+          storage_type?: string | null
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          department?: string
+          id?: string
+          min_quantity?: number | null
+          notes?: string | null
+          product_name?: string
+          storage_type?: string | null
+          unit?: string | null
+        }
+        Relationships: []
       }
       production_tasks: {
         Row: {
