@@ -79,7 +79,7 @@ export const ChefDashboardPage = () => {
 
     setTasks((tasksRes.data || []) as ChefTask[]);
     setDeliveries((deliveriesRes.data || []) as TodayDelivery[]);
-    setSchedule((scheduleRes.data || []) as ScheduleItem[]);
+    setSchedule((scheduleRes.data || []) as unknown as ScheduleItem[]);
     setLoading(false);
   }, [todayStr, dayOfWeek]);
 
