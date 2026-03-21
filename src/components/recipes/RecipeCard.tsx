@@ -12,6 +12,7 @@ import {
 import { Recipe } from '@/hooks/useRecipes';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { recipeImages } from '@/assets/recipes';
 
 interface RecipeCardProps {
   recipe: Recipe;
