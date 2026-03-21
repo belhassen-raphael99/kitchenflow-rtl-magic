@@ -79,6 +79,16 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/chef"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ChefDashboardPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/agenda"
         element={
           <ProtectedRoute>
