@@ -92,7 +92,15 @@ export const AgendaPage = () => {
           </h1>
           <p className="text-muted-foreground">{formattedDate}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 no-print">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => window.print()}
+            title="הדפס"
+          >
+            <Printer className="w-4 h-4" />
+          </Button>
           <Button
             variant={viewMode === 'calendar' ? 'default' : 'outline'}
             size="icon"
