@@ -268,6 +268,10 @@ export const Sidebar = () => {
                 <Maximize className="w-4 h-4" />
                 <span>מסך מלא</span>
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer gap-2">
+                {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                <span>{theme === 'light' ? 'מצב כהה' : 'מצב בהיר'}</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="cursor-pointer gap-2 text-destructive focus:text-destructive">
                 <LogOut className="w-4 h-4" />
