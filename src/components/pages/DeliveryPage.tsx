@@ -25,6 +25,7 @@ import {
   ChefHat,
   Eye,
   Package,
+  Printer,
 } from 'lucide-react';
 import { format, parseISO, isToday, isTomorrow, differenceInDays } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -216,12 +217,18 @@ export const DeliveryPage = () => {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Truck className="w-6 h-6" />
-          משלוחים
-        </h1>
-        <p className="text-muted-foreground">ניהול משלוחים והזמנות מוכנות</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Truck className="w-6 h-6" />
+            משלוחים
+          </h1>
+          <p className="text-muted-foreground">ניהול משלוחים והזמנות מוכנות</p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2 no-print" onClick={() => window.print()}>
+          <Printer className="w-4 h-4" />
+          הדפס יום
+        </Button>
       </div>
 
       {loading ? (

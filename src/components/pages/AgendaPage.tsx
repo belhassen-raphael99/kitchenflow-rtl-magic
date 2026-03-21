@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { CalendarDays, Plus, Clock, Loader2, List, LayoutGrid } from 'lucide-react';
+import { CalendarDays, Plus, Clock, Loader2, List, LayoutGrid, Printer } from 'lucide-react';
 import { useEvents, EventWithClient } from '@/hooks/useEvents';
 import { useClients } from '@/hooks/useClients';
 import { useRecipes } from '@/hooks/useRecipes';
@@ -92,7 +92,15 @@ export const AgendaPage = () => {
           </h1>
           <p className="text-muted-foreground">{formattedDate}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 no-print">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => window.print()}
+            title="הדפס"
+          >
+            <Printer className="w-4 h-4" />
+          </Button>
           <Button
             variant={viewMode === 'calendar' ? 'default' : 'outline'}
             size="icon"

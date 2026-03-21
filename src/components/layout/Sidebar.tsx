@@ -1,6 +1,7 @@
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useTheme } from '@/hooks/useTheme';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -16,11 +17,14 @@ import {
   Users,
   ChevronsUpDown,
   Settings,
-  Truck
+  Truck,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { GlobalSearch } from '@/components/search/GlobalSearch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -50,6 +54,7 @@ export const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen, toggleFullscreen, clientInfo } = useApp();
   const { signOut, isAdmin, user, role } = useAuth();
   const { full_name, avatar_url } = useUserProfile();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -129,6 +134,13 @@ export const Sidebar = () => {
             </div>
           </div>
         </div>
+
+        {/* Global Search */}
+        {sidebarOpen && (
+          <div className="px-3 pb-2">
+            <GlobalSearch />
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 p-3 overflow-y-auto">
@@ -255,6 +267,10 @@ export const Sidebar = () => {
               <DropdownMenuItem onClick={toggleFullscreen} className="cursor-pointer gap-2">
                 <Maximize className="w-4 h-4" />
                 <span>מסך מלא</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer gap-2">
+                {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                <span>{theme === 'light' ? 'מצב כהה' : 'מצב בהיר'}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="cursor-pointer gap-2 text-destructive focus:text-destructive">
