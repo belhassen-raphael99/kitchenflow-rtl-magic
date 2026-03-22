@@ -1,288 +1,95 @@
 
-# Rapport d'Audit de Sécurité - Casserole (Kitchen Flow)
-## Analyse Complète OWASP Top 10
+
+# Plan: Refonte UI/UX de la plateforme Casserole
+
+## Analyse de l'existant
+
+Apres exploration du code, voici les problemes UX/UI identifies :
+
+1. **Page Auth** — Fonctionnelle mais basique. Le formulaire est un bloc blanc simple sans hierarchy visuelle forte.
+2. **Dashboard** — KPI cards manquent de punch visuel. Le hero banner vert uni est generique.
+3. **Sidebar** — Custom-built, fonctionne bien mais le footer utilisateur est dense.
+4. **Recipe Cards** — Image minuscule (64x64), pas de mise en avant visuelle. Les cartes sont text-heavy.
+5. **Warehouse** — Liste tabulaire sans hierarchy, manque de cartes visuelles.
+6. **Agenda** — Calendrier + liste, design correct mais les event cards sont petites.
+7. **Delivery** — Timeline recente, design a affiner.
+8. **Responsive** — Globalement ok mais certaines pages sont serrees sur mobile.
+9. **Micro-interactions** — Peu de feedback visuel (hover, transitions, loading states).
+10. **Typographie** — Tailles uniformes, peu de contraste hierarchique.
 
 ---
 
-## SYNTHÈSE EXÉCUTIVE
+## Propositions d'ameliorations
 
-| Catégorie | Niveau de Risque | Statut |
-|-----------|------------------|--------|
-| Authentification | ✅ Bon | Système invitation-only avec validation forte |
-| Autorisation (RBAC) | ✅ Bon | RLS strict avec séparation admin/employee |
-| Injection SQL/XSS | ✅ Excellent | Supabase RLS + Zod validation |
-| Gestion des erreurs | ✅ Excellent | Messages génériques, pas de fuite technique |
-| Rate Limiting | ✅ Excellent | Implémenté côté serveur |
-| Headers de sécurité | ⚠️ À améliorer | CSP/HSTS manquants |
-| Données sensibles | ⚠️ À améliorer | PII accessibles à tous les employés |
-| Mots de passe | ⚠️ À améliorer | Leaked password protection désactivée |
+### 1. Recipe Cards — Image-first design
+Passer d'une image 64x64 dans le coin a une carte avec image plein-width en haut (aspect-ratio 16/9), titre et badge en overlay. Les infos prix/temps en bas. Style "food blog".
 
-**Score global : 7.5/10** - Bon niveau de sécurité avec quelques améliorations recommandées.
+### 2. Dashboard KPIs — Glassmorphism + icones colorees
+Remplacer les cartes KPI plates par des cartes avec fond gradient subtil par type (vert pour stock ok, orange pour alertes, bleu pour evenements). Ajouter des icones plus grandes avec un cercle colore en fond.
 
----
+### 3. Auth Page — Split layout
+Sur desktop : layout 50/50 avec a gauche une illustration/branding (gradient + logo + tagline) et a droite le formulaire. Sur mobile : formulaire seul avec header branding compact.
 
-## 1. AUTHENTIFICATION & AUTORISATION
+### 4. Sidebar — Micro-animations
+Ajouter un indicateur actif anime (barre verte a gauche du lien actif avec transition). Smooth collapse/expand animations.
 
-### ✅ Points Forts
+### 5. Cards & surfaces — Depth system
+Uniformiser les elevations : cards au repos = `shadow-soft`, hover = `shadow-card`, modals = `shadow-elevated`. Ajouter `border` subtile sur toutes les cartes. Coins arrondis uniformes `rounded-2xl`.
 
-**A. Système invitation-only sécurisé**
-- Pas de signup public (`/auth` n'affiche que le login)
-- Création d'utilisateurs via Edge Function `invite-user` avec :
-  - Validation JWT obligatoire
-  - Vérification du rôle admin de l'appelant
-  - Rate limiting (10 invitations/heure par admin)
-  - Validation Zod stricte des données
+### 6. Empty states — Illustrations
+Remplacer les textes "pas de donnees" par des empty states visuels avec icone SVG + texte + CTA.
 
-**B. RBAC (Role-Based Access Control) strict**
-- Table `user_roles` séparée (pas de rôle dans `profiles`)
-- Fonction `has_role()` Security Definer pour éviter la récursion RLS
-- Policies RLS strictes sur 16 tables :
-  - `SELECT` : Utilisateurs authentifiés
-  - `INSERT/UPDATE/DELETE` : Admins uniquement
+### 7. Loading states — Skeleton screens
+Remplacer les spinners isoles par des skeleton screens qui imitent la forme du contenu.
 
-**C. Gestion des sessions**
-- Supabase Auth avec tokens JWT
-- Refresh automatique des tokens
-- Protection contre l'auto-suppression (admin ne peut pas se supprimer)
+### 8. Page headers — Consistent pattern
+Chaque page commence par un header uniforme : titre + description + actions (boutons) a droite. Separation visuelle avec le contenu.
 
-### ⚠️ Vulnérabilités Identifiées
+### 9. Mobile bottom navigation
+Sur mobile, ajouter une barre de navigation fixe en bas avec les 5 pages principales (Dashboard, Agenda, Kitchen, Warehouse, Recipes) au lieu du hamburger menu seul.
 
-**V1. Leaked Password Protection désactivée**
-- **Risque** : MOYEN
-- **Impact** : Les utilisateurs peuvent utiliser des mots de passe compromis
-- **Correction** : Activer dans les paramètres Supabase Auth
+### 10. Color accents per section
+Chaque section de la sidebar a un accent couleur :
+- Dashboard = vert
+- Agenda = bleu  
+- Kitchen = orange
+- Warehouse = violet
+- Recipes = rose
 
-**V2. Politique de mot de passe incohérente**
-- **Risque** : FAIBLE
-- `AuthPage.tsx` : minimum 6 caractères
-- `validation.ts` + Edge Functions : minimum 12 caractères + complexité
-- **Correction** : Aligner les règles frontend sur le backend (12 caractères)
+Les headers de page et KPIs utilisent cette couleur.
 
 ---
 
-## 2. PROTECTION DES DONNÉES (PII)
+## Implementation technique
 
-### ⚠️ Vulnérabilités Identifiées
+### Fichiers a modifier
 
-**V3. Données clients exposées à tous les employés**
-- **Table** : `clients`
-- **Données** : email, téléphone, adresse
-- **Risque** : MOYEN
-- **Impact** : Vol de contacts clients, phishing
-- **Correction suggérée** :
-  
-```sql
--- Créer une vue sans PII pour les employés
-CREATE VIEW public.clients_limited
-WITH (security_invoker=on) AS
-  SELECT id, name, notes, created_at
-  FROM public.clients;
+| Fichier | Changement |
+|---------|-----------|
+| `RecipeCard.tsx` | Image pleine largeur, layout vertical, overlay badge |
+| `DashboardPage.tsx` | KPI cards avec gradient, icones plus grandes, hero revu |
+| `AuthPage.tsx` | Split layout desktop, branding panel a gauche |
+| `AppLayout.tsx` | Ajouter bottom nav mobile |
+| `Sidebar.tsx` | Indicateur actif anime, transitions |
+| `index.css` | Nouvelles variables CSS pour accents, skeleton keyframes |
+| `AgendaPage.tsx` | Header uniforme, event cards plus larges |
+| `WarehousePage.tsx` | Cards au lieu de liste plate, status visuels |
+| `RecipesPage.tsx` | Grid responsive ameliore (1/2/3 cols) |
+| Tous les pages | Page header pattern uniforme, empty states |
 
--- Modifier la policy pour restreindre l'accès direct
-CREATE POLICY "Only admins can view full client data"
-ON public.clients FOR SELECT
-USING (has_role(auth.uid(), 'admin'));
-```
+### Ordre d'implementation
 
-**V4. Données tarifaires visibles par tous**
-- **Tables** : `warehouse_items`, `recipes`
-- **Données** : prix fournisseurs, marges, coûts de revient
-- **Risque** : FAIBLE
-- **Impact** : Fuite d'informations business compétitives
-- **Correction suggérée** : Créer des vues sans colonnes `price`, `cost_per_serving`, `selling_price` pour les employés
+1. Design system de base (CSS variables, shadow system, page header component)
+2. Auth page split layout
+3. Dashboard KPIs refonte
+4. Recipe cards image-first
+5. Sidebar active indicator + transitions
+6. Mobile bottom navigation
+7. Empty states + skeleton loading
+8. Warehouse cards visuelles
+9. Color accents par section
+10. Polish final (micro-interactions, hover effects)
 
-**V5. Logs d'audit contenant potentiellement des PII**
-- **Table** : `audit_logs`
-- **Données** : `old_data`, `new_data` en JSONB
-- **Risque** : FAIBLE (accès admin seulement)
-- **Correction suggérée** : Implémenter une politique de rétention (supprimer après 90 jours)
+### Pas de changement de stack
+Tout reste en Tailwind CSS + shadcn/ui. Aucune lib externe ajoutee. Les ameliorations sont purement visuelles et CSS.
 
----
-
-## 3. VALIDATION DES ENTRÉES (XSS/Injection)
-
-### ✅ Excellent niveau de protection
-
-**A. Bibliothèque de validation centralisée** (`src/lib/validation.ts`)
-- Fonctions de sanitization HTML : `sanitizeHtml()`, `sanitizeText()`, `sanitizeName()`, `sanitizeUrl()`
-- Schémas Zod pour tous les formulaires avec transformations de nettoyage
-- Détection de patterns SQL injection (`containsSqlInjection()`)
-
-**B. Protection côté serveur**
-- Edge Functions utilisent Zod avec les mêmes règles
-- Supabase RLS empêche toute injection SQL directe
-- Paramètres toujours échappés via le client Supabase
-
-**C. Usage de `dangerouslySetInnerHTML`**
-- **Seul usage** : `src/components/ui/chart.tsx` pour injecter des variables CSS
-- **Risque** : NÉGLIGEABLE (valeurs typées, pas de données utilisateur)
-
----
-
-## 4. SÉCURITÉ DE L'API & HEADERS
-
-### ⚠️ À améliorer
-
-**V6. Headers de sécurité manquants**
-- **Fichiers concernés** : `index.html`, Edge Functions
-- **Risque** : MOYEN
-- **Headers manquants** :
-  - `Content-Security-Policy` (CSP)
-  - `Strict-Transport-Security` (HSTS)
-  - `X-Frame-Options`
-  - `X-Content-Type-Options`
-
-**Corrections recommandées :**
-
-1. **Dans `index.html`** - Ajouter des meta tags CSP :
-```html
-<meta http-equiv="Content-Security-Policy" 
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://api.resend.com;">
-<meta http-equiv="X-Frame-Options" content="DENY">
-<meta http-equiv="X-Content-Type-Options" content="nosniff">
-```
-
-2. **Dans les Edge Functions** - Ajouter les headers de sécurité :
-```typescript
-const securityHeaders = {
-  ...corsHeaders,
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-};
-```
-
-### ✅ Points Forts
-
-**A. Rate Limiting serveur**
-- Table `rate_limits` avec fonction `check_rate_limit()`
-- Limites par action :
-  - `invite_user` : 10/heure
-  - `delete_user` : 5/heure
-
-**B. CORS configuré**
-- Headers CORS présents sur toutes les Edge Functions
-
----
-
-## 5. GESTION DES ERREURS
-
-### ✅ Excellent
-
-**A. Librairie `errorHandler.ts`**
-- Messages utilisateur génériques (aucune fuite technique)
-- Classification des erreurs par type
-- Logging technique uniquement en développement
-
-**B. Edge Functions**
-- Fonction `errorResponse()` avec logs serveur uniquement
-- Messages d'erreur ne révélant pas l'existence d'emails
-
----
-
-## 6. DÉPENDANCES
-
-### ✅ Bon état
-
-**Dépendances principales analysées :**
-| Package | Version | Statut |
-|---------|---------|--------|
-| React | ^19.2.3 | ✅ À jour |
-| Supabase JS | ^2.89.0 | ✅ À jour |
-| Zod | ^3.25.76 | ✅ À jour |
-| React Router | ^6.30.1 | ✅ À jour |
-
-**Recommandation** : Configurer Dependabot ou Renovate pour les mises à jour automatiques.
-
----
-
-## 7. POLICIES RLS PROBLÉMATIQUES
-
-### ⚠️ Deux policies avec `WITH CHECK (true)`
-
-**Tables concernées :**
-1. `audit_logs` - Policy "System can insert audit logs"
-2. `notifications` - Policy "Service role can insert notifications"
-
-**Analyse** : Ces policies sont **intentionnelles** car :
-- `audit_logs` doit pouvoir être insérée par les triggers
-- `notifications` doit pouvoir être insérée par le service role (cron jobs)
-
-**Risque** : FAIBLE - Ces tables n'exposent pas de données sensibles et les insertions sont contrôlées côté serveur.
-
----
-
-## PLAN DE REMÉDIATION
-
-### 🔴 Priorité Haute (1-2 semaines)
-
-| # | Correction | Effort |
-|---|------------|--------|
-| 1 | Activer Leaked Password Protection | 5 min |
-| 2 | Aligner validation mot de passe frontend sur 12 caractères | 30 min |
-| 3 | Ajouter headers CSP dans `index.html` | 1h |
-
-### 🟠 Priorité Moyenne (1 mois)
-
-| # | Correction | Effort |
-|---|------------|--------|
-| 4 | Restreindre accès PII clients (vue limitée) | 2h |
-| 5 | Ajouter headers sécurité dans Edge Functions | 1h |
-| 6 | Implémenter politique rétention audit logs | 2h |
-
-### 🟢 Priorité Basse (3 mois)
-
-| # | Correction | Effort |
-|---|------------|--------|
-| 7 | Restreindre données tarifaires pour employés | 3h |
-| 8 | Configurer Dependabot | 30 min |
-| 9 | Considérer MFA pour admins | 4h |
-
----
-
-## ARCHITECTURE DE SÉCURITÉ ACTUELLE
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                         FRONTEND                                │
-│  ┌─────────────┐    ┌──────────────┐    ┌─────────────────┐    │
-│  │ Zod Schemas │───▶│ sanitizeHtml │───▶│ Supabase Client │    │
-│  │ (validation)│    │ sanitizeText │    │  (parameterized)│    │
-│  └─────────────┘    └──────────────┘    └────────┬────────┘    │
-└─────────────────────────────────────────────────┼──────────────┘
-                                                  │ JWT Token
-                                                  ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      SUPABASE (Backend)                         │
-│  ┌─────────────────┐    ┌──────────────────────────────────┐   │
-│  │   Edge Functions│    │         PostgreSQL               │   │
-│  │  ┌───────────┐  │    │  ┌────────────────────────────┐  │   │
-│  │  │ Rate Limit│  │    │  │      RLS Policies          │  │   │
-│  │  │ JWT Check │  │    │  │  ┌──────────────────────┐  │  │   │
-│  │  │ Admin Role│  │    │  │  │ has_role() function  │  │  │   │
-│  │  │ Zod Valid │  │    │  │  │ (Security Definer)   │  │  │   │
-│  │  └───────────┘  │    │  │  └──────────────────────┘  │  │   │
-│  └─────────────────┘    │  └────────────────────────────┘  │   │
-│                         └──────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## CONCLUSION
-
-L'application Casserole présente un **bon niveau de sécurité** avec une architecture "Zero Trust" bien implémentée :
-
-**✅ Points excellents :**
-- RBAC strict avec RLS
-- Validation Zod centralisée
-- Gestion des erreurs sécurisée
-- Rate limiting serveur
-- Audit logging
-
-**⚠️ Améliorations nécessaires :**
-- Headers HTTP de sécurité
-- Protection contre mots de passe compromis
-- Restriction des PII aux admins
-
-L'application est prête pour la production avec les corrections prioritaires 1-3 du plan de remédiation.
