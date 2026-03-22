@@ -79,8 +79,14 @@ export const RecipesPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="space-y-6" dir="rtl">
+        <PageHeader
+          icon={BookOpen}
+          title="ספר מתכונים"
+          description="ניהול מתכונים ומחירים"
+          accentColor="rose"
+        />
+        <CardSkeleton count={6} />
       </div>
     );
   }
@@ -88,21 +94,20 @@ export const RecipesPage = () => {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen className="w-6 h-6" />
-            ספר מתכונים
-          </h1>
-          <p className="text-muted-foreground">ניהול מתכונים ומחירים</p>
-        </div>
-        {canWrite && (
-          <Button className="gap-2" onClick={() => setRecipeDialogOpen(true)}>
-            <Plus className="w-4 h-4" />
-            מתכון חדש
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        icon={BookOpen}
+        title="ספר מתכונים"
+        description="ניהול מתכונים ומחירים"
+        accentColor="rose"
+        actions={
+          canWrite ? (
+            <Button className="gap-2 rounded-xl" onClick={() => setRecipeDialogOpen(true)}>
+              <Plus className="w-4 h-4" />
+              מתכון חדש
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
