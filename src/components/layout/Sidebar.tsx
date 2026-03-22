@@ -195,15 +195,18 @@ export const Sidebar = () => {
                 <button
                   onClick={() => handleNavClick(item.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200",
+                    "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200 relative",
                     "hover:bg-sidebar-accent active:scale-[0.98]",
                     "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
                     location.pathname === item.id
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                       : "text-sidebar-foreground",
                     !sidebarOpen && "lg:justify-center lg:px-0"
                   )}
                 >
+                  {location.pathname === item.id && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full transition-all duration-300" />
+                  )}
                   <item.icon className={cn(
                     "shrink-0 transition-all",
                     "w-6 h-6 md:w-5 md:h-5",
