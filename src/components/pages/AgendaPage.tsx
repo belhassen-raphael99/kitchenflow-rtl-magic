@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { format, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { CalendarDays, Plus, Clock, Loader2, List, LayoutGrid, Printer } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useEvents, EventWithClient } from '@/hooks/useEvents';
 import { useClients } from '@/hooks/useClients';
 import { useRecipes } from '@/hooks/useRecipes';
