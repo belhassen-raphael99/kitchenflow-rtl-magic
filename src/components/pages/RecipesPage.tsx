@@ -24,12 +24,6 @@ import { DeleteRecipeDialog } from '@/components/recipes/DeleteRecipeDialog';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { CardSkeleton } from '@/components/layout/CardSkeleton';
 import { EmptyState } from '@/components/layout/EmptyState';
-import { useRecipes, Recipe, RecipeFormData } from '@/hooks/useRecipes';
-import { useAuth } from '@/hooks/useAuth';
-import { RecipeCard } from '@/components/recipes/RecipeCard';
-import { RecipeDialog } from '@/components/recipes/RecipeDialog';
-import { RecipeDetailDialog } from '@/components/recipes/RecipeDetailDialog';
-import { DeleteRecipeDialog } from '@/components/recipes/DeleteRecipeDialog';
 
 export const RecipesPage = () => {
   const { canWrite } = useAuth();
