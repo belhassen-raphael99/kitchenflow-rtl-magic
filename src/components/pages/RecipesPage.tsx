@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -15,8 +14,16 @@ import {
   Search,
   Plus,
   Database,
-  Loader2,
 } from 'lucide-react';
+import { useRecipes, Recipe, RecipeFormData } from '@/hooks/useRecipes';
+import { useAuth } from '@/hooks/useAuth';
+import { RecipeCard } from '@/components/recipes/RecipeCard';
+import { RecipeDialog } from '@/components/recipes/RecipeDialog';
+import { RecipeDetailDialog } from '@/components/recipes/RecipeDetailDialog';
+import { DeleteRecipeDialog } from '@/components/recipes/DeleteRecipeDialog';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { CardSkeleton } from '@/components/layout/CardSkeleton';
+import { EmptyState } from '@/components/layout/EmptyState';
 import { useRecipes, Recipe, RecipeFormData } from '@/hooks/useRecipes';
 import { useAuth } from '@/hooks/useAuth';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
