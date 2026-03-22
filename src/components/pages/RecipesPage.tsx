@@ -184,9 +184,6 @@ export const RecipesPage = () => {
               title="לא נמצאו תוצאות"
               description="נסה לחפש מונח אחר או שנה את הסינון"
             />
-                נסה לחפש מונח אחר או שנה את הסינון
-              </p>
-            </div>
           </CardContent>
         </Card>
       )}
