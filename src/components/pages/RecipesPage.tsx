@@ -161,38 +161,29 @@ export const RecipesPage = () => {
           ))}
         </div>
       ) : recipes.length === 0 ? (
-        /* Empty State */
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="py-16">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-                <Database className="w-10 h-10 text-muted-foreground/50" />
-              </div>
-              <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                אין מתכונים עדיין
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-md mb-6">
-                התחל ליצור מתכונים לספר המתכונים שלך
-              </p>
-              {canWrite && (
-                <Button onClick={() => setRecipeDialogOpen(true)}>
+            <EmptyState
+              icon={Database}
+              title="אין מתכונים עדיין"
+              description="התחל ליצור מתכונים לספר המתכונים שלך"
+              action={canWrite ? (
+                <Button onClick={() => setRecipeDialogOpen(true)} className="rounded-xl">
                   <Plus className="w-4 h-4 ml-2" />
                   צור מתכון ראשון
                 </Button>
-              )}
-            </div>
+              ) : undefined}
+            />
           </CardContent>
         </Card>
       ) : (
-        /* No Results */
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="py-12">
-            <div className="flex flex-col items-center justify-center text-center">
-              <Search className="w-12 h-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                לא נמצאו תוצאות
-              </h3>
-              <p className="text-sm text-muted-foreground">
+            <EmptyState
+              icon={Search}
+              title="לא נמצאו תוצאות"
+              description="נסה לחפש מונח אחר או שנה את הסינון"
+            />
                 נסה לחפש מונח אחר או שנה את הסינון
               </p>
             </div>
