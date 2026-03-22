@@ -1,6 +1,7 @@
 import { Package, Plus, CheckCircle, AlertTriangle, AlertCircle, Loader2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useWarehouse, WarehouseItem } from '@/hooks/useWarehouse';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
