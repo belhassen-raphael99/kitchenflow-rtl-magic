@@ -17,6 +17,7 @@ import {
   CheckCircle, Loader2, ChefHat, Eye, Package, Printer, MessageCircle,
   ChevronRight, ChevronLeft, History, Camera, FileImage, X,
 } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { format, parseISO, isToday, isTomorrow, differenceInDays, addDays, subDays } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -257,19 +258,18 @@ export const DeliveryPage = () => {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Truck className="w-6 h-6" />
-            משלוחים
-          </h1>
-          <p className="text-muted-foreground">ניהול משלוחים והזמנות</p>
-        </div>
-        <Button variant="outline" size="sm" className="gap-2 no-print" onClick={() => window.print()}>
-          <Printer className="w-4 h-4" />
-          הדפס יום
-        </Button>
-      </div>
+      <PageHeader
+        icon={Truck}
+        title="משלוחים"
+        description="ניהול משלוחים והזמנות"
+        accentColor="blue"
+        actions={
+          <Button variant="outline" size="sm" className="gap-2 no-print rounded-xl" onClick={() => window.print()}>
+            <Printer className="w-4 h-4" />
+            הדפס יום
+          </Button>
+        }
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="no-print">

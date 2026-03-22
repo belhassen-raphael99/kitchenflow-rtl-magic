@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -15,7 +14,6 @@ import {
   Search,
   Plus,
   Database,
-  Loader2,
 } from 'lucide-react';
 import { useRecipes, Recipe, RecipeFormData } from '@/hooks/useRecipes';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +21,9 @@ import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { RecipeDialog } from '@/components/recipes/RecipeDialog';
 import { RecipeDetailDialog } from '@/components/recipes/RecipeDetailDialog';
 import { DeleteRecipeDialog } from '@/components/recipes/DeleteRecipeDialog';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { CardSkeleton } from '@/components/layout/CardSkeleton';
+import { EmptyState } from '@/components/layout/EmptyState';
 
 export const RecipesPage = () => {
   const { canWrite } = useAuth();
@@ -72,8 +73,14 @@ export const RecipesPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]" dir="rtl">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="space-y-6" dir="rtl">
+        <PageHeader
+          icon={BookOpen}
+          title="ספר מתכונים"
+          description="ניהול מתכונים ומחירים"
+          accentColor="rose"
+        />
+        <CardSkeleton count={6} />
       </div>
     );
   }
@@ -81,21 +88,20 @@ export const RecipesPage = () => {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen className="w-6 h-6" />
-            ספר מתכונים
-          </h1>
-          <p className="text-muted-foreground">ניהול מתכונים ומחירים</p>
-        </div>
-        {canWrite && (
-          <Button className="gap-2" onClick={() => setRecipeDialogOpen(true)}>
-            <Plus className="w-4 h-4" />
-            מתכון חדש
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        icon={BookOpen}
+        title="ספר מתכונים"
+        description="ניהול מתכונים ומחירים"
+        accentColor="rose"
+        actions={
+          canWrite ? (
+            <Button className="gap-2 rounded-xl" onClick={() => setRecipeDialogOpen(true)}>
+              <Plus className="w-4 h-4" />
+              מתכון חדש
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -155,41 +161,29 @@ export const RecipesPage = () => {
           ))}
         </div>
       ) : recipes.length === 0 ? (
-        /* Empty State */
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="py-16">
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-                <Database className="w-10 h-10 text-muted-foreground/50" />
-              </div>
-              <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                אין מתכונים עדיין
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-md mb-6">
-                התחל ליצור מתכונים לספר המתכונים שלך
-              </p>
-              {canWrite && (
-                <Button onClick={() => setRecipeDialogOpen(true)}>
+            <EmptyState
+              icon={Database}
+              title="אין מתכונים עדיין"
+              description="התחל ליצור מתכונים לספר המתכונים שלך"
+              action={canWrite ? (
+                <Button onClick={() => setRecipeDialogOpen(true)} className="rounded-xl">
                   <Plus className="w-4 h-4 ml-2" />
                   צור מתכון ראשון
                 </Button>
-              )}
-            </div>
+              ) : undefined}
+            />
           </CardContent>
         </Card>
       ) : (
-        /* No Results */
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="py-12">
-            <div className="flex flex-col items-center justify-center text-center">
-              <Search className="w-12 h-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                לא נמצאו תוצאות
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                נסה לחפש מונח אחר או שנה את הסינון
-              </p>
-            </div>
+            <EmptyState
+              icon={Search}
+              title="לא נמצאו תוצאות"
+              description="נסה לחפש מונח אחר או שנה את הסינון"
+            />
           </CardContent>
         </Card>
       )}

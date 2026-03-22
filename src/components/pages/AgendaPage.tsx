@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { format, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { CalendarDays, Plus, Clock, Loader2, List, LayoutGrid, Printer } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useEvents, EventWithClient } from '@/hooks/useEvents';
 import { useClients } from '@/hooks/useClients';
 import { useRecipes } from '@/hooks/useRecipes';
@@ -84,45 +85,31 @@ export const AgendaPage = () => {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <CalendarDays className="w-6 h-6" />
-            יומן אירועים
-          </h1>
-          <p className="text-muted-foreground">{formattedDate}</p>
-        </div>
-        <div className="flex gap-2 no-print">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => window.print()}
-            title="הדפס"
-          >
-            <Printer className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'calendar' ? 'default' : 'outline'}
-            size="icon"
-            onClick={() => setViewMode('calendar')}
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="icon"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="w-4 h-4" />
-          </Button>
-          {canWrite && (
-            <Button className="gap-2" onClick={handleNewEvent}>
-              <Plus className="w-4 h-4" />
-              הזמנה חדשה
+      <PageHeader
+        icon={CalendarDays}
+        title="יומן אירועים"
+        description={formattedDate}
+        accentColor="blue"
+        actions={
+          <div className="flex gap-2 no-print">
+            <Button variant="outline" size="icon" onClick={() => window.print()} title="הדפס" className="rounded-xl">
+              <Printer className="w-4 h-4" />
             </Button>
-          )}
-        </div>
-      </div>
+            <Button variant={viewMode === 'calendar' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('calendar')} className="rounded-xl">
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+            <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')} className="rounded-xl">
+              <List className="w-4 h-4" />
+            </Button>
+            {canWrite && (
+              <Button className="gap-2 rounded-xl" onClick={handleNewEvent}>
+                <Plus className="w-4 h-4" />
+                הזמנה חדשה
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {viewMode === 'calendar' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

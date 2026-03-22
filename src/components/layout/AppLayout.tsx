@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
+import { BottomNav } from './BottomNav';
 import { DemoBanner } from './DemoBanner';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,13 +23,15 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         className={cn(
           "min-h-screen transition-all duration-300",
           sidebarOpen ? "lg:mr-72" : "lg:mr-20",
-          "pt-20 lg:pt-0"
+          "pt-20 lg:pt-0",
+          "pb-20 lg:pb-0" // space for bottom nav on mobile
         )}
       >
         <div className="p-4 md:p-6 lg:p-8 max-w-6xl">
           {children}
         </div>
       </main>
+      <BottomNav />
     </div>
   );
 };

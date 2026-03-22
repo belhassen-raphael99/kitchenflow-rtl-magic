@@ -1,6 +1,7 @@
 import { Package, Plus, CheckCircle, AlertTriangle, AlertCircle, Loader2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useWarehouse, WarehouseItem } from '@/hooks/useWarehouse';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
@@ -89,21 +90,20 @@ export const WarehousePage = () => {
     <div className="space-y-6 animate-fade-in-up">
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          {canWrite && (
-            <Button onClick={handleAddNew} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl">
-              <Plus className="w-4 h-4 ml-2" />
-              קליטת סחורה
-            </Button>
-          )}
-          <div className="text-right">
-            <div className="flex items-center gap-2 justify-end">
-              <h1 className="text-2xl font-bold text-foreground">מחסן ראשי (חומרי גלם)</h1>
-              <Package className="w-6 h-6 text-primary" />
-            </div>
-            <p className="text-muted-foreground">{totalCount} מוצרים</p>
-          </div>
-        </div>
+        <PageHeader
+          icon={Package}
+          title="מחסן ראשי (חומרי גלם)"
+          description={`${totalCount} מוצרים`}
+          accentColor="violet"
+          actions={
+            canWrite ? (
+              <Button onClick={handleAddNew} className="rounded-xl gap-2">
+                <Plus className="w-4 h-4" />
+                קליטת סחורה
+              </Button>
+            ) : undefined
+          }
+        />
 
         {/* Alerts Summary */}
         {(lowStockCount > 0 || criticalStockCount > 0) && (
