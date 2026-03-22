@@ -17,6 +17,7 @@ import {
   CheckCircle, Loader2, ChefHat, Eye, Package, Printer, MessageCircle,
   ChevronRight, ChevronLeft, History, Camera, FileImage, X,
 } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { format, parseISO, isToday, isTomorrow, differenceInDays, addDays, subDays } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
