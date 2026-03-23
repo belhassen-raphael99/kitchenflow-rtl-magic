@@ -268,7 +268,7 @@ export const ChefDashboardPage = () => {
       <div className="flex items-center justify-between print-header">
         <PageHeader
           title={`דשבורד שף — יום ${hebrewDays[dayOfWeek]}`}
-          subtitle={format(today, 'dd/MM/yyyy')}
+          description={format(today, 'dd/MM/yyyy')}
           icon={ChefHat}
           accentColor="orange"
         />
