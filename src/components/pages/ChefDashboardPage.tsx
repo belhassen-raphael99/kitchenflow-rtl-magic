@@ -391,7 +391,7 @@ export const ChefDashboardPage = () => {
             <div>
               <h3 className="font-bold text-sm mb-3">משימות ייצור — {dept.label}</h3>
               {deptTasks.length === 0 && activeDept === dept.key ? (
-                <EmptyState icon={Package} title={`אין משימות ל${dept.label} היום`} subtitle="לחץ 'ייצור אוטומטי' ליצירת משימות לפי תכנית הייצור" />
+                <EmptyState icon={Package} title={`אין משימות ל${dept.label} היום`} description="לחץ 'ייצור אוטומטי' ליצירת משימות לפי תכנית הייצור" />
               ) : activeDept === dept.key && (
                 <div className="space-y-2">
                   {deptTasks.map(task => {
