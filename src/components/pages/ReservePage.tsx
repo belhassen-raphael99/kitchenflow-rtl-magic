@@ -13,6 +13,7 @@ import {
   Box,
   AlertTriangle,
   Loader2,
+  Factory,
 } from 'lucide-react';
 import { useReserve, ReserveItem, ReserveItemFormData } from '@/hooks/useReserve';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +21,9 @@ import { ReserveItemCard } from '@/components/reserve/ReserveItemCard';
 import { ReserveItemDialog } from '@/components/reserve/ReserveItemDialog';
 import { QuantityDialog } from '@/components/reserve/QuantityDialog';
 import { DeleteReserveItemDialog } from '@/components/reserve/DeleteReserveItemDialog';
+import { ProductionScheduleTab } from '@/components/reserve/ProductionScheduleTab';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { EmptyState } from '@/components/layout/EmptyState';
 
 export const ReservePage = () => {
   const { canWrite } = useAuth();
@@ -37,6 +41,7 @@ export const ReservePage = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [mainTab, setMainTab] = useState<string>('stock');
 
   // Dialog states
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
@@ -96,136 +101,137 @@ export const ReservePage = () => {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-5" dir="rtl">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Package className="w-6 h-6" />
-            רזרבה (מלאי הייצור)
-          </h1>
-          <p className="text-muted-foreground">ניהול מוצרים מוכנים למלאי</p>
-        </div>
-        {canWrite && (
-          <Button className="gap-2" onClick={() => setItemDialogOpen(true)}>
-            <Plus className="w-4 h-4" />
-            פריט חדש
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="רזרבה (מלאי הייצור)"
+        description="ניהול מוצרים מוכנים למלאי"
+        icon={Package}
+        accentColor="violet"
+        actions={
+          canWrite ? (
+            <Button className="gap-2" onClick={() => setItemDialogOpen(true)}>
+              <Plus className="w-4 h-4" />
+              פריט חדש
+            </Button>
+          ) : undefined
+        }
+      />
 
-      {/* Alerts */}
-      {(lowStockItems.length > 0 || expiringItems.length > 0) && (
-        <div className="flex flex-wrap gap-3">
-          {lowStockItems.length > 0 && (
-            <Badge variant="outline" className="text-orange-600 border-orange-300 gap-1 py-1 px-3">
-              <AlertTriangle className="w-4 h-4" />
-              {lowStockItems.length} פריטים במלאי נמוך
-            </Badge>
-          )}
-          {expiringItems.length > 0 && (
-            <Badge variant="outline" className="text-red-600 border-red-300 gap-1 py-1 px-3">
-              <AlertTriangle className="w-4 h-4" />
-              {expiringItems.length} פריטים עם תוקף קרוב
-            </Badge>
-          )}
-        </div>
-      )}
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="חיפוש פריט..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pr-10"
-        />
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all" className="gap-2">
+      {/* Main tabs: Stock vs Production Schedule */}
+      <Tabs value={mainTab} onValueChange={setMainTab}>
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="stock" className="gap-2">
             <Package className="w-4 h-4" />
-            הכל ({items.length})
+            מלאי
           </TabsTrigger>
-          <TabsTrigger value="frozen" className="gap-2">
-            <Snowflake className="w-4 h-4" />
-            הקפאה ({frozenCount})
-          </TabsTrigger>
-          <TabsTrigger value="refrigerated" className="gap-2">
-            <Thermometer className="w-4 h-4" />
-            קירור ({refrigeratedCount})
-          </TabsTrigger>
-          <TabsTrigger value="ambient" className="gap-2">
-            <Box className="w-4 h-4" />
-            אחסון ({ambientCount})
+          <TabsTrigger value="production" className="gap-2">
+            <Factory className="w-4 h-4" />
+            תכנית ייצור
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab} className="mt-4">
-          {filteredItems.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredItems.map((item) => (
-                <ReserveItemCard
-                  key={item.id}
-                  item={item}
-                  onEdit={(i) => {
-                    setEditingItem(i);
-                    setItemDialogOpen(true);
-                  }}
-                  onDelete={setDeletingItem}
-                  onProduce={(i) => {
-                    setQuantityItem(i);
-                    setQuantityMode('produce');
-                  }}
-                  onConsume={(i) => {
-                    setQuantityItem(i);
-                    setQuantityMode('consume');
-                  }}
-                />
-              ))}
+        {/* Stock Tab */}
+        <TabsContent value="stock" className="space-y-4 mt-4">
+          {/* Alerts */}
+          {(lowStockItems.length > 0 || expiringItems.length > 0) && (
+            <div className="flex flex-wrap gap-3">
+              {lowStockItems.length > 0 && (
+                <Badge variant="outline" className="text-amber-600 border-amber-300 gap-1 py-1 px-3">
+                  <AlertTriangle className="w-4 h-4" />
+                  {lowStockItems.length} פריטים במלאי נמוך
+                </Badge>
+              )}
+              {expiringItems.length > 0 && (
+                <Badge variant="outline" className="text-destructive border-destructive/30 gap-1 py-1 px-3">
+                  <AlertTriangle className="w-4 h-4" />
+                  {expiringItems.length} פריטים עם תוקף קרוב
+                </Badge>
+              )}
             </div>
-          ) : items.length === 0 ? (
-            /* Empty State */
-            <Card>
-              <CardContent className="py-16">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-                    <Package className="w-10 h-10 text-muted-foreground/50" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                    אין פריטים ברזרבה
-                  </h3>
-                  <p className="text-sm text-muted-foreground max-w-md mb-6">
-                    התחל להוסיף פריטים מוכנים למלאי הייצור
-                  </p>
-                  {canWrite && (
+          )}
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="חיפוש פריט..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-10"
+            />
+          </div>
+
+          {/* Storage type tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="all" className="gap-1 text-xs sm:text-sm">
+                <Package className="w-3.5 h-3.5" />
+                הכל ({items.length})
+              </TabsTrigger>
+              <TabsTrigger value="frozen" className="gap-1 text-xs sm:text-sm">
+                <Snowflake className="w-3.5 h-3.5" />
+                הקפאה ({frozenCount})
+              </TabsTrigger>
+              <TabsTrigger value="refrigerated" className="gap-1 text-xs sm:text-sm">
+                <Thermometer className="w-3.5 h-3.5" />
+                קירור ({refrigeratedCount})
+              </TabsTrigger>
+              <TabsTrigger value="ambient" className="gap-1 text-xs sm:text-sm">
+                <Box className="w-3.5 h-3.5" />
+                אחסון ({ambientCount})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={activeTab} className="mt-4">
+              {filteredItems.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredItems.map((item) => (
+                    <ReserveItemCard
+                      key={item.id}
+                      item={item}
+                      onEdit={(i) => {
+                        setEditingItem(i);
+                        setItemDialogOpen(true);
+                      }}
+                      onDelete={setDeletingItem}
+                      onProduce={(i) => {
+                        setQuantityItem(i);
+                        setQuantityMode('produce');
+                      }}
+                      onConsume={(i) => {
+                        setQuantityItem(i);
+                        setQuantityMode('consume');
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : items.length === 0 ? (
+                <EmptyState
+                  icon={Package}
+                  title="אין פריטים ברזרבה"
+                  description="התחל להוסיף פריטים מוכנים למלאי הייצור"
+                  action={canWrite ? (
                     <Button onClick={() => setItemDialogOpen(true)}>
                       <Plus className="w-4 h-4 ml-2" />
                       צור פריט ראשון
                     </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            /* No Results */
-            <Card>
-              <CardContent className="py-12">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <Search className="w-12 h-12 text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                    לא נמצאו תוצאות
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    נסה לחפש מונח אחר
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  ) : undefined}
+                />
+              ) : (
+                <EmptyState
+                  icon={Search}
+                  title="לא נמצאו תוצאות"
+                  description="נסה לחפש מונח אחר"
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        {/* Production Schedule Tab */}
+        <TabsContent value="production" className="mt-4">
+          <ProductionScheduleTab />
         </TabsContent>
       </Tabs>
 
