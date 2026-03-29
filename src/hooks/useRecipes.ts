@@ -32,8 +32,8 @@ export interface Recipe {
   selling_price: number;
   max_capacity_grams: number | null;
   assembly_type: string | null;
-  qty_x2: Record<string, number> | null;
-  qty_x3: Record<string, number> | null;
+  qty_x2: any;
+  qty_x3: any;
   created_at: string;
   updated_at: string;
   ingredients?: RecipeIngredient[];
@@ -79,7 +79,7 @@ export function useRecipes() {
         variant: 'destructive',
       });
     } else {
-      setRecipes(data || []);
+      setRecipes((data || []) as unknown as Recipe[]);
     }
     
     setLoading(false);
