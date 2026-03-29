@@ -53,6 +53,59 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_items: {
+        Row: {
+          created_at: string | null
+          department: string | null
+          id: string
+          is_active: boolean | null
+          name_internal: string
+          name_website: string
+          notes: string | null
+          price: number | null
+          quantity_per_serving: number | null
+          recipe_id: string | null
+          size_option: string | null
+          unit_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_internal: string
+          name_website: string
+          notes?: string | null
+          price?: number | null
+          quantity_per_serving?: number | null
+          recipe_id?: string | null
+          size_option?: string | null
+          unit_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_internal?: string
+          name_website?: string
+          notes?: string | null
+          price?: number | null
+          quantity_per_serving?: number | null
+          recipe_id?: string | null
+          size_option?: string | null
+          unit_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string
