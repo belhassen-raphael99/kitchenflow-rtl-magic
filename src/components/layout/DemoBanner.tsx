@@ -49,7 +49,7 @@ export const DemoBanner = () => {
       >
         <AlertTriangle className="w-4 h-4 flex-shrink-0" />
         <span>
-          👁 מצב דמו — צפייה בלבד | הסשן יפוג בעוד {formattedTime}
+          🧪 מצב דמו — ניתן לצפות ולערוך, מחיקה חסומה | הסשן יפוג בעוד {formattedTime}
         </span>
         <button
           onClick={() => setShowInfo(true)}
