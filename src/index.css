@@ -218,8 +218,9 @@
 
 /* Print styles */
 @media print {
-  .sidebar, .navbar, .no-print, .demo-banner,
-  aside, button[class*="fixed"], .demo-tour-overlay {
+  .sidebar, .navbar, .no-print, .demo-banner, .impersonation-banner,
+  aside, button[class*="fixed"], .demo-tour-overlay, .search-bar,
+  nav[class*="fixed"] {
     display: none !important;
   }
   
