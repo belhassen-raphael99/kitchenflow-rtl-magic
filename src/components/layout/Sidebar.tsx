@@ -207,7 +207,7 @@ export const Sidebar = () => {
                     )}
                   >
                     {isActive(item.id) && (
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full transition-all duration-300" />
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full animate-nav-indicator" />
                     )}
                     <item.icon className={cn(
                       "shrink-0 transition-all w-6 h-6 md:w-5 md:h-5",
