@@ -401,6 +401,10 @@ export const DeliveryPage = () => {
                               </>
                             )}
                             <div className="flex-1" />
+                            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleGenerateSlip(event)} disabled={generatingSlip === event.id}>
+                              {generatingSlip === event.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+                              בון משלוח
+                            </Button>
                             {status === 'ready' && (
                               <Button size="sm" className="gap-1.5 bg-primary hover:bg-primary/90" onClick={() => openDispatchConfirm(event)}>
                                 <Send className="w-3.5 h-3.5" />שלח
