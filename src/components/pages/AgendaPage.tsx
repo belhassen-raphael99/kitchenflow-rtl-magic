@@ -122,6 +122,7 @@ export const AgendaPage = () => {
                 onSelect={(date) => { date && setSelectedDate(date); setDetailEvent(null); }}
                 className="rounded-md pointer-events-auto"
                 locale={he}
+                weekStartsOn={0}
                 modifiers={modifiers}
                 components={{
                   DayContent: ({ date }) => {

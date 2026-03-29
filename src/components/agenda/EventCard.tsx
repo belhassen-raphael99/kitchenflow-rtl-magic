@@ -32,7 +32,10 @@ export const EventCard = ({ event, onEdit, onDelete, onClick, isAdmin }: EventCa
 
   return (
     <Card
-      className={`hover:shadow-md transition-shadow cursor-pointer ${urgencyBorder}`}
+      className={cn(
+        "group overflow-hidden transition-all duration-300 cursor-pointer hover:shadow-lg hover:-translate-y-0.5",
+        urgencyBorder
+      )}
       onClick={() => onClick?.(event)}
     >
       <CardContent className="p-4">
