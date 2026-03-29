@@ -184,9 +184,11 @@ export const CatalogPage = () => {
                         <Pencil className="w-3 h-3" />
                         ערוך
                       </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 h-7 text-xs text-destructive hover:text-destructive" onClick={() => handleDelete(item.id)}>
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                      {canDelete && (
+                        <Button variant="ghost" size="sm" className="gap-1 h-7 text-xs text-destructive hover:text-destructive" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
