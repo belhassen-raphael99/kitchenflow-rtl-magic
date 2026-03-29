@@ -1,132 +1,142 @@
+import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { 
+import {
   CalendarDays, Package, AlertTriangle, Users,
-  ChefHat, TrendingUp, Warehouse, BookOpen,
-  Calendar, Receipt, Timer, Printer
+  ChefHat, TrendingUp, Warehouse, Truck,
+  Calendar, Receipt, Timer, Printer, Bell,
+  Snowflake, ClipboardList, Eye, DollarSign
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CardSkeleton } from '@/components/layout/CardSkeleton';
 import { EmptyState } from '@/components/layout/EmptyState';
 import { cn } from '@/lib/utils';
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer
+} from 'recharts';
+
+const statusColors: Record<string, string> = {
+  pending: 'bg-destructive text-destructive-foreground',
+  confirmed: 'bg-green-600 text-white',
+  in_progress: 'bg-amber-500 text-white',
+  ready: 'bg-blue-600 text-white',
+  delivered: 'bg-muted text-muted-foreground',
+  cancelled: 'bg-foreground/20 text-foreground',
+};
+
+const statusLabels: Record<string, string> = {
+  pending: 'ממתין',
+  confirmed: 'מאושר',
+  in_progress: 'בהכנה',
+  ready: 'מוכן',
+  delivered: 'נמסר',
+  cancelled: 'בוטל',
+};
+
+const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
 export const DashboardPage = () => {
   const { clientInfo } = useApp();
-  const { 
-    totalRecipes, eventsThisWeek, guestsThisWeek, activeTasks,
-    totalWarehouseItems, lowStockItems, criticalStockItems,
-    pendingInvoices, nextEvent, loading: statsLoading 
-  } = useDashboardStats();
+  const stats = useDashboardStats();
+  const [showNextWeek, setShowNextWeek] = useState(false);
 
-  const kpis = [
-    {
-      label: 'פריטים במחסן',
-      value: totalWarehouseItems,
-      sub: 'סה״כ פריטים',
-      icon: Package,
-      gradient: 'from-primary/10 to-primary/5',
-      iconBg: 'bg-primary/15',
-      iconColor: 'text-primary',
-      borderColor: 'border-r-primary',
-    },
-    {
-      label: 'התראות מלאי',
-      value: criticalStockItems + lowStockItems,
-      icon: AlertTriangle,
-      gradient: criticalStockItems > 0 ? 'from-destructive/10 to-destructive/5' : lowStockItems > 0 ? 'from-amber-500/10 to-amber-500/5' : 'from-primary/10 to-primary/5',
-      iconBg: criticalStockItems > 0 ? 'bg-destructive/15' : lowStockItems > 0 ? 'bg-amber-500/15' : 'bg-primary/15',
-      iconColor: criticalStockItems > 0 ? 'text-destructive' : lowStockItems > 0 ? 'text-amber-500' : 'text-primary',
-      borderColor: criticalStockItems > 0 ? 'border-r-destructive' : lowStockItems > 0 ? 'border-r-amber-500' : 'border-r-primary',
-      badges: [
-        criticalStockItems > 0 && { label: `${criticalStockItems} קריטי`, variant: 'destructive' as const },
-        lowStockItems > 0 && { label: `${lowStockItems} נמוך`, className: 'bg-amber-500' },
-        criticalStockItems === 0 && lowStockItems === 0 && { label: 'מלאי תקין', className: 'bg-primary' },
-      ].filter(Boolean),
-    },
-    {
-      label: 'אירועים השבוע',
-      value: eventsThisWeek,
-      sub: `${guestsThisWeek} אורחים`,
-      icon: CalendarDays,
-      gradient: 'from-kpi-events/10 to-kpi-events/5',
-      iconBg: 'bg-kpi-events/15',
-      iconColor: 'text-kpi-events',
-      borderColor: 'border-r-kpi-events',
-    },
-    {
-      label: 'ממתינים לתשלום',
-      value: pendingInvoices,
-      sub: 'חשבוניות פתוחות',
-      icon: Receipt,
-      gradient: 'from-amber-500/10 to-amber-500/5',
-      iconBg: 'bg-amber-500/15',
-      iconColor: 'text-amber-500',
-      borderColor: 'border-r-amber-500',
-    },
+  const today = new Date();
+  const isThursday = today.getDay() === 4;
+  const todayFormatted = format(today, 'EEEE, dd MMMM yyyy', { locale: he });
+
+  // Placeholder chart data (would be from real monthly aggregation)
+  const monthlyData = [
+    { month: 'ינו', revenue: 0, events: 0 },
+    { month: 'פבר', revenue: 0, events: 0 },
+    { month: 'מרץ', revenue: 0, events: 0 },
+    { month: 'אפר', revenue: 0, events: 0 },
+    { month: 'מאי', revenue: 0, events: 0 },
+    { month: format(today, 'MMM', { locale: he }), revenue: stats.monthlyRevenue, events: stats.eventsThisWeek },
   ];
 
   return (
-    <div className="space-y-5 sm:space-y-6" dir="rtl">
-      {/* Hero Banner */}
-      <div className="gradient-hero-soft rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-primary-foreground relative overflow-hidden">
+    <div className="space-y-5" dir="rtl">
+      {/* Section A — Day summary bar */}
+      <div className="gradient-hero-soft rounded-2xl p-4 sm:p-6 text-primary-foreground relative overflow-hidden">
         <div className="absolute inset-0 bg-food-pattern opacity-20 pointer-events-none" />
-        <div className="relative z-10 flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">שלום! 👋</h1>
-            <p className="text-primary-foreground/80 text-sm sm:text-lg leading-snug">
-              ברוכים הבאים ל{clientInfo.name} - {clientInfo.tagline}
-            </p>
+        <div className="relative z-10">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm sm:text-base">
+            <span className="flex items-center gap-2 font-bold text-lg sm:text-xl">
+              📅 {todayFormatted}
+            </span>
+            <span className="flex items-center gap-1.5">
+              🎉 <strong>{stats.eventsThisWeek}</strong> אירועים השבוע
+            </span>
+            <span className="flex items-center gap-1.5">
+              🚚 <strong>{stats.todayDeliveries}</strong> משלוחים היום
+            </span>
+            <span className="flex items-center gap-1.5">
+              ⚠️ <strong>{stats.alertCount}</strong> התראות
+            </span>
           </div>
-          <div className="text-5xl sm:text-7xl shrink-0 drop-shadow-lg">{clientInfo.logo}</div>
-        </div>
-        
-        <div className="relative z-10 flex flex-wrap gap-2 sm:gap-3 mt-5 sm:mt-6">
-          <Button asChild variant="secondary" size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm rounded-xl shadow-soft">
-            <Link to="/warehouse"><Warehouse className="w-3.5 h-3.5 sm:w-4 sm:h-4" />מחסן</Link>
-          </Button>
-          <Button asChild variant="secondary" size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm rounded-xl shadow-soft">
-            <Link to="/chef"><ChefHat className="w-3.5 h-3.5 sm:w-4 sm:h-4" />דשבורד שף</Link>
-          </Button>
-          <Button asChild variant="secondary" size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm rounded-xl shadow-soft">
-            <Link to="/agenda"><Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />יומן אירועים</Link>
-          </Button>
         </div>
       </div>
 
-      {/* KPIs Grid */}
-      {statsLoading ? (
+      {/* Section B — 4 KPI cards */}
+      {stats.loading ? (
         <CardSkeleton variant="kpi" count={4} />
       ) : (
-        <div data-demo-tour="dashboard-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {kpis.map((kpi) => (
-            <Card key={kpi.label} className={cn(
-              "border-r-4 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-card",
-              kpi.borderColor
-            )}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[
+            {
+              label: 'אירועים השבוע',
+              value: stats.eventsThisWeek,
+              icon: CalendarDays,
+              gradient: 'from-kpi-events/10 to-kpi-events/5',
+              iconBg: 'bg-kpi-events/15',
+              iconColor: 'text-kpi-events',
+              borderColor: 'border-r-kpi-events',
+            },
+            {
+              label: 'אורחים השבוע',
+              value: stats.guestsThisWeek,
+              icon: Users,
+              gradient: 'from-primary/10 to-primary/5',
+              iconBg: 'bg-primary/15',
+              iconColor: 'text-primary',
+              borderColor: 'border-r-primary',
+            },
+            {
+              label: 'הכנסות החודש',
+              value: `₪${stats.monthlyRevenue.toLocaleString()}`,
+              icon: DollarSign,
+              gradient: 'from-green-500/10 to-green-500/5',
+              iconBg: 'bg-green-500/15',
+              iconColor: 'text-green-600',
+              borderColor: 'border-r-green-500',
+            },
+            {
+              label: 'משימות פתוחות',
+              value: stats.activeTasks,
+              icon: ClipboardList,
+              gradient: 'from-amber-500/10 to-amber-500/5',
+              iconBg: 'bg-amber-500/15',
+              iconColor: 'text-amber-500',
+              borderColor: 'border-r-amber-500',
+            },
+          ].map((kpi) => (
+            <Card key={kpi.label} className={cn("border-r-4 rounded-2xl overflow-hidden hover:shadow-card transition-shadow", kpi.borderColor)}>
               <div className={cn("bg-gradient-to-bl", kpi.gradient)}>
-                <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-5">
+                <CardHeader className="flex flex-row items-center justify-between pb-1 p-3 sm:p-5">
                   <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
                   <div className={cn("w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center", kpi.iconBg)}>
-                    <kpi.icon className={cn("w-4.5 h-4.5 sm:w-5.5 sm:h-5.5", kpi.iconColor)} />
+                    <kpi.icon className={cn("w-4 h-4 sm:w-5 sm:h-5", kpi.iconColor)} />
                   </div>
                 </CardHeader>
                 <CardContent className="p-3 sm:p-5 pt-0">
                   <p className="text-2xl sm:text-3xl font-bold">{kpi.value}</p>
-                  {kpi.sub && <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{kpi.sub}</p>}
-                  {kpi.badges && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {kpi.badges.map((b: any, i: number) => b && (
-                        <Badge key={i} variant={b.variant || 'default'} className={cn("text-[10px] sm:text-xs px-1.5 sm:px-2", b.className)}>
-                          {b.label}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </CardContent>
               </div>
             </Card>
@@ -134,83 +144,262 @@ export const DashboardPage = () => {
         </div>
       )}
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Next Event */}
-        <Card className="rounded-2xl shadow-soft hover:shadow-card transition-shadow">
+      {/* Section C + D — Events this week + Today's deliveries */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Section C — This week's events */}
+        <Card className="rounded-2xl shadow-soft">
           <CardHeader className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <CardTitle className="flex items-center gap-2 text-base">
                 <div className="w-8 h-8 bg-kpi-events/10 rounded-lg flex items-center justify-center">
-                  <Timer className="w-4 h-4 text-kpi-events" />
+                  <Calendar className="w-4 h-4 text-kpi-events" />
                 </div>
-                האירוע הקרוב
+                אירועים השבוע
               </CardTitle>
-              <Button asChild variant="ghost" size="sm" className="text-xs sm:text-sm">
+              <Button asChild variant="ghost" size="sm" className="text-xs">
                 <Link to="/agenda">הכל ←</Link>
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0">
-            {statsLoading ? (
+          <CardContent className="p-4 sm:p-6 pt-0 space-y-2 max-h-80 overflow-y-auto">
+            {stats.loading ? (
               <div className="animate-pulse h-20 bg-muted rounded-xl" />
-            ) : nextEvent ? (
-              <div className="bg-muted/50 rounded-xl p-4 space-y-2 border border-border/50">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-base">{nextEvent.client_name || nextEvent.name}</h3>
-                  <Badge variant={nextEvent.daysUntil <= 2 ? 'destructive' : 'secondary'} className="rounded-lg">
-                    {nextEvent.daysUntil === 0 ? 'היום!' : `בעוד ${nextEvent.daysUntil} ימים`}
+            ) : stats.weekEvents.length === 0 ? (
+              <EmptyState icon={CalendarDays} title="אין אירועים השבוע" className="py-6" />
+            ) : (
+              stats.weekEvents.map((event, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border border-border/30 hover:bg-muted/50 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{event.client_name || event.name}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                      <span>{format(new Date(event.date), 'EEEE dd/MM', { locale: he })}</span>
+                      <span>{event.guests} אורחים</span>
+                    </div>
+                  </div>
+                  <Badge className={cn("text-[10px] shrink-0", statusColors[event.status] || 'bg-muted')}>
+                    {statusLabels[event.status] || event.status}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" />{nextEvent.guests} אורחים
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <CalendarDays className="w-3.5 h-3.5" />
-                    {format(new Date(nextEvent.date), 'dd/MM/yyyy', { locale: he })}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <EmptyState icon={CalendarDays} title="אין אירועים קרובים" className="py-8" />
+              ))
             )}
           </CardContent>
         </Card>
 
-        {/* System Status */}
-        <Card className="rounded-2xl shadow-soft hover:shadow-card transition-shadow">
+        {/* Section D — Today's deliveries */}
+        <Card className="rounded-2xl shadow-soft">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-primary" />
-              </div>
-              סטטוס מערכת
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 sm:space-y-3 p-4 sm:p-6 pt-0">
-            {[
-              { icon: Warehouse, label: 'מחסן', sub: `${totalWarehouseItems} פריטים`, link: '/warehouse', color: 'bg-kpi-reserve/10 text-kpi-reserve' },
-              { icon: BookOpen, label: 'ספר מתכונים', sub: `${totalRecipes} מתכונים`, link: '/recipes', color: 'bg-destructive/10 text-destructive' },
-              { icon: CalendarDays, label: 'יומן אירועים', sub: `${eventsThisWeek} אירועים השבוע`, link: '/agenda', color: 'bg-kpi-events/10 text-kpi-events' },
-              { icon: ChefHat, label: 'דשבורד שף', sub: `${activeTasks} משימות פעילות`, link: '/chef', color: 'bg-secondary/10 text-secondary' },
-            ].map(item => (
-              <Link key={item.label} to={item.link} className="flex items-center justify-between p-3 sm:p-4 bg-muted/30 rounded-xl hover:bg-muted/60 transition-all duration-200 border border-transparent hover:border-border/50 group">
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                  <div className={cn("w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105", item.color)}>
-                    <item.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm sm:text-base">{item.label}</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground">{item.sub}</p>
-                  </div>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                  <Truck className="w-4 h-4 text-blue-500" />
                 </div>
-                <Badge className="bg-primary/10 text-primary text-[10px] sm:text-xs hover:bg-primary/20">פעיל</Badge>
-              </Link>
-            ))}
+                משלוחים היום
+              </CardTitle>
+              <Button asChild variant="ghost" size="sm" className="text-xs">
+                <Link to="/delivery">הכל ←</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0 space-y-2 max-h-80 overflow-y-auto">
+            {stats.loading ? (
+              <div className="animate-pulse h-20 bg-muted rounded-xl" />
+            ) : stats.todayDeliveryEvents.length === 0 ? (
+              <EmptyState icon={Truck} title="אין משלוחים היום" className="py-6" />
+            ) : (
+              stats.todayDeliveryEvents.map((event, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border border-border/30">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{event.client_name || event.name}</p>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                      {event.delivery_time && <span>🕐 {event.delivery_time}</span>}
+                      <span>{event.guests} אורחים</span>
+                      {event.delivery_address && <span className="truncate max-w-[120px]">📍 {event.delivery_address}</span>}
+                    </div>
+                  </div>
+                  <Badge className={cn("text-[10px] shrink-0", statusColors[event.status] || 'bg-muted')}>
+                    {statusLabels[event.status] || event.status}
+                  </Badge>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Section E — Active alerts (3 columns) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Low stock */}
+        <Card className="rounded-2xl shadow-soft border-t-4 border-t-destructive/50">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Package className="w-4 h-4 text-destructive" />
+              מלאי נמוך
+              {stats.lowStockList.length > 0 && (
+                <Badge variant="destructive" className="text-[10px]">{stats.lowStockList.length}</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-2 max-h-48 overflow-y-auto">
+            {stats.lowStockList.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">מלאי תקין ✅</p>
+            ) : (
+              stats.lowStockList.map((item) => (
+                <div key={item.id} className="flex items-center justify-between text-xs p-2 bg-destructive/5 rounded-lg">
+                  <span className="font-medium truncate flex-1">{item.name}</span>
+                  <span className="text-destructive font-bold shrink-0 mr-2">
+                    {item.quantity}/{item.min_stock} {item.unit}
+                  </span>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Expiring soon */}
+        <Card className="rounded-2xl shadow-soft border-t-4 border-t-amber-500/50">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Snowflake className="w-4 h-4 text-amber-500" />
+              פג תוקף קרוב
+              {stats.expiringItems.length > 0 && (
+                <Badge className="bg-amber-500 text-white text-[10px]">{stats.expiringItems.length}</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-2 max-h-48 overflow-y-auto">
+            {stats.expiringItems.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">הכל בתוקף ✅</p>
+            ) : (
+              stats.expiringItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between text-xs p-2 bg-amber-500/5 rounded-lg">
+                  <span className="font-medium truncate flex-1">{item.name}</span>
+                  <Badge className={cn("text-[10px] shrink-0", item.daysUntil === 0 ? 'bg-destructive' : 'bg-amber-500')}>
+                    {item.daysUntil === 0 ? 'היום!' : `בעוד ${item.daysUntil} ימים`}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Urgent tasks */}
+        <Card className="rounded-2xl shadow-soft border-t-4 border-t-primary/50">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <ChefHat className="w-4 h-4 text-primary" />
+              משימות דחופות
+              {stats.urgentTasks.length > 0 && (
+                <Badge className="bg-primary text-primary-foreground text-[10px]">{stats.urgentTasks.length}</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-2 max-h-48 overflow-y-auto">
+            {stats.urgentTasks.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">אין משימות דחופות ✅</p>
+            ) : (
+              stats.urgentTasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between text-xs p-2 bg-primary/5 rounded-lg">
+                  <span className="font-medium truncate flex-1">{task.name}</span>
+                  <Badge variant="outline" className="text-[10px] shrink-0">{task.department}</Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Section F — Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="rounded-2xl shadow-soft">
+          <CardHeader className="p-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <DollarSign className="w-4 h-4 text-green-600" />
+              הכנסות חודשיות
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(v: number) => [`₪${v.toLocaleString()}`, 'הכנסות']} />
+                  <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl shadow-soft">
+          <CardHeader className="p-4">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <TrendingUp className="w-4 h-4 text-kpi-events" />
+              אירועים לחודש
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(v: number) => [v, 'אירועים']} />
+                  <Line type="monotone" dataKey="events" stroke="hsl(var(--kpi-events))" strokeWidth={2} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Section G — Weekly preview */}
+      {(isThursday || showNextWeek) && (
+        <Card className="rounded-2xl shadow-soft border-2 border-primary/20">
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Eye className="w-4 h-4 text-primary" />
+                📋 תצפית שבועית — שבוע הבא
+              </CardTitle>
+              <Button variant="outline" size="sm" className="gap-1.5 no-print" onClick={() => window.print()}>
+                <Printer className="w-3.5 h-3.5" />
+                הדפס
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0 space-y-2">
+            {stats.nextWeekEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">אין אירועים בשבוע הבא</p>
+            ) : (
+              stats.nextWeekEvents.map((event, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-primary/5 rounded-xl border border-primary/10">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{event.client_name || event.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(event.date), 'EEEE dd/MM', { locale: he })} | {event.guests} אורחים
+                    </p>
+                  </div>
+                  <Badge className={cn("text-[10px]", statusColors[event.status] || 'bg-muted')}>
+                    {statusLabels[event.status] || event.status}
+                  </Badge>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {!isThursday && !showNextWeek && (
+        <div className="flex justify-center">
+          <Button variant="outline" size="sm" onClick={() => setShowNextWeek(true)} className="gap-2">
+            <Eye className="w-4 h-4" />
+            צפה בשבוע הבא
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
