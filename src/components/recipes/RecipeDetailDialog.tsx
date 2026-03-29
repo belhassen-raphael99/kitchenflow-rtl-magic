@@ -101,11 +101,11 @@ export const RecipeDetailDialog = ({
   // Batch scaling: get scaled quantity for an ingredient
   const getScaledQty = (ing: RecipeIngredient, mult: number): number => {
     if (mult === 2 && recipe?.qty_x2) {
-      const x2 = recipe.qty_x2 as Record<string, number>;
+      const x2 = recipe.qty_x2;
       if (x2[ing.name]) return x2[ing.name];
     }
     if (mult === 3 && recipe?.qty_x3) {
-      const x3 = recipe.qty_x3 as Record<string, number>;
+      const x3 = recipe.qty_x3;
       if (x3[ing.name]) return x3[ing.name];
     }
     return ing.quantity * mult;

@@ -30,6 +30,10 @@ export interface Recipe {
   image_url: string | null;
   cost_per_serving: number;
   selling_price: number;
+  max_capacity_grams: number | null;
+  assembly_type: string | null;
+  qty_x2: Record<string, number> | null;
+  qty_x3: Record<string, number> | null;
   created_at: string;
   updated_at: string;
   ingredients?: RecipeIngredient[];
