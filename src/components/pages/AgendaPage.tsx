@@ -185,15 +185,16 @@ export const AgendaPage = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {eventsForSelectedDate.map((event) => (
-                        <EventCard
-                          key={event.id}
-                          event={event}
-                          onEdit={handleEditEvent}
-                          onDelete={handleDeleteEvent}
-                          onClick={handleEventClick}
-                          isAdmin={canWrite}
-                        />
+                      {eventsForSelectedDate.map((event, index) => (
+                        <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.08}s`, animationFillMode: 'backwards' }}>
+                          <EventCard
+                            event={event}
+                            onEdit={handleEditEvent}
+                            onDelete={handleDeleteEvent}
+                            onClick={handleEventClick}
+                            isAdmin={canWrite}
+                          />
+                        </div>
                       ))}
                     </div>
                   )}

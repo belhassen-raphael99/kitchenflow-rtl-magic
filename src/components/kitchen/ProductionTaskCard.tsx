@@ -109,7 +109,7 @@ export const ProductionTaskCard = ({
   return (
     <>
       <Card className={cn(
-        "transition-all border-r-4",
+        "transition-all duration-300 border-r-4 hover:shadow-lg hover:-translate-y-0.5",
         getStatusColor(),
         task.status === 'completed' && "opacity-60",
         task.status === 'in-progress' && "ring-1 ring-blue-200 shadow-md",
