@@ -69,7 +69,7 @@ export function useRecipes() {
     
     const { data, error } = await supabase
       .from('recipes')
-      .select('id, name, category, description, servings, prep_time, cook_time, cost_per_serving, selling_price, image_url, instructions, created_at, updated_at')
+      .select('id, name, category, description, servings, prep_time, cook_time, cost_per_serving, selling_price, image_url, instructions, created_at, updated_at, max_capacity_grams, assembly_type, qty_x2, qty_x3')
       .order('name');
 
     if (error) {
