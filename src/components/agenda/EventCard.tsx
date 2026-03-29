@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EventWithClient, EventStatus } from '@/hooks/useEvents';
+import { cn } from '@/lib/utils';
 
 interface EventCardProps {
   event: EventWithClient;

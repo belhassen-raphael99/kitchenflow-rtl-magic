@@ -84,7 +84,7 @@ export const ReserveItemCard = ({
 
   return (
     <Card className={cn(
-      "transition-all hover:shadow-md",
+      "transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5",
       isExpired && "border-red-300 bg-red-50/50",
       isLowStock && !isExpired && "border-orange-300 bg-orange-50/50"
     )}>
