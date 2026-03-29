@@ -159,7 +159,7 @@ export function useRecipes() {
     });
 
     await fetchRecipes();
-    return recipe;
+    return recipe as unknown as Recipe;
   };
 
   const updateRecipe = async (id: string, data: Partial<RecipeFormData>): Promise<boolean> => {
