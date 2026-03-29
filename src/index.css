@@ -185,6 +185,16 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes nav-indicator {
+  from { height: 0; opacity: 0; }
+  to { height: 2rem; opacity: 1; }
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(var(--rotate, 0deg)); }
   50% { transform: translateY(-8px) rotate(var(--rotate, 0deg)); }
@@ -208,6 +218,16 @@
 
 .animate-fade-in-up {
   animation: fade-in-up 0.4s ease-out;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted) / 0.5) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.animate-nav-indicator {
+  animation: nav-indicator 0.3s ease-out;
 }
 
 /* Staggered animations */
