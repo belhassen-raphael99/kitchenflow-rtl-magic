@@ -122,6 +122,7 @@ export const AgendaPage = () => {
                 onSelect={(date) => { date && setSelectedDate(date); setDetailEvent(null); }}
                 className="rounded-md pointer-events-auto"
                 locale={he}
+                weekStartsOn={0}
                 modifiers={modifiers}
                 components={{
                   DayContent: ({ date }) => {
@@ -184,15 +185,16 @@ export const AgendaPage = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {eventsForSelectedDate.map((event) => (
-                        <EventCard
-                          key={event.id}
-                          event={event}
-                          onEdit={handleEditEvent}
-                          onDelete={handleDeleteEvent}
-                          onClick={handleEventClick}
-                          isAdmin={canWrite}
-                        />
+                      {eventsForSelectedDate.map((event, index) => (
+                        <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.08}s`, animationFillMode: 'backwards' }}>
+                          <EventCard
+                            event={event}
+                            onEdit={handleEditEvent}
+                            onDelete={handleDeleteEvent}
+                            onClick={handleEventClick}
+                            isAdmin={canWrite}
+                          />
+                        </div>
                       ))}
                     </div>
                   )}
@@ -221,8 +223,8 @@ export const AgendaPage = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id}>
+                {upcomingEvents.map((event, index) => (
+                  <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'backwards' }}>
                     <EventCard
                       event={event}
                       onEdit={handleEditEvent}
