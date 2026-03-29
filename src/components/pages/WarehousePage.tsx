@@ -1,4 +1,4 @@
-import { Package, Plus, CheckCircle, AlertTriangle, AlertCircle, Loader2, Pencil, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
+import { Package, Plus, CheckCircle, AlertTriangle, AlertCircle, Loader2, Pencil, ChevronLeft, ChevronRight, Printer, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -8,12 +8,14 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { WarehouseItemDialog } from '@/components/warehouse/WarehouseItemDialog';
 import { StockUpdateDialog } from '@/components/warehouse/StockUpdateDialog';
+import { PurchaseListDialog } from '@/components/warehouse/PurchaseListDialog';
 
 export const WarehousePage = () => {
   const { items, categories, suppliers, loading, refetch, page, setPage, totalPages, totalCount, search, setSearch, categoryFilter, setCategoryFilter } = useWarehouse();
   const { canWrite } = useAuth();
   const [showItemDialog, setShowItemDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<WarehouseItem | null>(null);
   const [stockItem, setStockItem] = useState<WarehouseItem | null>(null);
   const [searchInput, setSearchInput] = useState(search);
@@ -79,6 +81,12 @@ export const WarehousePage = () => {
                 <Printer className="w-4 h-4" />
                 הדפס
               </Button>
+              {canWrite && (
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowPurchaseDialog(true)}>
+                  <ShoppingCart className="w-4 h-4" />
+                  רשימת קניות
+                </Button>
+              )}
               {canWrite && (
                 <Button onClick={() => { setEditingItem(null); setShowItemDialog(true); }} className="rounded-xl gap-2">
                   <Plus className="w-4 h-4" />
@@ -201,6 +209,7 @@ export const WarehousePage = () => {
 
       <WarehouseItemDialog open={showItemDialog} onOpenChange={setShowItemDialog} categories={categories} suppliers={suppliers} item={editingItem} onSuccess={refetch} />
       <StockUpdateDialog open={showStockDialog} onOpenChange={setShowStockDialog} item={stockItem} onSuccess={refetch} />
+      <PurchaseListDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog} />
     </div>
   );
 };

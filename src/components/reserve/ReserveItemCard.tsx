@@ -128,13 +128,18 @@ export const ReserveItemCard = ({
           {isExpired && (
             <Badge variant="destructive" className="gap-1">
               <Calendar className="w-3 h-3" />
-              פג תוקף!
+              🗑 פג תוקף היום!
             </Badge>
           )}
-          {isExpiringSoon && !isExpired && (
-            <Badge variant="outline" className="text-red-600 border-red-300 gap-1">
+          {isExpiringSoon && !isExpired && item.expiry_date && (
+            <Badge variant="outline" className={cn(
+              "gap-1",
+              differenceInDays(new Date(item.expiry_date), new Date()) <= 1
+                ? "text-destructive border-destructive/30 bg-destructive/5"
+                : "text-amber-600 border-amber-300 bg-amber-50"
+            )}>
               <Calendar className="w-3 h-3" />
-              פג תוקף בקרוב
+              פג תוקף בעוד {differenceInDays(new Date(item.expiry_date), new Date())} ימים
             </Badge>
           )}
         </div>

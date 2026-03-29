@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import {
@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { Client } from '@/hooks/useClients';
 import { Recipe } from '@/hooks/useRecipes';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
 
 const EVENT_TYPES = [
   'חתונה', 'בר/בת מצווה', 'אירוע חברה', 'ברית', 'יום הולדת', 'אירוע פרטי', 'אחר'
@@ -39,6 +41,16 @@ function mapCategoryToDepartment(category: string): string {
   if (lower.includes('מאפ') || lower.includes('bak') || lower.includes('לחם')) return 'מאפייה';
   if (lower.includes('קונד') || lower.includes('עוג') || lower.includes('dessert')) return 'קונדיטוריה';
   return 'מטבח';
+}
+
+interface CatalogItemForWizard {
+  id: string;
+  name_website: string;
+  name_internal: string;
+  department: string | null;
+  unit_type: string | null;
+  quantity_per_serving: number | null;
+  recipe_id: string | null;
 }
 
 export interface OrderItem {
@@ -82,6 +94,9 @@ export const EventWizard = ({
   const [clientSearch, setClientSearch] = useState('');
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [recipePopoverOpen, setRecipePopoverOpen] = useState(false);
+  const [catalogItems, setCatalogItems] = useState<CatalogItemForWizard[]>([]);
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [useCatalog, setUseCatalog] = useState(true);
 
   const [form, setForm] = useState<EventWizardData>({
     client_name: '',
@@ -106,6 +121,15 @@ export const EventWizard = ({
       delivery_time: '16:00', notes: '', items: [],
     });
   };
+
+  // Fetch catalog items
+  useEffect(() => {
+    if (open) {
+      supabase.from('catalog_items').select('id, name_website, name_internal, department, unit_type, quantity_per_serving, recipe_id')
+        .eq('is_active', true).order('department').order('name_website')
+        .then(({ data }) => setCatalogItems((data || []) as unknown as CatalogItemForWizard[]));
+    }
+  }, [open]);
 
   const handleOpenChange = (val: boolean) => {
     if (!val) resetForm();
@@ -384,97 +408,147 @@ export const EventWizard = ({
           </div>
         )}
 
-        {/* Step 3: Order Items */}
+        {/* Step 3: Order Items — Catalog-based */}
         {step === 3 && (
           <div className="space-y-4 pt-2">
-            <Popover open={recipePopoverOpen} onOpenChange={setRecipePopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full gap-2">
-                  <Plus className="w-4 h-4" />
-                  הוסף מנה
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[350px] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="חפש מתכון..." />
-                  <CommandList>
-                    <CommandEmpty>לא נמצאו מתכונים</CommandEmpty>
-                    <CommandGroup>
-                      {recipes.map(recipe => (
-                        <CommandItem key={recipe.id} onSelect={() => addItem(recipe)}>
-                          <div className="flex justify-between w-full">
-                            <span>{recipe.name}</span>
-                            <Badge variant="outline" className="text-xs">{recipe.category}</Badge>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="חפש מנה בקטלוג..."
+                value={catalogSearch}
+                onChange={e => setCatalogSearch(e.target.value)}
+                className="pr-10"
+              />
+            </div>
 
-            {form.items.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <ShoppingCart className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                <p>לא נבחרו מנות עדיין</p>
-                <p className="text-xs">לחץ על "הוסף מנה" כדי להתחיל</p>
+            {/* Catalog items grouped by department */}
+            {catalogItems.length > 0 ? (
+              <div className="space-y-4 max-h-[350px] overflow-y-auto">
+                {DEPARTMENTS.map(dept => {
+                  const deptItems = catalogItems.filter(ci =>
+                    ci.department === dept &&
+                    (!catalogSearch || ci.name_website.includes(catalogSearch) || ci.name_internal.includes(catalogSearch))
+                  );
+                  if (deptItems.length === 0) return null;
+
+                  return (
+                    <div key={dept}>
+                      <h4 className="font-bold text-sm mb-2 text-muted-foreground">{dept}</h4>
+                      <div className="space-y-1.5">
+                        {deptItems.map(ci => {
+                          const existing = form.items.findIndex(i => i.recipe_name === ci.name_internal);
+                          const isSelected = existing >= 0;
+                          return (
+                            <div key={ci.id} className={cn(
+                              "flex items-center gap-3 p-2.5 rounded-lg border transition-colors",
+                              isSelected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                            )}>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setForm(prev => ({
+                                      ...prev,
+                                      items: [...prev.items, {
+                                        recipe_id: ci.recipe_id || ci.id,
+                                        recipe_name: ci.name_internal,
+                                        quantity: 1,
+                                        unit: ci.unit_type || 'מנות',
+                                        department: ci.department || 'מטבח',
+                                        notes: '',
+                                      }],
+                                    }));
+                                  } else {
+                                    removeItem(existing);
+                                  }
+                                }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{ci.name_website}</p>
+                                {ci.name_internal !== ci.name_website && (
+                                  <p className="text-[11px] text-muted-foreground truncate">{ci.name_internal}</p>
+                                )}
+                              </div>
+                              {isSelected && (
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={form.items[existing]?.quantity || 1}
+                                  onChange={e => updateItem(existing, 'quantity', parseInt(e.target.value) || 1)}
+                                  className="w-16 h-8 text-sm text-center"
+                                />
+                              )}
+                              {isSelected && (
+                                <span className="text-xs text-muted-foreground shrink-0">
+                                  {form.items[existing]?.unit}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Fallback: add from recipes */}
+                <Separator />
+                <Popover open={recipePopoverOpen} onOpenChange={setRecipePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-full gap-2 text-xs">
+                      <Plus className="w-3 h-3" />
+                      הוסף מנה מספר המתכונים
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[350px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="חפש מתכון..." />
+                      <CommandList>
+                        <CommandEmpty>לא נמצאו</CommandEmpty>
+                        <CommandGroup>
+                          {recipes.map(recipe => (
+                            <CommandItem key={recipe.id} onSelect={() => addItem(recipe)}>
+                              <div className="flex justify-between w-full">
+                                <span>{recipe.name}</span>
+                                <Badge variant="outline" className="text-xs">{recipe.category}</Badge>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             ) : (
-              <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                {form.items.map((item, index) => (
-                  <div key={index} className="border rounded-lg p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium">{item.recipe_name}</div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeItem(index)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div>
-                        <Label className="text-xs">כמות</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={item.quantity}
-                          onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">יחידה</Label>
-                        <Input
-                          value={item.unit}
-                          onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                          className="h-8 text-sm"
-                          placeholder="מגשים / יח'"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">מחלקה</Label>
-                        <Select
-                          value={item.department}
-                          onValueChange={(val) => updateItem(index, 'department', val)}
-                        >
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DEPARTMENTS.map(d => (
-                              <SelectItem key={d} value={d}>{d}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Input
-                      value={item.notes}
-                      onChange={(e) => updateItem(index, 'notes', e.target.value)}
-                      placeholder="הערה למנה..."
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                ))}
+              <div className="text-center py-8 text-muted-foreground">
+                <ShoppingCart className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                <p>אין פריטים בקטלוג</p>
+                <p className="text-xs">הוסף פריטים בדף הקטלוג או בחר מספר המתכונים</p>
+                <Popover open={recipePopoverOpen} onOpenChange={setRecipePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="mt-3 gap-2">
+                      <Plus className="w-4 h-4" />
+                      הוסף ממתכונים
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[350px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="חפש מתכון..." />
+                      <CommandList>
+                        <CommandEmpty>לא נמצאו</CommandEmpty>
+                        <CommandGroup>
+                          {recipes.map(recipe => (
+                            <CommandItem key={recipe.id} onSelect={() => addItem(recipe)}>
+                              <span>{recipe.name}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             )}
 

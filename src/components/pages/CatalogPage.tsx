@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/layout/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { CatalogItemDialog } from '@/components/catalog/CatalogItemDialog';
 
 interface CatalogItem {
   id: string;
@@ -40,24 +41,28 @@ export const CatalogPage = () => {
   const [deptFilter, setDeptFilter] = useState<string | null>(null);
   const { canWrite } = useAuth();
   const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
 
-  useEffect(() => {
-    const fetchItems = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('catalog_items' as any)
-        .select('*')
-        .order('department')
-        .order('name_website');
+  const fetchItems = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('catalog_items' as any)
+      .select('*')
+      .order('department')
+      .order('name_website');
+    if (error) toast({ title: 'שגיאה בטעינת קטלוג', description: error.message, variant: 'destructive' });
+    setItems((data || []) as unknown as CatalogItem[]);
+    setLoading(false);
+  };
 
-      if (error) {
-        toast({ title: 'שגיאה בטעינת קטלוג', description: error.message, variant: 'destructive' });
-      }
-      setItems((data || []) as unknown as CatalogItem[]);
-      setLoading(false);
-    };
-    fetchItems();
-  }, [toast]);
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from('catalog_items').delete().eq('id', id);
+    if (error) toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    else { toast({ title: 'פריט נמחק' }); fetchItems(); }
+  };
+
+  useEffect(() => { fetchItems(); }, []);
 
   const filtered = items.filter(item => {
     const matchSearch = !search || 
@@ -87,7 +92,7 @@ export const CatalogPage = () => {
               הדפס
             </Button>
             {canWrite && (
-              <Button size="sm" className="gap-2">
+              <Button size="sm" className="gap-2" onClick={() => { setEditingItem(null); setDialogOpen(true); }}>
                 <Plus className="w-4 h-4" />
                 פריט חדש
               </Button>
@@ -175,11 +180,11 @@ export const CatalogPage = () => {
                   )}
                   {canWrite && (
                     <>
-                      <Button variant="ghost" size="sm" className="gap-1 h-7 text-xs">
+                      <Button variant="ghost" size="sm" className="gap-1 h-7 text-xs" onClick={() => { setEditingItem(item); setDialogOpen(true); }}>
                         <Pencil className="w-3 h-3" />
                         ערוך
                       </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 h-7 text-xs text-destructive hover:text-destructive">
+                      <Button variant="ghost" size="sm" className="gap-1 h-7 text-xs text-destructive hover:text-destructive" onClick={() => handleDelete(item.id)}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </>
@@ -230,6 +235,7 @@ export const CatalogPage = () => {
           );
         })}
       </div>
+      <CatalogItemDialog open={dialogOpen} onOpenChange={setDialogOpen} item={editingItem} onSuccess={fetchItems} />
     </div>
   );
 };
