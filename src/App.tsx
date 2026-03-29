@@ -8,9 +8,9 @@ import { AgendaPage } from './components/pages/AgendaPage';
 import { RecipesPage } from './components/pages/RecipesPage';
 import { ReservePage } from './components/pages/ReservePage';
 import { WarehousePage } from './components/pages/WarehousePage';
-import { KitchenOpsPage } from './components/pages/KitchenOpsPage';
-import { DeliveryPage } from './components/pages/DeliveryPage';
 import { ChefDashboardPage } from './components/pages/ChefDashboardPage';
+import { DeliveryPage } from './components/pages/DeliveryPage';
+import { CatalogPage } from './components/pages/CatalogPage';
 import { AdminUsersPage } from './components/pages/AdminUsersPage';
 import { SettingsPage } from './components/pages/SettingsPage';
 import { DemoPage } from './components/pages/DemoPage';
@@ -58,16 +58,8 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/kitchen-ops"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <KitchenOpsPage />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
+      {/* /kitchen-ops redirects to /chef */}
+      <Route path="/kitchen-ops" element={<Navigate to="/chef" replace />} />
       <Route
         path="/delivery"
         element={
@@ -114,6 +106,16 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <AppLayout>
               <ReservePage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/catalog"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <CatalogPage />
             </AppLayout>
           </ProtectedRoute>
         }

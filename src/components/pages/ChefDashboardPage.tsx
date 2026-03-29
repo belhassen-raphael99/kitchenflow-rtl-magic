@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ChefHat, Truck, Users, Clock, Printer, Loader2,
   CheckCircle, PlayCircle, Package, AlertTriangle, RefreshCw,
-  Scale,
+  Scale, ClipboardList, Eye,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -72,12 +71,6 @@ const departments = [
 
 const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
-const batchOptions = [
-  { value: '1', label: 'x1' },
-  { value: '2', label: 'x2' },
-  { value: '3', label: 'x3' },
-];
-
 export const ChefDashboardPage = () => {
   const [tasks, setTasks] = useState<ChefTask[]>([]);
   const [deliveries, setDeliveries] = useState<TodayDelivery[]>([]);
@@ -87,6 +80,7 @@ export const ChefDashboardPage = () => {
   const [activeDept, setActiveDept] = useState('מטבח');
   const [updating, setUpdating] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [mainTab, setMainTab] = useState('overview');
   const { toast } = useToast();
 
   const today = new Date();
@@ -122,22 +116,17 @@ export const ChefDashboardPage = () => {
 
   const handleCompleteTask = async (task: ChefTask) => {
     setUpdating(task.id);
-
-    // Update the task
     await supabase.from('production_tasks').update({
       status: 'completed',
       completed_quantity: task.target_quantity,
       completed_at: new Date().toISOString(),
     }).eq('id', task.id);
 
-    // If linked to a reserve item, update stock
     if (task.reserve_item_id) {
       const stock = reserveStock.find(s => s.id === task.reserve_item_id);
       if (stock) {
         const newQty = stock.quantity + task.target_quantity;
         await supabase.from('reserve_items').update({ quantity: newQty }).eq('id', task.reserve_item_id);
-
-        // Log production
         await supabase.from('production_logs').insert([{
           reserve_item_id: task.reserve_item_id,
           action: 'production',
@@ -149,7 +138,6 @@ export const ChefDashboardPage = () => {
       }
     }
 
-    // If linked to a recipe, deduct warehouse ingredients
     if (task.recipe_id) {
       const { data: ingredients } = await supabase
         .from('recipe_ingredients')
@@ -171,7 +159,6 @@ export const ChefDashboardPage = () => {
               const newQty = Math.max(0, wItem.quantity - deduction);
               await supabase.from('warehouse_items').update({ quantity: newQty }).eq('id', ing.warehouse_item_id);
 
-              // Alert if below min_stock
               if (newQty < wItem.min_stock) {
                 await supabase.from('notifications').insert([{
                   type: 'low_stock',
@@ -193,11 +180,8 @@ export const ChefDashboardPage = () => {
     setUpdating(null);
   };
 
-  // Auto-generate tasks from production_schedule for today
   const handleGenerateFromSchedule = async () => {
     setGenerating(true);
-
-    // Get existing tasks for today
     const existingNames = new Set(tasks.map(t => `${t.department}-${t.name}`));
     let created = 0;
 
@@ -205,7 +189,6 @@ export const ChefDashboardPage = () => {
       const key = `${item.department}-${item.product_name}`;
       if (existingNames.has(key)) continue;
 
-      // Check current reserve stock to see if production is needed
       const stock = reserveStock.find(s => s.name === item.product_name);
       const currentQty = stock?.quantity || 0;
       const minQty = item.min_quantity || 0;
@@ -240,13 +223,11 @@ export const ChefDashboardPage = () => {
   const deptTasks = tasks.filter(t => t.department === activeDept);
   const deptSchedule = schedule.filter(s => s.department === activeDept);
 
-  // Summary stats
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const inProgressTasks = tasks.filter(t => t.status === 'in-progress').length;
   const overallProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // Low stock items for current dept
   const deptLowStock = reserveStock.filter(s => {
     const scheduleItem = schedule.find(sc => sc.product_name === s.name && sc.department === activeDept);
     return scheduleItem && s.quantity < s.min_stock;
@@ -258,9 +239,69 @@ export const ChefDashboardPage = () => {
     return <Clock className="w-4 h-4 text-muted-foreground" />;
   };
 
+  // Split tasks by type
+  const stockTasks = deptTasks.filter(t => t.task_type === 'stock');
+  const eventTasks = deptTasks.filter(t => t.task_type === 'event');
+
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
+
+  const renderTaskCard = (task: ChefTask) => {
+    const percent = task.target_quantity > 0 ? Math.round((task.completed_quantity / task.target_quantity) * 100) : 0;
+    return (
+      <Card key={task.id} className={cn(
+        "rounded-xl transition-all",
+        task.status === 'completed' && "opacity-60",
+        task.status === 'in-progress' && "border-blue-300 shadow-sm"
+      )}>
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {statusIcon(task.status)}
+              <span className="font-medium text-sm">{task.name}</span>
+              {task.task_type === 'event' && (
+                <Badge variant="outline" className="text-[10px] border-kpi-events/30 text-kpi-events">אירוע</Badge>
+              )}
+            </div>
+            <Badge variant="secondary" className="text-xs gap-1">
+              <Scale className="w-3 h-3" />
+              {task.target_quantity} {task.unit}
+            </Badge>
+          </div>
+
+          {task.notes && (
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">{task.notes}</p>
+          )}
+
+          <Progress value={percent} className="h-1.5" />
+
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-muted-foreground">
+              {task.completed_quantity}/{task.target_quantity} {task.unit} ({percent}%)
+            </span>
+            <div className="flex gap-1.5 no-print">
+              {task.status === 'pending' && (
+                <Button size="sm" variant="outline" className="gap-1 h-7 text-xs" onClick={() => handleStartTask(task)} disabled={updating === task.id}>
+                  {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <PlayCircle className="w-3 h-3" />}
+                  התחל
+                </Button>
+              )}
+              {(task.status === 'in-progress' || task.status === 'pending') && (
+                <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => handleCompleteTask(task)} disabled={updating === task.id}>
+                  {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                  סיים
+                </Button>
+              )}
+              {task.status === 'completed' && (
+                <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">✅ הושלם</Badge>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-5 print-content" dir="rtl">
@@ -273,11 +314,7 @@ export const ChefDashboardPage = () => {
           accentColor="orange"
         />
         <div className="flex gap-2 no-print">
-          <Button
-            variant="outline" size="sm" className="gap-2"
-            onClick={handleGenerateFromSchedule}
-            disabled={generating}
-          >
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleGenerateFromSchedule} disabled={generating}>
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             ייצור אוטומטי
           </Button>
@@ -316,184 +353,205 @@ export const ChefDashboardPage = () => {
         </Card>
       </div>
 
-      {/* Today's deliveries */}
-      {deliveries.length > 0 && (
-        <Card className="rounded-2xl">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Truck className="w-4 h-4 text-kpi-events" />
-              משלוחים היום ({deliveries.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="space-y-2">
-              {deliveries.map(d => (
-                <div key={d.id} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-xl text-sm border border-border/30">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-base tabular-nums">{(d.delivery_time || d.time || '').slice(0, 5)}</span>
-                    <div>
-                      <span className="font-medium">{d.client_name || d.name}</span>
-                      {d.delivery_address && (
-                        <p className="text-xs text-muted-foreground truncate max-w-[200px]">{d.delivery_address}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <span className="flex items-center gap-1 text-xs"><Users className="w-3.5 h-3.5" />{d.guests}</span>
-                    <Badge variant="outline" className="text-[10px]">
-                      {d.status === 'in-progress' ? '🔵 בדרך' : d.status === 'confirmed' ? '🟢 מאושר' : '⏳ ממתין'}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Department tabs */}
-      <Tabs value={activeDept} onValueChange={setActiveDept}>
-        <TabsList className="no-print w-full justify-start">
-          {departments.map(d => {
-            const count = tasks.filter(t => t.department === d.key).length;
-            return (
-              <TabsTrigger key={d.key} value={d.key} className="text-xs sm:text-sm gap-1">
-                <span>{d.icon}</span>
-                {d.label}
-                {count > 0 && <Badge variant="secondary" className="text-[10px] px-1 h-4">{count}</Badge>}
-              </TabsTrigger>
-            );
-          })}
+      {/* Main Tabs: Day Overview + Production Tasks */}
+      <Tabs value={mainTab} onValueChange={setMainTab}>
+        <TabsList className="no-print grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="overview" className="gap-2">
+            <Eye className="w-4 h-4" />
+            סקירת יום
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="gap-2">
+            <ClipboardList className="w-4 h-4" />
+            משימות ייצור
+          </TabsTrigger>
         </TabsList>
 
-        {departments.map(dept => (
-          <TabsContent key={dept.key} value={dept.key} className="space-y-4 mt-4">
-            {/* Low stock alerts */}
-            {deptLowStock.length > 0 && activeDept === dept.key && (
-              <Card className="border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl">
-                <CardContent className="p-3">
-                  <p className="text-xs font-bold flex items-center gap-1 text-amber-700 dark:text-amber-400 mb-2">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    מלאי נמוך — {dept.label}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {deptLowStock.map(s => (
-                      <Badge key={s.id} variant="outline" className="text-[10px] border-amber-300 text-amber-700 dark:text-amber-400">
-                        {s.name}: {s.quantity}/{s.min_stock} {s.unit}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Tasks */}
-            <div>
-              <h3 className="font-bold text-sm mb-3">משימות ייצור — {dept.label}</h3>
-              {deptTasks.length === 0 && activeDept === dept.key ? (
-                <EmptyState icon={Package} title={`אין משימות ל${dept.label} היום`} description="לחץ 'ייצור אוטומטי' ליצירת משימות לפי תכנית הייצור" />
-              ) : activeDept === dept.key && (
+        {/* Tab A: Day Overview */}
+        <TabsContent value="overview" className="space-y-4 mt-4">
+          {/* Today's deliveries */}
+          {deliveries.length > 0 && (
+            <Card className="rounded-2xl">
+              <CardHeader className="p-4 pb-2">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-kpi-events" />
+                  משלוחים היום ({deliveries.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
                 <div className="space-y-2">
-                  {deptTasks.map(task => {
-                    const percent = task.target_quantity > 0 ? Math.round((task.completed_quantity / task.target_quantity) * 100) : 0;
-                    return (
-                      <Card key={task.id} className={cn(
-                        "rounded-xl transition-all",
-                        task.status === 'completed' && "opacity-60",
-                        task.status === 'in-progress' && "border-blue-300 shadow-sm"
-                      )}>
-                        <CardContent className="p-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              {statusIcon(task.status)}
-                              <span className="font-medium text-sm">{task.name}</span>
-                              {task.task_type === 'event' && (
-                                <Badge variant="outline" className="text-[10px] border-kpi-events/30 text-kpi-events">אירוע</Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="text-xs gap-1">
-                                <Scale className="w-3 h-3" />
-                                {task.target_quantity} {task.unit}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          {task.notes && (
-                            <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">{task.notes}</p>
+                  {deliveries.map(d => (
+                    <div key={d.id} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-xl text-sm border border-border/30">
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-base tabular-nums">{(d.delivery_time || d.time || '').slice(0, 5)}</span>
+                        <div>
+                          <span className="font-medium">{d.client_name || d.name}</span>
+                          {d.delivery_address && (
+                            <p className="text-xs text-muted-foreground truncate max-w-[200px]">{d.delivery_address}</p>
                           )}
-
-                          <Progress value={percent} className="h-1.5" />
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-muted-foreground">
-                              {task.completed_quantity}/{task.target_quantity} {task.unit} ({percent}%)
-                            </span>
-                            <div className="flex gap-1.5 no-print">
-                              {task.status === 'pending' && (
-                                <Button size="sm" variant="outline" className="gap-1 h-7 text-xs" onClick={() => handleStartTask(task)} disabled={updating === task.id}>
-                                  {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <PlayCircle className="w-3 h-3" />}
-                                  התחל
-                                </Button>
-                              )}
-                              {(task.status === 'in-progress' || task.status === 'pending') && (
-                                <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => handleCompleteTask(task)} disabled={updating === task.id}>
-                                  {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                                  סיים
-                                </Button>
-                              )}
-                              {task.status === 'completed' && (
-                                <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">✅ הושלם</Badge>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Weekly schedule for this department */}
-            {deptSchedule.length > 0 && activeDept === dept.key && (
-              <Card className="rounded-xl">
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-sm font-bold flex items-center gap-2">
-                    <Package className="w-4 h-4" />
-                    תכנית ייצור להיום — {hebrewDays[dayOfWeek]}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="divide-y">
-                    {deptSchedule.map(item => {
-                      const stock = reserveStock.find(s => s.name === item.product_name);
-                      const qty = stock?.quantity || 0;
-                      const minQty = item.min_quantity || 0;
-                      const isLow = qty < minQty;
-                      return (
-                        <div key={item.id} className="flex items-center justify-between py-2 text-sm">
-                          <span className="font-medium">{item.product_name}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={cn("text-xs", isLow ? "text-destructive font-bold" : "text-muted-foreground")}>
-                              {qty}/{minQty} {item.unit}
-                            </span>
-                            <Badge variant="outline" className={cn("text-[10px]", isLow && "border-destructive/30 text-destructive")}>
-                              {item.storage_type}
-                            </Badge>
-                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        ))}
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span className="flex items-center gap-1 text-xs"><Users className="w-3.5 h-3.5" />{d.guests}</span>
+                        <Badge variant="outline" className="text-[10px]">
+                          {d.status === 'in-progress' ? '🔵 בדרך' : d.status === 'confirmed' ? '🟢 מאושר' : '⏳ ממתין'}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Production plan for today by department */}
+          <Tabs value={activeDept} onValueChange={setActiveDept}>
+            <TabsList className="no-print w-full justify-start">
+              {departments.map(d => {
+                const count = schedule.filter(s => s.department === d.key).length;
+                return (
+                  <TabsTrigger key={d.key} value={d.key} className="text-xs sm:text-sm gap-1">
+                    <span>{d.icon}</span>
+                    {d.label}
+                    {count > 0 && <Badge variant="secondary" className="text-[10px] px-1 h-4">{count}</Badge>}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+
+            {departments.map(dept => (
+              <TabsContent key={dept.key} value={dept.key} className="space-y-4 mt-4">
+                {/* Low stock alerts */}
+                {deptLowStock.length > 0 && activeDept === dept.key && (
+                  <Card className="border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl">
+                    <CardContent className="p-3">
+                      <p className="text-xs font-bold flex items-center gap-1 text-amber-700 dark:text-amber-400 mb-2">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        מלאי נמוך — {dept.label}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {deptLowStock.map(s => (
+                          <Badge key={s.id} variant="outline" className="text-[10px] border-amber-300 text-amber-700 dark:text-amber-400">
+                            {s.name}: {s.quantity}/{s.min_stock} {s.unit}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Schedule items with stock status */}
+                {deptSchedule.length > 0 && activeDept === dept.key && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <Package className="w-4 h-4" />
+                        תכנית ייצור — יום {hebrewDays[dayOfWeek]}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <div className="divide-y">
+                        {deptSchedule.map(item => {
+                          const stock = reserveStock.find(s => s.name === item.product_name);
+                          const qty = stock?.quantity || 0;
+                          const minQty = item.min_quantity || 0;
+                          const isLow = qty < minQty;
+                          const percent = minQty > 0 ? Math.min(100, Math.round((qty / minQty) * 100)) : 100;
+                          return (
+                            <div key={item.id} className="py-2.5 space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium">{item.product_name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className={cn("text-xs", isLow ? "text-destructive font-bold" : "text-muted-foreground")}>
+                                    {qty}/{minQty} {item.unit}
+                                  </span>
+                                  <Badge variant="outline" className={cn("text-[10px]", isLow && "border-destructive/30 text-destructive")}>
+                                    {item.storage_type}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <Progress value={percent} className={cn("h-1.5", isLow && "[&>div]:bg-destructive")} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {deptSchedule.length === 0 && activeDept === dept.key && (
+                  <EmptyState icon={Package} title={`אין תכנית ייצור ל${dept.label} היום`} />
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </TabsContent>
+
+        {/* Tab B: Production Tasks (merged Kitchen Ops) */}
+        <TabsContent value="tasks" className="space-y-4 mt-4">
+          <Tabs value={activeDept} onValueChange={setActiveDept}>
+            <TabsList className="no-print w-full justify-start">
+              {departments.map(d => {
+                const count = tasks.filter(t => t.department === d.key).length;
+                return (
+                  <TabsTrigger key={d.key} value={d.key} className="text-xs sm:text-sm gap-1">
+                    <span>{d.icon}</span>
+                    {d.label}
+                    {count > 0 && <Badge variant="secondary" className="text-[10px] px-1 h-4">{count}</Badge>}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+
+            {departments.map(dept => (
+              <TabsContent key={dept.key} value={dept.key} className="space-y-4 mt-4">
+                {activeDept === dept.key && (
+                  <>
+                    {deptTasks.length === 0 ? (
+                      <EmptyState icon={Package} title={`אין משימות ל${dept.label} היום`} description="לחץ 'ייצור אוטומטי' ליצירת משימות לפי תכנית הייצור" />
+                    ) : (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Stock Tasks */}
+                        <div className="space-y-3">
+                          <h3 className="font-bold text-sm flex items-center gap-2">
+                            <Package className="w-4 h-4" />
+                            ייצור למלאי
+                            <Badge variant="secondary" className="text-[10px]">{stockTasks.length}</Badge>
+                          </h3>
+                          {stockTasks.length > 0 ? (
+                            <div className="space-y-2">{stockTasks.map(renderTaskCard)}</div>
+                          ) : (
+                            <Card className="border-dashed rounded-xl">
+                              <CardContent className="py-6 text-center text-muted-foreground text-sm">אין משימות למלאי</CardContent>
+                            </Card>
+                          )}
+                        </div>
+
+                        {/* Event Tasks */}
+                        <div className="space-y-3">
+                          <h3 className="font-bold text-sm flex items-center gap-2">
+                            <ClipboardList className="w-4 h-4" />
+                            הזמנות לאירועים
+                            <Badge variant="secondary" className="text-[10px]">{eventTasks.length}</Badge>
+                          </h3>
+                          {eventTasks.length > 0 ? (
+                            <div className="space-y-2">{eventTasks.map(renderTaskCard)}</div>
+                          ) : (
+                            <Card className="border-dashed rounded-xl">
+                              <CardContent className="py-6 text-center text-muted-foreground text-sm">אין הזמנות לאירועים</CardContent>
+                            </Card>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </TabsContent>
       </Tabs>
 
-      {/* Print-only: Full summary by department */}
+      {/* Print-only summary */}
       <div className="hidden print:block">
         <div className="page-break" />
         <h2 className="text-lg font-bold mb-4">סיכום ייצור יומי — {format(today, 'dd/MM/yyyy')}</h2>
@@ -505,13 +563,7 @@ export const ChefDashboardPage = () => {
               <h3 className="font-bold text-sm mb-2">{dept.icon} {dept.label}</h3>
               <table className="print-table">
                 <thead>
-                  <tr>
-                    <th>מוצר</th>
-                    <th>כמות</th>
-                    <th>יח׳</th>
-                    <th>סוג</th>
-                    <th>סטטוס</th>
-                  </tr>
+                  <tr><th>מוצר</th><th>כמות</th><th>יח׳</th><th>סוג</th><th>סטטוס</th></tr>
                 </thead>
                 <tbody>
                   {dt.map(t => (
@@ -528,21 +580,11 @@ export const ChefDashboardPage = () => {
             </div>
           );
         })}
-
-        {/* Print deliveries */}
         {deliveries.length > 0 && (
           <div className="print-section">
             <h3 className="font-bold text-sm mb-2">🚚 משלוחים היום</h3>
             <table className="print-table">
-              <thead>
-                <tr>
-                  <th>שעה</th>
-                  <th>לקוח</th>
-                  <th>אורחים</th>
-                  <th>כתובת</th>
-                  <th>סטטוס</th>
-                </tr>
-              </thead>
+              <thead><tr><th>שעה</th><th>לקוח</th><th>אורחים</th><th>כתובת</th><th>סטטוס</th></tr></thead>
               <tbody>
                 {deliveries.map(d => (
                   <tr key={d.id}>

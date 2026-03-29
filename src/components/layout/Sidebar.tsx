@@ -11,7 +11,6 @@ import {
   Package,
   Maximize,
   LogOut,
-  Monitor,
   Menu,
   X,
   Users,
@@ -20,6 +19,8 @@ import {
   Truck,
   Sun,
   Moon,
+  UtensilsCrossed,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -37,12 +38,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const navItems = [
-  { id: '/', label: 'דשבורד', icon: LayoutDashboard },
-  { id: '/chef', label: 'דשבורד שף', icon: ChefHat, section: 'תפעול' },
-  { id: '/kitchen-ops', label: 'פוסט מטבח', icon: Monitor },
+  { id: '/', label: 'דשבורד מנהל', icon: LayoutDashboard, section: 'תפעול' },
+  { id: '/chef', label: 'דשבורד שף + ייצור', icon: ChefHat },
   { id: '/delivery', label: 'משלוחים', icon: Truck },
   { id: '/agenda', label: 'יומן אירועים', icon: Calendar },
-  { id: '/recipes', label: 'ספר מתכונים', icon: ChefHat },
+  { id: '/recipes', label: 'ספר מתכונים', icon: BookOpen },
+  { id: '/catalog', label: 'קטלוג מגשים', icon: UtensilsCrossed },
   { id: '/reserve', label: 'רזרבה (הכנות)', icon: Layers, section: 'ניהול מלאי' },
   { id: '/warehouse', label: 'מחסן (חומרי גלם)', icon: Package },
 ];
@@ -81,6 +82,12 @@ export const Sidebar = () => {
       navigate('/auth');
     }
   };
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <>
       {/* Mobile/Tablet overlay */}
@@ -96,16 +103,13 @@ export const Sidebar = () => {
       <aside
         className={cn(
           "fixed top-0 right-0 h-full bg-sidebar border-l border-sidebar-border z-50 transition-all duration-300 flex flex-col shadow-xl lg:shadow-none",
-          // Mobile: Full width slide-in
           sidebarOpen ? "w-72 translate-x-0" : "translate-x-full lg:translate-x-0",
-          // Desktop: Collapsible
           !sidebarOpen && "lg:w-20"
         )}
       >
-        {/* Header with close button for mobile */}
+        {/* Header */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between">
-            {/* Close button - mobile only */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSidebarOpen(false)}
@@ -113,18 +117,11 @@ export const Sidebar = () => {
               >
                 <X className="w-5 h-5" />
               </button>
-              
-              {/* Notification Bell */}
               {sidebarOpen && <NotificationBell />}
             </div>
-
-            {/* Logo */}
             <div className="flex items-center gap-3">
               {(sidebarOpen || window.innerWidth >= 1024) && (
-                <div className={cn(
-                  "text-right animate-fade-in",
-                  !sidebarOpen && "lg:hidden"
-                )}>
+                <div className={cn("text-right animate-fade-in", !sidebarOpen && "lg:hidden")}>
                   <h1 className="font-bold text-lg text-foreground">{clientInfo.name}</h1>
                   <p className="text-xs text-muted-foreground">{clientInfo.tagline}</p>
                 </div>
@@ -159,20 +156,18 @@ export const Sidebar = () => {
                     "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200 relative",
                     "hover:bg-sidebar-accent active:scale-[0.98]",
                     "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
-                    location.pathname === item.id
+                    isActive(item.id)
                       ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                       : "text-sidebar-foreground",
                     !sidebarOpen && "lg:justify-center lg:px-0"
                   )}
                 >
-                  {/* Active indicator bar */}
-                  {location.pathname === item.id && (
+                  {isActive(item.id) && (
                     <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full transition-all duration-300" />
                   )}
                   <item.icon className={cn(
-                    "shrink-0 transition-all",
-                    "w-6 h-6 md:w-5 md:h-5",
-                    location.pathname === item.id && "text-primary"
+                    "shrink-0 transition-all w-6 h-6 md:w-5 md:h-5",
+                    isActive(item.id) && "text-primary"
                   )} />
                   <span className={cn(
                     "text-base md:text-sm font-medium",
@@ -198,19 +193,18 @@ export const Sidebar = () => {
                     "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200 relative",
                     "hover:bg-sidebar-accent active:scale-[0.98]",
                     "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
-                    location.pathname === item.id
+                    isActive(item.id)
                       ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                       : "text-sidebar-foreground",
                     !sidebarOpen && "lg:justify-center lg:px-0"
                   )}
                 >
-                  {location.pathname === item.id && (
+                  {isActive(item.id) && (
                     <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full transition-all duration-300" />
                   )}
                   <item.icon className={cn(
-                    "shrink-0 transition-all",
-                    "w-6 h-6 md:w-5 md:h-5",
-                    location.pathname === item.id && "text-primary"
+                    "shrink-0 transition-all w-6 h-6 md:w-5 md:h-5",
+                    isActive(item.id) && "text-primary"
                   )} />
                   <span className={cn(
                     "text-base md:text-sm font-medium",
@@ -288,7 +282,7 @@ export const Sidebar = () => {
         </div>
       </aside>
 
-      {/* Mobile/Tablet toggle button - Floating hamburger menu */}
+      {/* Mobile toggle */}
       <button
         onClick={() => setSidebarOpen(true)}
         className={cn(
