@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import {
@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { Client } from '@/hooks/useClients';
 import { Recipe } from '@/hooks/useRecipes';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
 
 const EVENT_TYPES = [
   'חתונה', 'בר/בת מצווה', 'אירוע חברה', 'ברית', 'יום הולדת', 'אירוע פרטי', 'אחר'
@@ -39,6 +41,16 @@ function mapCategoryToDepartment(category: string): string {
   if (lower.includes('מאפ') || lower.includes('bak') || lower.includes('לחם')) return 'מאפייה';
   if (lower.includes('קונד') || lower.includes('עוג') || lower.includes('dessert')) return 'קונדיטוריה';
   return 'מטבח';
+}
+
+interface CatalogItemForWizard {
+  id: string;
+  name_website: string;
+  name_internal: string;
+  department: string | null;
+  unit_type: string | null;
+  quantity_per_serving: number | null;
+  recipe_id: string | null;
 }
 
 export interface OrderItem {
@@ -82,6 +94,9 @@ export const EventWizard = ({
   const [clientSearch, setClientSearch] = useState('');
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
   const [recipePopoverOpen, setRecipePopoverOpen] = useState(false);
+  const [catalogItems, setCatalogItems] = useState<CatalogItemForWizard[]>([]);
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [useCatalog, setUseCatalog] = useState(true);
 
   const [form, setForm] = useState<EventWizardData>({
     client_name: '',
@@ -106,6 +121,15 @@ export const EventWizard = ({
       delivery_time: '16:00', notes: '', items: [],
     });
   };
+
+  // Fetch catalog items
+  useEffect(() => {
+    if (open) {
+      supabase.from('catalog_items').select('id, name_website, name_internal, department, unit_type, quantity_per_serving, recipe_id')
+        .eq('is_active', true).order('department').order('name_website')
+        .then(({ data }) => setCatalogItems((data || []) as unknown as CatalogItemForWizard[]));
+    }
+  }, [open]);
 
   const handleOpenChange = (val: boolean) => {
     if (!val) resetForm();
