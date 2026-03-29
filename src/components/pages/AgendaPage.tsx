@@ -223,8 +223,8 @@ export const AgendaPage = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {upcomingEvents.map((event) => (
-                  <div key={event.id}>
+                {upcomingEvents.map((event, index) => (
+                  <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'backwards' }}>
                     <EventCard
                       event={event}
                       onEdit={handleEditEvent}
