@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.demo-otp-signup]
 verify_jwt = false
+
+[functions.generate-delivery-slip]
+verify_jwt = false

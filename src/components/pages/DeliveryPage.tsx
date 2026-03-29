@@ -74,6 +74,7 @@ export const DeliveryPage = () => {
   const [activeTab, setActiveTab] = useState('today');
   const [proofMode, setProofMode] = useState<'none' | 'signature' | 'photo'>('none');
   const [uploadingProof, setUploadingProof] = useState(false);
+  const [generatingSlip, setGeneratingSlip] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
