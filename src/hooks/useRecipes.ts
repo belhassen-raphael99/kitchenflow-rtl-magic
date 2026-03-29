@@ -30,6 +30,10 @@ export interface Recipe {
   image_url: string | null;
   cost_per_serving: number;
   selling_price: number;
+  max_capacity_grams: number | null;
+  assembly_type: string | null;
+  qty_x2: any;
+  qty_x3: any;
   created_at: string;
   updated_at: string;
   ingredients?: RecipeIngredient[];
@@ -65,7 +69,7 @@ export function useRecipes() {
     
     const { data, error } = await supabase
       .from('recipes')
-      .select('id, name, category, description, servings, prep_time, cook_time, cost_per_serving, selling_price, image_url, instructions, created_at, updated_at')
+      .select('id, name, category, description, servings, prep_time, cook_time, cost_per_serving, selling_price, image_url, instructions, created_at, updated_at, max_capacity_grams, assembly_type, qty_x2, qty_x3')
       .order('name');
 
     if (error) {
@@ -75,7 +79,7 @@ export function useRecipes() {
         variant: 'destructive',
       });
     } else {
-      setRecipes(data || []);
+      setRecipes((data || []) as unknown as Recipe[]);
     }
     
     setLoading(false);
@@ -120,7 +124,7 @@ export function useRecipes() {
     return {
       ...recipe,
       ingredients: ingredients || [],
-    };
+    } as unknown as Recipe;
   };
 
   const createRecipe = async (data: RecipeFormData): Promise<Recipe | null> => {
@@ -155,7 +159,7 @@ export function useRecipes() {
     });
 
     await fetchRecipes();
-    return recipe;
+    return recipe as unknown as Recipe;
   };
 
   const updateRecipe = async (id: string, data: Partial<RecipeFormData>): Promise<boolean> => {
