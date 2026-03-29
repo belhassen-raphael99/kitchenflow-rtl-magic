@@ -39,7 +39,7 @@ export const CatalogPage = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState<string | null>(null);
-  const { canWrite } = useAuth();
+  const { canWrite, canDelete } = useAuth();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);
