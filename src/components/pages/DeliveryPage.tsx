@@ -249,6 +249,30 @@ export const DeliveryPage = () => {
 
   const allItemsChecked = selectedEvent ? selectedEvent.items.every(item => checkedItems.has(item.id)) : false;
 
+  const handleGenerateSlip = async (event: DeliveryEvent) => {
+    setGeneratingSlip(event.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-delivery-slip', {
+        body: { event_id: event.id },
+      });
+      if (error) throw error;
+      if (data?.slip_url) {
+        window.open(data.slip_url, '_blank');
+        toast({ title: '📦 בון משלוח הופק', description: 'הקובץ נפתח בחלון חדש' });
+        await fetchDeliveryEvents();
+      } else if (data?.html) {
+        const blob = new Blob([data.html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        toast({ title: '📦 בון משלוח הופק' });
+      }
+    } catch (err: any) {
+      toast({ title: 'שגיאה בהפקת בון', description: err.message, variant: 'destructive' });
+    } finally {
+      setGeneratingSlip(null);
+    }
+  };
+
   // Sort events by delivery time for timeline
   const sortedEvents = [...events].sort((a, b) => {
     const tA = a.delivery_time || a.time || '23:59';
