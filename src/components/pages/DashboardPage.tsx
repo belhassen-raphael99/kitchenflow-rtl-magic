@@ -8,7 +8,7 @@ import { he } from 'date-fns/locale';
 import { 
   CalendarDays, Package, AlertTriangle, Users,
   ChefHat, TrendingUp, Warehouse, BookOpen,
-  Calendar, Receipt, Timer
+  Calendar, Receipt, Timer, Printer
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CardSkeleton } from '@/components/layout/CardSkeleton';
@@ -90,7 +90,7 @@ export const DashboardPage = () => {
             <Link to="/warehouse"><Warehouse className="w-3.5 h-3.5 sm:w-4 sm:h-4" />מחסן</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm rounded-xl shadow-soft">
-            <Link to="/kitchen-ops"><ChefHat className="w-3.5 h-3.5 sm:w-4 sm:h-4" />פוסט מטבח</Link>
+            <Link to="/chef"><ChefHat className="w-3.5 h-3.5 sm:w-4 sm:h-4" />דשבורד שף</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm rounded-xl shadow-soft">
             <Link to="/agenda"><Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />יומן אירועים</Link>
@@ -147,7 +147,7 @@ export const DashboardPage = () => {
                 האירוע הקרוב
               </CardTitle>
               <Button asChild variant="ghost" size="sm" className="text-xs sm:text-sm">
-                <Link to="/agenda">הכל →</Link>
+                <Link to="/agenda">הכל ←</Link>
               </Button>
             </div>
           </CardHeader>
@@ -193,7 +193,7 @@ export const DashboardPage = () => {
               { icon: Warehouse, label: 'מחסן', sub: `${totalWarehouseItems} פריטים`, link: '/warehouse', color: 'bg-kpi-reserve/10 text-kpi-reserve' },
               { icon: BookOpen, label: 'ספר מתכונים', sub: `${totalRecipes} מתכונים`, link: '/recipes', color: 'bg-destructive/10 text-destructive' },
               { icon: CalendarDays, label: 'יומן אירועים', sub: `${eventsThisWeek} אירועים השבוע`, link: '/agenda', color: 'bg-kpi-events/10 text-kpi-events' },
-              { icon: ChefHat, label: 'פוסט מטבח', sub: `${activeTasks} משימות פעילות`, link: '/kitchen-ops', color: 'bg-secondary/10 text-secondary' },
+              { icon: ChefHat, label: 'דשבורד שף', sub: `${activeTasks} משימות פעילות`, link: '/chef', color: 'bg-secondary/10 text-secondary' },
             ].map(item => (
               <Link key={item.label} to={item.link} className="flex items-center justify-between p-3 sm:p-4 bg-muted/30 rounded-xl hover:bg-muted/60 transition-all duration-200 border border-transparent hover:border-border/50 group">
                 <div className="flex items-center gap-2.5 sm:gap-3">
