@@ -124,7 +124,7 @@ export function useRecipes() {
     return {
       ...recipe,
       ingredients: ingredients || [],
-    };
+    } as unknown as Recipe;
   };
 
   const createRecipe = async (data: RecipeFormData): Promise<Recipe | null> => {
