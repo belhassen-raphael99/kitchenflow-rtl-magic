@@ -258,6 +258,8 @@ export type Database = {
           date: string
           delivery_address: string | null
           delivery_proof_url: string | null
+          delivery_slip_generated: boolean | null
+          delivery_slip_url: string | null
           delivery_time: string | null
           event_type: string | null
           guests: number
@@ -279,6 +281,8 @@ export type Database = {
           date: string
           delivery_address?: string | null
           delivery_proof_url?: string | null
+          delivery_slip_generated?: boolean | null
+          delivery_slip_url?: string | null
           delivery_time?: string | null
           event_type?: string | null
           guests?: number
@@ -300,6 +304,8 @@ export type Database = {
           date?: string
           delivery_address?: string | null
           delivery_proof_url?: string | null
+          delivery_slip_generated?: boolean | null
+          delivery_slip_url?: string | null
           delivery_time?: string | null
           event_type?: string | null
           guests?: number
@@ -562,6 +568,33 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_lists: {
+        Row: {
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          items: Json
+          notes: string | null
+          status: string | null
+        }
+        Insert: {
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: string | null
+        }
+        Update: {
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          items?: Json
+          notes?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           action: string
@@ -639,6 +672,7 @@ export type Database = {
       }
       recipes: {
         Row: {
+          assembly_type: string | null
           category: string
           cook_time: number | null
           cost_per_serving: number | null
@@ -647,13 +681,17 @@ export type Database = {
           id: string
           image_url: string | null
           instructions: string[] | null
+          max_capacity_grams: number | null
           name: string
           prep_time: number | null
+          qty_x2: Json | null
+          qty_x3: Json | null
           selling_price: number | null
           servings: number
           updated_at: string | null
         }
         Insert: {
+          assembly_type?: string | null
           category?: string
           cook_time?: number | null
           cost_per_serving?: number | null
@@ -662,13 +700,17 @@ export type Database = {
           id?: string
           image_url?: string | null
           instructions?: string[] | null
+          max_capacity_grams?: number | null
           name: string
           prep_time?: number | null
+          qty_x2?: Json | null
+          qty_x3?: Json | null
           selling_price?: number | null
           servings?: number
           updated_at?: string | null
         }
         Update: {
+          assembly_type?: string | null
           category?: string
           cook_time?: number | null
           cost_per_serving?: number | null
@@ -677,8 +719,11 @@ export type Database = {
           id?: string
           image_url?: string | null
           instructions?: string[] | null
+          max_capacity_grams?: number | null
           name?: string
           prep_time?: number | null
+          qty_x2?: Json | null
+          qty_x3?: Json | null
           selling_price?: number | null
           servings?: number
           updated_at?: string | null
@@ -694,8 +739,11 @@ export type Database = {
           min_stock: number
           name: string
           notes: string | null
+          production_date: string | null
+          production_day_label: string | null
           quantity: number
           recipe_id: string | null
+          shelf_life_days: number | null
           storage_type: string
           unit: string
           updated_at: string | null
@@ -708,8 +756,11 @@ export type Database = {
           min_stock?: number
           name: string
           notes?: string | null
+          production_date?: string | null
+          production_day_label?: string | null
           quantity?: number
           recipe_id?: string | null
+          shelf_life_days?: number | null
           storage_type?: string
           unit?: string
           updated_at?: string | null
@@ -722,8 +773,11 @@ export type Database = {
           min_stock?: number
           name?: string
           notes?: string | null
+          production_date?: string | null
+          production_day_label?: string | null
           quantity?: number
           recipe_id?: string | null
+          shelf_life_days?: number | null
           storage_type?: string
           unit?: string
           updated_at?: string | null
@@ -769,6 +823,69 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          event_id: string | null
+          id: string
+          item_id: string
+          item_name: string | null
+          item_type: string
+          movement_type: string
+          quantity_after: number | null
+          quantity_before: number | null
+          quantity_change: number | null
+          reason: string | null
+          task_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          item_id: string
+          item_name?: string | null
+          item_type: string
+          movement_type: string
+          quantity_after?: number | null
+          quantity_before?: number | null
+          quantity_change?: number | null
+          reason?: string | null
+          task_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          item_id?: string
+          item_name?: string | null
+          item_type?: string
+          movement_type?: string
+          quantity_after?: number | null
+          quantity_before?: number | null
+          quantity_change?: number | null
+          reason?: string | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "production_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -821,6 +938,8 @@ export type Database = {
           code: string | null
           created_at: string
           id: string
+          item_notes: string | null
+          last_restocked_at: string | null
           min_stock: number
           name: string
           price: number | null
@@ -836,6 +955,8 @@ export type Database = {
           code?: string | null
           created_at?: string
           id?: string
+          item_notes?: string | null
+          last_restocked_at?: string | null
           min_stock?: number
           name: string
           price?: number | null
@@ -851,6 +972,8 @@ export type Database = {
           code?: string | null
           created_at?: string
           id?: string
+          item_notes?: string | null
+          last_restocked_at?: string | null
           min_stock?: number
           name?: string
           price?: number | null

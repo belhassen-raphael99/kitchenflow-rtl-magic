@@ -37,19 +37,55 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const navItems = [
-  { id: '/', label: 'דשבורד מנהל', icon: LayoutDashboard, section: 'תפעול' },
-  { id: '/chef', label: 'דשבורד שף + ייצור', icon: ChefHat },
-  { id: '/delivery', label: 'משלוחים', icon: Truck },
-  { id: '/agenda', label: 'יומן אירועים', icon: Calendar },
-  { id: '/recipes', label: 'ספר מתכונים', icon: BookOpen },
-  { id: '/catalog', label: 'קטלוג מגשים', icon: UtensilsCrossed },
-  { id: '/reserve', label: 'רזרבה (הכנות)', icon: Layers, section: 'ניהול מלאי' },
-  { id: '/warehouse', label: 'מחסן (חומרי גלם)', icon: Package },
-];
+interface NavItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
 
-const adminNavItems = [
-  { id: '/admin/users', label: 'ניהול משתמשים', icon: Users, section: 'ניהול' },
+interface NavSection {
+  title: string;
+  items: NavItem[];
+  adminOnly?: boolean;
+}
+
+const navSections: NavSection[] = [
+  {
+    title: 'תפעול',
+    items: [
+      { id: '/', label: 'דשבורד', icon: LayoutDashboard },
+      { id: '/agenda', label: 'יומן אירועים', icon: Calendar },
+      { id: '/catalog', label: 'קטלוג מגשים', icon: UtensilsCrossed },
+    ],
+  },
+  {
+    title: 'מטבח',
+    items: [
+      { id: '/chef', label: 'פוסט מטבח', icon: ChefHat },
+      { id: '/recipes', label: 'ספר מתכונים', icon: BookOpen },
+    ],
+  },
+  {
+    title: 'מלאי',
+    items: [
+      { id: '/reserve', label: 'רזרבה', icon: Layers },
+      { id: '/warehouse', label: 'מחסן', icon: Package },
+    ],
+  },
+  {
+    title: 'משלוחים',
+    items: [
+      { id: '/delivery', label: 'משלוחים', icon: Truck },
+    ],
+  },
+  {
+    title: 'ניהול',
+    items: [
+      { id: '/admin/users', label: 'משתמשים', icon: Users },
+      { id: '/settings', label: 'הגדרות', icon: Settings },
+    ],
+    adminOnly: true,
+  },
 ];
 
 export const Sidebar = () => {
@@ -87,6 +123,11 @@ export const Sidebar = () => {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);
   };
+
+  const visibleSections = navSections.filter(section => {
+    if (section.adminOnly && !isAdmin) return false;
+    return true;
+  });
 
   return (
     <>
@@ -143,78 +184,75 @@ export const Sidebar = () => {
         {/* Navigation */}
         <nav className="flex-1 p-3 overflow-y-auto">
           <div className="space-y-1">
-            {navItems.map((item) => (
-              <div key={item.id}>
-                {item.section && sidebarOpen && (
-                  <p className="text-xs text-muted-foreground px-3 py-2 mt-4 font-medium uppercase tracking-wide">
-                    {item.section}
+            {visibleSections.map((section) => (
+              <div key={section.title}>
+                {sidebarOpen && (
+                  <p className="text-xs text-muted-foreground px-3 py-2 mt-3 first:mt-0 font-medium uppercase tracking-wide">
+                    {section.title}
                   </p>
                 )}
-                <button
-                  onClick={() => handleNavClick(item.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200 relative",
-                    "hover:bg-sidebar-accent active:scale-[0.98]",
-                    "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
-                    isActive(item.id)
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "text-sidebar-foreground",
-                    !sidebarOpen && "lg:justify-center lg:px-0"
-                  )}
-                >
-                  {isActive(item.id) && (
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full transition-all duration-300" />
-                  )}
-                  <item.icon className={cn(
-                    "shrink-0 transition-all w-6 h-6 md:w-5 md:h-5",
-                    isActive(item.id) && "text-primary"
-                  )} />
-                  <span className={cn(
-                    "text-base md:text-sm font-medium",
-                    !sidebarOpen && "lg:hidden"
-                  )}>
-                    {item.label}
-                  </span>
-                </button>
+                {!sidebarOpen && <div className="my-2 mx-3 border-t border-sidebar-border" />}
+                {section.items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200 relative",
+                      "hover:bg-sidebar-accent active:scale-[0.98]",
+                      "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
+                      isActive(item.id)
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground",
+                      !sidebarOpen && "lg:justify-center lg:px-0"
+                    )}
+                  >
+                    {isActive(item.id) && (
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full transition-all duration-300" />
+                    )}
+                    <item.icon className={cn(
+                      "shrink-0 transition-all w-6 h-6 md:w-5 md:h-5",
+                      isActive(item.id) && "text-primary"
+                    )} />
+                    <span className={cn(
+                      "text-base md:text-sm font-medium",
+                      !sidebarOpen && "lg:hidden"
+                    )}>
+                      {item.label}
+                    </span>
+                  </button>
+                ))}
               </div>
             ))}
 
-            {/* Admin Navigation */}
-            {isAdmin && adminNavItems.map((item) => (
-              <div key={item.id}>
-                {item.section && sidebarOpen && (
-                  <p className="text-xs text-muted-foreground px-3 py-2 mt-4 font-medium uppercase tracking-wide">
-                    {item.section}
-                  </p>
+            {/* Settings for non-admin */}
+            {!isAdmin && (
+              <button
+                onClick={() => handleNavClick('/settings')}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200 relative",
+                  "hover:bg-sidebar-accent active:scale-[0.98]",
+                  "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
+                  isActive('/settings')
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-sidebar-foreground",
+                  !sidebarOpen && "lg:justify-center lg:px-0"
                 )}
-                <button
-                  onClick={() => handleNavClick(item.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200 relative",
-                    "hover:bg-sidebar-accent active:scale-[0.98]",
-                    "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
-                    isActive(item.id)
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "text-sidebar-foreground",
-                    !sidebarOpen && "lg:justify-center lg:px-0"
-                  )}
-                >
-                  {isActive(item.id) && (
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full transition-all duration-300" />
-                  )}
-                  <item.icon className={cn(
-                    "shrink-0 transition-all w-6 h-6 md:w-5 md:h-5",
-                    isActive(item.id) && "text-primary"
-                  )} />
-                  <span className={cn(
-                    "text-base md:text-sm font-medium",
-                    !sidebarOpen && "lg:hidden"
-                  )}>
-                    {item.label}
-                  </span>
-                </button>
-              </div>
-            ))}
+              >
+                {isActive('/settings') && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full transition-all duration-300" />
+                )}
+                <Settings className={cn(
+                  "shrink-0 transition-all w-6 h-6 md:w-5 md:h-5",
+                  isActive('/settings') && "text-primary"
+                )} />
+                <span className={cn(
+                  "text-base md:text-sm font-medium",
+                  !sidebarOpen && "lg:hidden"
+                )}>
+                  הגדרות
+                </span>
+              </button>
+            )}
           </div>
         </nav>
 
