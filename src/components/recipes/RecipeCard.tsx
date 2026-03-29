@@ -22,7 +22,7 @@ interface RecipeCardProps {
 }
 
 export const RecipeCard = ({ recipe, onEdit, onDelete, onClick }: RecipeCardProps) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, canWrite, canDelete } = useAuth();
 
   const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0);
   const imageUrl = recipe.image_url || recipeImages[recipe.id];
@@ -118,7 +118,7 @@ export const RecipeCard = ({ recipe, onEdit, onDelete, onClick }: RecipeCardProp
             )}
           </div>
 
-          {isAdmin && (
+          {canWrite && (
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
               <Button
                 variant="ghost"
@@ -128,14 +128,16 @@ export const RecipeCard = ({ recipe, onEdit, onDelete, onClick }: RecipeCardProp
               >
                 <Edit className="w-4 h-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
-                onClick={() => onDelete(recipe)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              {canDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
+                  onClick={() => onDelete(recipe)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           )}
         </div>

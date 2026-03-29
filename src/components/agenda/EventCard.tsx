@@ -79,9 +79,6 @@ export const EventCard = ({ event, onEdit, onDelete, onClick, isAdmin }: EventCa
               <Button variant="ghost" size="icon" onClick={() => onEdit(event)} className="h-8 w-8">
                 <Edit className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => onDelete(event)} className="h-8 w-8 text-destructive hover:text-destructive">
-                <Trash2 className="w-4 h-4" />
-              </Button>
             </div>
           )}
         </div>
