@@ -59,6 +59,7 @@ export type Database = {
           department: string | null
           id: string
           is_active: boolean | null
+          is_external: boolean | null
           name_internal: string
           name_website: string
           notes: string | null
@@ -73,6 +74,7 @@ export type Database = {
           department?: string | null
           id?: string
           is_active?: boolean | null
+          is_external?: boolean | null
           name_internal: string
           name_website: string
           notes?: string | null
@@ -87,6 +89,7 @@ export type Database = {
           department?: string | null
           id?: string
           is_active?: boolean | null
+          is_external?: boolean | null
           name_internal?: string
           name_website?: string
           notes?: string | null
@@ -417,34 +420,43 @@ export type Database = {
       production_schedule: {
         Row: {
           created_at: string | null
-          day_of_week: number
+          day_of_week: number | null
           department: string
           id: string
           min_quantity: number | null
           notes: string | null
           product_name: string
+          production_day_label: string | null
+          shelf_life_days: number | null
+          shelf_life_label: string | null
           storage_type: string | null
           unit: string | null
         }
         Insert: {
           created_at?: string | null
-          day_of_week: number
+          day_of_week?: number | null
           department: string
           id?: string
           min_quantity?: number | null
           notes?: string | null
           product_name: string
+          production_day_label?: string | null
+          shelf_life_days?: number | null
+          shelf_life_label?: string | null
           storage_type?: string | null
           unit?: string | null
         }
         Update: {
           created_at?: string | null
-          day_of_week?: number
+          day_of_week?: number | null
           department?: string
           id?: string
           min_quantity?: number | null
           notes?: string | null
           product_name?: string
+          production_day_label?: string | null
+          shelf_life_days?: number | null
+          shelf_life_label?: string | null
           storage_type?: string | null
           unit?: string | null
         }
@@ -688,6 +700,9 @@ export type Database = {
           qty_x3: Json | null
           selling_price: number | null
           servings: number
+          total_weight_x1: number | null
+          total_weight_x2: number | null
+          total_weight_x3: number | null
           updated_at: string | null
         }
         Insert: {
@@ -707,6 +722,9 @@ export type Database = {
           qty_x3?: Json | null
           selling_price?: number | null
           servings?: number
+          total_weight_x1?: number | null
+          total_weight_x2?: number | null
+          total_weight_x3?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -726,6 +744,9 @@ export type Database = {
           qty_x3?: Json | null
           selling_price?: number | null
           servings?: number
+          total_weight_x1?: number | null
+          total_weight_x2?: number | null
+          total_weight_x3?: number | null
           updated_at?: string | null
         }
         Relationships: []
