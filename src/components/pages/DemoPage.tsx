@@ -216,7 +216,7 @@ const PublicDemoLanding = () => {
               onClick={handleDemoLogin}
               disabled={loading}
               size="lg"
-              className="w-full text-lg h-12 bg-green-600 hover:bg-green-700"
+              className="w-full text-lg h-12"
             >
               {loading ? (
                 <>
