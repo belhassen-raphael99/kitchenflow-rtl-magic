@@ -88,7 +88,7 @@ export const WarehousePage = () => {
                 </Button>
               )}
               {canWrite && (
-                <Button onClick={() => { setEditingItem(null); setShowItemDialog(true); }} className="rounded-xl gap-2">
+                <Button onClick={() => { setEditingItem(null); setShowItemDialog(true); }} className="rounded-md gap-2">
                   <Plus className="w-4 h-4" />
                   קליטת סחורה
                 </Button>

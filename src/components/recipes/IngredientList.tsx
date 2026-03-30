@@ -15,7 +15,7 @@ export const IngredientList = ({ ingredients, onEdit, onDelete }: IngredientList
 
   if (ingredients.length === 0) {
     return (
-      <div className="bg-muted/50 rounded-xl p-6 text-center text-muted-foreground">
+      <div className="bg-muted/50 rounded-md p-6 text-center text-muted-foreground">
         <p>אין מרכיבים עדיין</p>
         <p className="text-sm mt-1">הוסף מרכיבים למתכון זה</p>
       </div>
@@ -23,7 +23,7 @@ export const IngredientList = ({ ingredients, onEdit, onDelete }: IngredientList
   }
 
   return (
-    <div className="bg-muted/50 rounded-xl p-4">
+    <div className="bg-muted/50 rounded-md p-4">
       <div className="space-y-2">
         {ingredients.map((ing) => (
           <div

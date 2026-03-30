@@ -355,7 +355,7 @@ export const AdminUsersPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-primary/10 rounded-md flex items-center justify-center">
             <Users className="w-6 h-6 text-primary" />
           </div>
           <div>
@@ -464,7 +464,7 @@ export const AdminUsersPage = () => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-md border border-border overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -623,7 +623,7 @@ export const AdminUsersPage = () => {
       </div>
 
       {/* Demo Access Section */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-md border border-border overflow-hidden">
         <div className="p-6 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">

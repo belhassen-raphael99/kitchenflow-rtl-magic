@@ -68,7 +68,7 @@ export const RecipeModal = ({ recipe, onClose, departmentColor }: RecipeModalPro
                 </DialogTitle>
                 <p className="text-white/80">{recipe.name}</p>
               </div>
-              <div className="text-center bg-white/20 backdrop-blur-sm rounded-xl p-3">
+              <div className="text-center bg-white/20 backdrop-blur-sm rounded-md p-3">
                 <p className="text-3xl font-bold">{recipe.targetQuantity}</p>
                 <p className="text-sm">{recipe.unit}</p>
               </div>
@@ -96,7 +96,7 @@ export const RecipeModal = ({ recipe, onClose, departmentColor }: RecipeModalPro
                 <h3 className="text-lg font-bold">מרכיבים</h3>
               </div>
               
-              <div className="bg-muted/50 rounded-xl p-4">
+              <div className="bg-muted/50 rounded-md p-4">
                 <div className="grid grid-cols-2 gap-3">
                   {recipe.ingredients.map((ing, idx) => (
                     <div 
@@ -132,7 +132,7 @@ export const RecipeModal = ({ recipe, onClose, departmentColor }: RecipeModalPro
                   <div 
                     key={idx}
                     className={cn(
-                      "flex items-start gap-4 p-4 rounded-xl border-2 transition-all",
+                      "flex items-start gap-4 p-4 rounded-md border-2 transition-all",
                       departmentColor.bgLight,
                       departmentColor.border
                     )}

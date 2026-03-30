@@ -124,12 +124,12 @@ export const DashboardPage = () => {
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 space-y-2 max-h-80 overflow-y-auto">
             {stats.loading ? (
-              <div className="animate-pulse h-20 bg-muted rounded-xl" />
+              <div className="animate-pulse h-20 bg-muted rounded-md" />
             ) : stats.weekEvents.length === 0 ? (
               <EmptyState icon={CalendarDays} title="אין אירועים השבוע" className="py-6" />
             ) : (
               stats.weekEvents.map((event, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border border-border/30 hover:bg-muted/50 transition-colors">
+                <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-md border border-border/30 hover:bg-muted/50 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{event.client_name || event.name}</p>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
@@ -163,12 +163,12 @@ export const DashboardPage = () => {
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 space-y-2 max-h-80 overflow-y-auto">
             {stats.loading ? (
-              <div className="animate-pulse h-20 bg-muted rounded-xl" />
+              <div className="animate-pulse h-20 bg-muted rounded-md" />
             ) : stats.todayDeliveryEvents.length === 0 ? (
               <EmptyState icon={Truck} title="אין משלוחים היום" className="py-6" />
             ) : (
               stats.todayDeliveryEvents.map((event, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border border-border/30">
+                <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-md border border-border/30">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{event.client_name || event.name}</p>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
@@ -336,7 +336,7 @@ export const DashboardPage = () => {
               <p className="text-sm text-muted-foreground text-center py-4">אין אירועים בשבוע הבא</p>
             ) : (
               stats.nextWeekEvents.map((event, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-primary/5 rounded-xl border border-primary/10">
+                <div key={i} className="flex items-center justify-between p-3 bg-primary/5 rounded-md border border-primary/10">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{event.client_name || event.name}</p>
                     <p className="text-xs text-muted-foreground">

@@ -20,7 +20,7 @@ export const SettingsPage = () => {
       </div>
 
       {isDemo && (
-        <div className="bg-secondary/10 border border-secondary/30 rounded-xl p-4 text-sm text-secondary-foreground">
+        <div className="bg-secondary/10 border border-secondary/30 rounded-md p-4 text-sm text-secondary-foreground">
           ⚠️ לא ניתן לשנות הגדרות במצב דמו
         </div>
       )}
@@ -28,7 +28,7 @@ export const SettingsPage = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
         <div className="flex flex-col md:flex-row gap-6">
           <TabsList className={cn(
-            "flex md:flex-col h-auto bg-card border border-border rounded-xl p-2 gap-1",
+            "flex md:flex-col h-auto bg-card border border-border rounded-md p-2 gap-1",
             "md:w-48 w-full shrink-0"
           )}>
             <TabsTrigger

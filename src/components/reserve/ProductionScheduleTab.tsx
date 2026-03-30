@@ -79,7 +79,7 @@ export const ProductionScheduleTab = () => {
           return (
             <TabsContent key={dept.key} value={dept.key} className="mt-4">
               {deptItems.length === 0 ? (
-                <Card className="rounded-xl">
+                <Card className="rounded-md">
                   <CardContent className="py-8 text-center text-muted-foreground text-sm">
                     אין תכנית ייצור ל{dept.label}
                   </CardContent>
@@ -92,7 +92,7 @@ export const ProductionScheduleTab = () => {
                     const isToday = day === todayDow;
 
                     return (
-                      <Card key={day} className={cn("rounded-xl", isToday && "border-primary/50 shadow-sm")}>
+                      <Card key={day} className={cn("rounded-md", isToday && "border-primary/50 shadow-sm")}>
                         <CardHeader className="p-3 pb-1">
                           <CardTitle className="text-xs font-bold flex items-center gap-2">
                             <Calendar className="w-3.5 h-3.5" />

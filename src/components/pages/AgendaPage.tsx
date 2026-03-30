@@ -92,17 +92,17 @@ export const AgendaPage = () => {
         accentColor="blue"
         actions={
           <div className="flex gap-2 no-print">
-            <Button variant="outline" size="icon" onClick={() => window.print()} title="הדפס" className="rounded-xl">
+            <Button variant="outline" size="icon" onClick={() => window.print()} title="הדפס" className="rounded-md">
               <Printer className="w-4 h-4" />
             </Button>
-            <Button variant={viewMode === 'calendar' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('calendar')} className="rounded-xl">
+            <Button variant={viewMode === 'calendar' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('calendar')} className="rounded-md">
               <LayoutGrid className="w-4 h-4" />
             </Button>
-            <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')} className="rounded-xl">
+            <Button variant={viewMode === 'list' ? 'default' : 'outline'} size="icon" onClick={() => setViewMode('list')} className="rounded-md">
               <List className="w-4 h-4" />
             </Button>
             {canWrite && (
-              <Button className="gap-2 rounded-xl" onClick={handleNewEvent}>
+              <Button className="gap-2 rounded-md" onClick={handleNewEvent}>
                 <Plus className="w-4 h-4" />
                 הזמנה חדשה
               </Button>

@@ -209,7 +209,7 @@ const PublicDemoLanding = () => {
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-accent/50 rounded-xl p-5 text-center space-y-3">
+          <div className="bg-accent/50 rounded-md p-5 text-center space-y-3">
             <div className="flex items-center justify-center gap-2 text-primary font-semibold text-lg">
               <Play className="w-5 h-5" />
               סביבת דמו — צפייה בלבד
