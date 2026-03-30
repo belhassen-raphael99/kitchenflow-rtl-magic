@@ -96,7 +96,7 @@ export const ChefDashboardPage = () => {
       supabase.from('production_tasks').select('id, name, department, task_type, status, target_quantity, completed_quantity, unit, priority, notes, event_id, recipe_id, reserve_item_id, assigned_to, started_at, completed_at, date').eq('date', todayStr).order('priority', { ascending: false }),
       supabase.from('events').select('id, name, client_name, delivery_time, time, guests, status, delivery_address')
         .eq('date', todayStr).in('status', ['confirmed', 'pending', 'in-progress']).order('delivery_time', { ascending: true }),
-      supabase.from('production_schedule' as any).select('id, day_of_week, department, product_name, min_quantity, unit, storage_type, notes').eq('day_of_week', dayOfWeek),
+      supabase.from('production_schedule' as any).select('id, day_of_week, department, product_name, min_quantity, unit, storage_type, production_day_label, notes'),
       supabase.from('reserve_items').select('id, name, quantity, min_stock, unit'),
     ]);
 
