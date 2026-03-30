@@ -92,7 +92,7 @@ export function useRecipes() {
   const fetchRecipeWithIngredients = async (recipeId: string): Promise<Recipe | null> => {
     const { data: recipe, error: recipeError } = await supabase
       .from('recipes')
-      .select('*')
+      .select('id, name, category, description, servings, prep_time, cook_time, cost_per_serving, selling_price, image_url, instructions, assembly_type, max_capacity_grams, qty_x2, qty_x3, created_at, updated_at')
       .eq('id', recipeId)
       .single();
 
