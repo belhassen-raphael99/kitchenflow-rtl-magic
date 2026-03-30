@@ -64,23 +64,20 @@ export const DashboardPage = () => {
   return (
     <div className="space-y-5" dir="rtl">
       {/* Section A — Day summary bar */}
-      <div className="gradient-hero-soft rounded-2xl p-4 sm:p-6 text-primary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 bg-food-pattern opacity-20 pointer-events-none" />
-        <div className="relative z-10">
-          <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm sm:text-base">
-            <span className="flex items-center gap-2 font-bold text-lg sm:text-xl">
-              📅 {todayFormatted}
-            </span>
-            <span className="flex items-center gap-1.5">
-              🎉 <strong>{stats.eventsThisWeek}</strong> אירועים השבוע
-            </span>
-            <span className="flex items-center gap-1.5">
-              🚚 <strong>{stats.todayDeliveries}</strong> משלוחים היום
-            </span>
-            <span className="flex items-center gap-1.5">
-              ⚠️ <strong>{stats.alertCount}</strong> התראות
-            </span>
-          </div>
+      <div className="bg-card border border-border rounded-lg p-4 sm:p-6">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm sm:text-base">
+          <span className="font-semibold text-lg sm:text-xl text-foreground">
+            {todayFormatted}
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <CalendarDays className="w-4 h-4" /> <strong className="text-foreground">{stats.eventsThisWeek}</strong> אירועים השבוע
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Truck className="w-4 h-4" /> <strong className="text-foreground">{stats.todayDeliveries}</strong> משלוחים היום
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <AlertTriangle className="w-4 h-4" /> <strong className="text-foreground">{stats.alertCount}</strong> התראות
+          </span>
         </div>
       </div>
 
@@ -90,55 +87,19 @@ export const DashboardPage = () => {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[
-            {
-              label: 'אירועים השבוע',
-              value: stats.eventsThisWeek,
-              icon: CalendarDays,
-              gradient: 'from-kpi-events/10 to-kpi-events/5',
-              iconBg: 'bg-kpi-events/15',
-              iconColor: 'text-kpi-events',
-              borderColor: 'border-r-kpi-events',
-            },
-            {
-              label: 'אורחים השבוע',
-              value: stats.guestsThisWeek,
-              icon: Users,
-              gradient: 'from-primary/10 to-primary/5',
-              iconBg: 'bg-primary/15',
-              iconColor: 'text-primary',
-              borderColor: 'border-r-primary',
-            },
-            {
-              label: 'הכנסות החודש',
-              value: `₪${stats.monthlyRevenue.toLocaleString()}`,
-              icon: DollarSign,
-              gradient: 'from-green-500/10 to-green-500/5',
-              iconBg: 'bg-green-500/15',
-              iconColor: 'text-green-600',
-              borderColor: 'border-r-green-500',
-            },
-            {
-              label: 'משימות פתוחות',
-              value: stats.activeTasks,
-              icon: ClipboardList,
-              gradient: 'from-amber-500/10 to-amber-500/5',
-              iconBg: 'bg-amber-500/15',
-              iconColor: 'text-amber-500',
-              borderColor: 'border-r-amber-500',
-            },
+            { label: 'אירועים השבוע', value: stats.eventsThisWeek, icon: CalendarDays },
+            { label: 'אורחים השבוע', value: stats.guestsThisWeek, icon: Users },
+            { label: 'הכנסות החודש', value: `₪${stats.monthlyRevenue.toLocaleString()}`, icon: DollarSign },
+            { label: 'משימות פתוחות', value: stats.activeTasks, icon: ClipboardList },
           ].map((kpi) => (
-            <Card key={kpi.label} className={cn("border-r-4 rounded-2xl overflow-hidden hover:shadow-card transition-shadow", kpi.borderColor)}>
-              <div className={cn("bg-gradient-to-bl", kpi.gradient)}>
-                <CardHeader className="flex flex-row items-center justify-between pb-1 p-3 sm:p-5">
-                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">{kpi.label}</CardTitle>
-                  <div className={cn("w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center", kpi.iconBg)}>
-                    <kpi.icon className={cn("w-4 h-4 sm:w-5 sm:h-5", kpi.iconColor)} />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-3 sm:p-5 pt-0">
-                  <p className="text-2xl sm:text-3xl font-bold">{kpi.value}</p>
-                </CardContent>
-              </div>
+            <Card key={kpi.label} className="rounded-lg border border-border hover:shadow-card transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 p-3 sm:p-5">
+                <CardTitle className="text-xs sm:text-sm font-normal text-muted-foreground">{kpi.label}</CardTitle>
+                <kpi.icon className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="p-3 sm:p-5 pt-0">
+                <p className="text-2xl sm:text-3xl font-semibold">{kpi.value}</p>
+              </CardContent>
             </Card>
           ))}
         </div>
