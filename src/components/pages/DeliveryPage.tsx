@@ -120,7 +120,7 @@ export const DeliveryPage = () => {
     const thirtyDaysAgo = format(subDays(new Date(), 30), 'yyyy-MM-dd');
     const { data } = await supabase
       .from('events')
-      .select('id, name, date, time, status, guests, client_name, client_phone, delivery_address, delivery_time, delivery_proof_url')
+      .select('id, name, date, time, status, guests, client_name, client_phone, client_email, delivery_address, delivery_time, delivery_proof_url, event_type, notes, invoice_status, invoice_amount')
       .eq('status', 'completed')
       .gte('date', thirtyDaysAgo)
       .order('date', { ascending: false });
