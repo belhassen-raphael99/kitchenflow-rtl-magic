@@ -316,7 +316,7 @@ export const DemoTour = () => {
 
       {!step.centered && targetRect && (
         <div
-          className="pointer-events-none fixed rounded-3xl border-2 border-primary shadow-[0_0_30px_hsl(var(--primary)/0.45)] transition-all duration-300"
+          className="pointer-events-none fixed rounded-lg border-2 border-primary shadow-[0_0_30px_hsl(var(--primary)/0.45)] transition-all duration-300"
           style={{
             top: targetRect.top - 8,
             left: targetRect.left - 8,
@@ -339,7 +339,7 @@ export const DemoTour = () => {
                   </div>
                   <div className="flex items-center justify-end gap-3">
                     <h2 className="text-2xl sm:text-4xl font-bold leading-tight">{step.title}</h2>
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-3xl">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10 text-3xl">
                       {step.icon}
                     </div>
                   </div>

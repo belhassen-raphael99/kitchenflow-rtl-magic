@@ -161,7 +161,7 @@ export const RecipesPage = () => {
           ))}
         </div>
       ) : recipes.length === 0 ? (
-        <Card className="rounded-2xl">
+        <Card className="rounded-lg">
           <CardContent className="py-16">
             <EmptyState
               icon={Database}
@@ -177,7 +177,7 @@ export const RecipesPage = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card className="rounded-2xl">
+        <Card className="rounded-lg">
           <CardContent className="py-12">
             <EmptyState
               icon={Search}

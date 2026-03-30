@@ -370,7 +370,7 @@ export const ChefDashboardPage = () => {
         <TabsContent value="overview" className="space-y-4 mt-4">
           {/* Today's deliveries */}
           {deliveries.length > 0 && (
-            <Card className="rounded-2xl">
+            <Card className="rounded-lg">
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <Truck className="w-4 h-4 text-kpi-events" />

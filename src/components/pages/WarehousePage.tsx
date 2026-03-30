@@ -127,7 +127,7 @@ export const WarehousePage = () => {
         </div>
       </div>
 
-      <div data-demo-tour="warehouse-stock" className="bg-card rounded-2xl shadow-soft overflow-hidden">
+      <div data-demo-tour="warehouse-stock" className="bg-card rounded-lg shadow-soft overflow-hidden">
         <div className="grid grid-cols-5 gap-4 p-4 bg-muted/50 border-b border-border text-sm font-medium text-muted-foreground">
           <div className="text-center">פעולות</div>
           <div className="text-center">סטטוס</div>
