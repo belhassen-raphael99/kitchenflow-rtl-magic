@@ -272,16 +272,7 @@ export const DemoTour = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen || currentStep !== TOUR_STEPS.length - 1) return;
-
-    confetti({
-      particleCount: 140,
-      spread: 90,
-      origin: { y: 0.65 },
-      zIndex: 9991,
-    });
-  }, [currentStep, isOpen]);
+  // Final step celebration removed (canvas-confetti dependency cleaned up)
 
   const tooltipStyle = useMemo(() => {
     if (step.centered) return undefined;
