@@ -137,7 +137,7 @@ export const CatalogPage = () => {
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(item => (
-            <Card key={item.id} className="rounded-2xl hover:shadow-card transition-shadow">
+            <Card key={item.id} className="rounded-lg hover:shadow-card transition-shadow">
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">

@@ -108,7 +108,7 @@ export const DashboardPage = () => {
       {/* Section C + D — Events this week + Today's deliveries */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Section C — This week's events */}
-        <Card className="rounded-2xl shadow-soft">
+        <Card className="rounded-lg shadow-soft">
           <CardHeader className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -147,7 +147,7 @@ export const DashboardPage = () => {
         </Card>
 
         {/* Section D — Today's deliveries */}
-        <Card className="rounded-2xl shadow-soft">
+        <Card className="rounded-lg shadow-soft">
           <CardHeader className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -190,7 +190,7 @@ export const DashboardPage = () => {
       {/* Section E — Active alerts (3 columns) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Low stock */}
-        <Card className="rounded-2xl shadow-soft border-t-4 border-t-destructive/50">
+        <Card className="rounded-lg shadow-soft border-t-4 border-t-destructive/50">
           <CardHeader className="p-4 pb-2">
             <CardTitle className="flex items-center gap-2 text-sm">
               <Package className="w-4 h-4 text-destructive" />
@@ -217,7 +217,7 @@ export const DashboardPage = () => {
         </Card>
 
         {/* Expiring soon */}
-        <Card className="rounded-2xl shadow-soft border-t-4 border-t-amber-500/50">
+        <Card className="rounded-lg shadow-soft border-t-4 border-t-amber-500/50">
           <CardHeader className="p-4 pb-2">
             <CardTitle className="flex items-center gap-2 text-sm">
               <Snowflake className="w-4 h-4 text-amber-500" />
@@ -244,7 +244,7 @@ export const DashboardPage = () => {
         </Card>
 
         {/* Urgent tasks */}
-        <Card className="rounded-2xl shadow-soft border-t-4 border-t-primary/50">
+        <Card className="rounded-lg shadow-soft border-t-4 border-t-primary/50">
           <CardHeader className="p-4 pb-2">
             <CardTitle className="flex items-center gap-2 text-sm">
               <ChefHat className="w-4 h-4 text-primary" />
@@ -271,7 +271,7 @@ export const DashboardPage = () => {
 
       {/* Section F — Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="rounded-2xl shadow-soft">
+        <Card className="rounded-lg shadow-soft">
           <CardHeader className="p-4">
             <CardTitle className="flex items-center gap-2 text-sm">
               <DollarSign className="w-4 h-4 text-green-600" />
@@ -293,7 +293,7 @@ export const DashboardPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl shadow-soft">
+        <Card className="rounded-lg shadow-soft">
           <CardHeader className="p-4">
             <CardTitle className="flex items-center gap-2 text-sm">
               <TrendingUp className="w-4 h-4 text-kpi-events" />
@@ -318,7 +318,7 @@ export const DashboardPage = () => {
 
       {/* Section G — Weekly preview */}
       {(isThursday || showNextWeek) && (
-        <Card className="rounded-2xl shadow-soft border-2 border-primary/20">
+        <Card className="rounded-lg shadow-soft border-2 border-primary/20">
           <CardHeader className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-base">

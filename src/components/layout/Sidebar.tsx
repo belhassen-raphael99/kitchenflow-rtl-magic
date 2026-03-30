@@ -154,7 +154,7 @@ export const Sidebar = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
+                className="lg:hidden w-10 h-10 rounded-md bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -167,8 +167,8 @@ export const Sidebar = () => {
                   <p className="text-xs text-muted-foreground">{clientInfo.tagline}</p>
                 </div>
               )}
-              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-2xl shrink-0">
-                {clientInfo.logo}
+              <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center text-xl font-bold text-primary-foreground shrink-0">
+                ק
               </div>
             </div>
           </div>
@@ -197,8 +197,8 @@ export const Sidebar = () => {
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200 relative",
-                      "hover:bg-sidebar-accent active:scale-[0.98]",
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 relative",
+                      "hover:bg-sidebar-accent",
                       "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
                       isActive(item.id)
                         ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
@@ -207,7 +207,7 @@ export const Sidebar = () => {
                     )}
                   >
                     {isActive(item.id) && (
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full animate-nav-indicator" />
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-l-full transition-all duration-200" />
                     )}
                     <item.icon className={cn(
                       "shrink-0 transition-all w-6 h-6 md:w-5 md:h-5",
@@ -229,8 +229,8 @@ export const Sidebar = () => {
               <button
                 onClick={() => handleNavClick('/settings')}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all duration-200 relative",
-                  "hover:bg-sidebar-accent active:scale-[0.98]",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 relative",
+                  "hover:bg-sidebar-accent",
                   "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
                   isActive('/settings')
                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
@@ -239,7 +239,7 @@ export const Sidebar = () => {
                 )}
               >
                 {isActive('/settings') && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-l-full transition-all duration-300" />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-primary rounded-l-full transition-all duration-200" />
                 )}
                 <Settings className={cn(
                   "shrink-0 transition-all w-6 h-6 md:w-5 md:h-5",
@@ -262,8 +262,8 @@ export const Sidebar = () => {
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200",
-                  "hover:bg-sidebar-accent active:scale-[0.98]",
+                  "w-full flex items-center gap-3 px-3 py-3 rounded-md transition-all duration-200",
+                  "hover:bg-sidebar-accent",
                   "min-h-[56px] md:min-h-[52px] lg:min-h-[48px]",
                   !sidebarOpen && "lg:justify-center lg:px-0"
                 )}
@@ -326,8 +326,8 @@ export const Sidebar = () => {
         className={cn(
           "fixed top-4 right-4 z-30 lg:hidden",
           "w-14 h-14 md:w-12 md:h-12",
-          "bg-primary text-primary-foreground rounded-2xl",
-          "flex items-center justify-center shadow-lg shadow-primary/30",
+          "bg-primary text-primary-foreground rounded-lg",
+          "flex items-center justify-center shadow-lg",
           "hover:bg-primary/90 active:scale-95 transition-all",
           sidebarOpen && "opacity-0 pointer-events-none scale-90"
         )}

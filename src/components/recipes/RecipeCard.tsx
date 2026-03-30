@@ -33,7 +33,7 @@ export const RecipeCard = ({ recipe, onEdit, onDelete, onClick }: RecipeCardProp
 
   return (
     <Card 
-      className="group overflow-hidden rounded-2xl border border-border hover:shadow-card transition-all duration-300 cursor-pointer"
+      className="group overflow-hidden rounded-lg border border-border hover:shadow-card transition-all duration-300 cursor-pointer"
       onClick={() => onClick(recipe)}
     >
       {/* Image */}
