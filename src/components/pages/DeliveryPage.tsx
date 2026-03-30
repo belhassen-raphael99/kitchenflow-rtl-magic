@@ -86,7 +86,7 @@ export const DeliveryPage = () => {
     setLoading(true);
     const { data: eventsData, error } = await supabase
       .from('events')
-      .select('*')
+      .select('id, name, date, time, status, guests, client_name, client_phone, client_email, delivery_address, delivery_time, delivery_slip_generated, delivery_slip_url, delivery_proof_url, notes, invoice_amount, invoice_status, event_type')
       .in('status', ['confirmed', 'pending', 'in-progress'])
       .eq('date', dateStr)
       .order('delivery_time', { ascending: true, nullsFirst: false })
@@ -120,7 +120,7 @@ export const DeliveryPage = () => {
     const thirtyDaysAgo = format(subDays(new Date(), 30), 'yyyy-MM-dd');
     const { data } = await supabase
       .from('events')
-      .select('*')
+      .select('id, name, date, time, status, guests, client_name, client_phone, delivery_address, delivery_time, delivery_proof_url')
       .eq('status', 'completed')
       .gte('date', thirtyDaysAgo)
       .order('date', { ascending: false });

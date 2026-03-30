@@ -48,7 +48,7 @@ export const CatalogPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('catalog_items' as any)
-      .select('*')
+      .select('id, name_website, name_internal, department, unit_type, size_option, price, quantity_per_serving, recipe_id, is_active, notes')
       .order('department')
       .order('name_website');
     if (error) toast({ title: 'שגיאה בטעינת קטלוג', description: error.message, variant: 'destructive' });
