@@ -223,6 +223,7 @@ export const ChefDashboardPage = () => {
     setGenerating(false);
   };
 
+  const deptTasks = tasks.filter(t => t.department === activeDept);
   const deptScheduleAll = schedule.filter(s => s.department === activeDept);
   const deptSchedule = showFullWeek 
     ? deptScheduleAll 
