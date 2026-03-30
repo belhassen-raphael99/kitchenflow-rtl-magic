@@ -1023,6 +1023,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_demo_token: {
+        Args: { p_token: string }
+        Returns: {
+          email: string
+          expires_at: string
+          id: string
+          used: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "employee" | "demo"

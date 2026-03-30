@@ -19,12 +19,8 @@ const OtpFlow = ({ refToken }: { refToken: string }) => {
 
   useEffect(() => {
     const validate = async () => {
-      const { data } = await supabase
-        .from('demo_tokens')
-        .select('id, expires_at, used')
-        .eq('token', refToken)
-        .maybeSingle();
-      setTokenValid(!(!data || data.used || new Date(data.expires_at!) < new Date()));
+      const { data } = await supabase.rpc('validate_demo_token', { p_token: refToken }) as { data: any[] | null };
+      setTokenValid(!!(data && data.length > 0));
     };
     validate();
   }, [refToken]);
@@ -64,11 +60,10 @@ const OtpFlow = ({ refToken }: { refToken: string }) => {
       return;
     }
     try {
-      await supabase.functions.invoke('assign-demo-role', { body: { user_id: verifyData.user?.id } });
+      await supabase.functions.invoke('assign-demo-role', { body: { user_id: verifyData.user?.id, token: refToken, email } });
     } catch (err) {
-      console.error('Failed to assign demo role:', err);
+      // Role assignment handled server-side
     }
-    await supabase.from('demo_tokens').update({ used: true, email }).eq('token', refToken);
     localStorage.setItem('demo_session_start', Date.now().toString());
     setLoading(false);
     navigate('/');
@@ -221,7 +216,7 @@ const PublicDemoLanding = () => {
               onClick={handleDemoLogin}
               disabled={loading}
               size="lg"
-              className="w-full text-lg h-12 bg-green-600 hover:bg-green-700"
+              className="w-full text-lg h-12"
             >
               {loading ? (
                 <>
@@ -237,7 +232,7 @@ const PublicDemoLanding = () => {
           <div className="grid grid-cols-2 gap-2">
             {features.map((feature) => (
               <div key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
                 {feature}
               </div>
             ))}

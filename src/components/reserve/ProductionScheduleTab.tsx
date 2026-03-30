@@ -42,7 +42,7 @@ export const ProductionScheduleTab = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [scheduleRes, stockRes] = await Promise.all([
-      supabase.from('production_schedule' as any).select('*'),
+      supabase.from('production_schedule' as any).select('id, day_of_week, department, product_name, min_quantity, unit, storage_type, notes'),
       supabase.from('reserve_items').select('name, quantity, min_stock, unit'),
     ]);
     setSchedule((scheduleRes.data || []) as unknown as ScheduleItem[]);
