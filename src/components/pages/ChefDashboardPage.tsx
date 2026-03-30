@@ -448,11 +448,14 @@ export const ChefDashboardPage = () => {
                 {/* Schedule items with stock status */}
                 {deptSchedule.length > 0 && activeDept === dept.key && (
                   <Card className="rounded-md">
-                    <CardHeader className="p-4 pb-2">
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
                       <CardTitle className="text-sm font-bold flex items-center gap-2">
                         <Package className="w-4 h-4" />
-                        תכנית ייצור — יום {hebrewDays[dayOfWeek]}
+                        {showFullWeek ? 'תכנית ייצור שבועית' : `תכנית ייצור — יום ${hebrewDays[dayOfWeek]}`}
                       </CardTitle>
+                      <Button variant="ghost" size="sm" className="text-xs no-print" onClick={() => setShowFullWeek(!showFullWeek)}>
+                        {showFullWeek ? 'הצג היום בלבד' : 'הצג שבוע מלא'}
+                      </Button>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
                       <div className="divide-y">
@@ -460,22 +463,36 @@ export const ChefDashboardPage = () => {
                           const stock = reserveStock.find(s => s.name === item.product_name);
                           const qty = stock?.quantity || 0;
                           const minQty = item.min_quantity || 0;
-                          const isLow = qty < minQty;
+                          const isLow = minQty > 0 && qty < minQty;
+                          const isAssembly = item.storage_type === 'הרכבה';
                           const percent = minQty > 0 ? Math.min(100, Math.round((qty / minQty) * 100)) : 100;
                           return (
                             <div key={item.id} className="py-2.5 space-y-1">
                               <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">{item.product_name}</span>
                                 <div className="flex items-center gap-2">
-                                  <span className={cn("text-xs", isLow ? "text-destructive font-bold" : "text-muted-foreground")}>
-                                    {qty}/{minQty} {item.unit}
-                                  </span>
-                                  <Badge variant="outline" className={cn("text-[10px]", isLow && "border-destructive/30 text-destructive")}>
-                                    {item.storage_type}
+                                  <span className="font-medium">{item.product_name}</span>
+                                  {showFullWeek && item.production_day_label && (
+                                    <span className="text-[10px] text-muted-foreground">({item.production_day_label})</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {minQty > 0 ? (
+                                    <span className={cn("text-xs", isLow ? "text-destructive font-bold" : "text-muted-foreground")}>
+                                      {qty}/{minQty} {item.unit}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">כמות לפי הזמנה</span>
+                                  )}
+                                  <Badge variant="outline" className={cn(
+                                    "text-[10px]",
+                                    isAssembly && "border-amber-300 text-amber-700 dark:text-amber-400",
+                                    isLow && !isAssembly && "border-destructive/30 text-destructive"
+                                  )}>
+                                    {isAssembly ? 'הרכבה ביום המשלוח' : item.storage_type}
                                   </Badge>
                                 </div>
                               </div>
-                              <Progress value={percent} className={cn("h-1.5", isLow && "[&>div]:bg-destructive")} />
+                              {minQty > 0 && <Progress value={percent} className={cn("h-1.5", isLow && "[&>div]:bg-destructive")} />}
                             </div>
                           );
                         })}
@@ -485,7 +502,11 @@ export const ChefDashboardPage = () => {
                 )}
 
                 {deptSchedule.length === 0 && activeDept === dept.key && (
-                  <EmptyState icon={Package} title={`אין תכנית ייצור ל${dept.label} היום`} />
+                  <EmptyState 
+                    icon={Package} 
+                    title={showFullWeek ? `אין תכנית ייצור ל${dept.label}` : `אין פריטים מתוכננים להיום`}
+                    description={!showFullWeek ? 'לחץ ״הצג שבוע מלא״ לתכנית השבועית' : undefined}
+                  />
                 )}
               </TabsContent>
             ))}
