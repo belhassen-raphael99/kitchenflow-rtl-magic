@@ -83,6 +83,7 @@ export const ChefDashboardPage = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [mainTab, setMainTab] = useState('overview');
+  const [showFullWeek, setShowFullWeek] = useState(false);
   const { toast } = useToast();
 
   const today = new Date();
