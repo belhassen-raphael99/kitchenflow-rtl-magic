@@ -26,6 +26,7 @@ interface CatalogItem {
   notes: string | null;
   price: number | null;
   is_active: boolean;
+  is_external: boolean;
 }
 
 const deptColors: Record<string, string> = {
@@ -48,7 +49,7 @@ export const CatalogPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('catalog_items' as any)
-      .select('id, name_website, name_internal, department, unit_type, size_option, price, quantity_per_serving, recipe_id, is_active, notes')
+      .select('id, name_website, name_internal, department, unit_type, size_option, price, quantity_per_serving, recipe_id, is_active, is_external, notes')
       .order('department')
       .order('name_website');
     if (error) toast({ title: 'שגיאה בטעינת קטלוג', description: error.message, variant: 'destructive' });
@@ -146,7 +147,12 @@ export const CatalogPage = () => {
                       <p className="text-xs text-muted-foreground truncate">{item.name_internal}</p>
                     )}
                   </div>
-                  {item.department && (
+                  {item.is_external && (
+                    <Badge variant="outline" className="text-[10px] shrink-0 border-amber-300 text-amber-700 dark:text-amber-400">
+                      חיצוני
+                    </Badge>
+                  )}
+                  {item.department && !item.is_external && (
                     <Badge variant="outline" className={cn("text-[10px] shrink-0", deptColors[item.department] || '')}>
                       {item.department}
                     </Badge>
