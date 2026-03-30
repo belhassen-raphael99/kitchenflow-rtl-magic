@@ -52,6 +52,8 @@ interface ScheduleItem {
   min_quantity: number | null;
   unit: string | null;
   storage_type: string | null;
+  production_day_label: string | null;
+  day_of_week: number | null;
 }
 
 interface ReserveStock {
