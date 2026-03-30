@@ -19,12 +19,8 @@ const OtpFlow = ({ refToken }: { refToken: string }) => {
 
   useEffect(() => {
     const validate = async () => {
-      const { data } = await supabase
-        .from('demo_tokens')
-        .select('id, expires_at, used')
-        .eq('token', refToken)
-        .maybeSingle();
-      setTokenValid(!(!data || data.used || new Date(data.expires_at!) < new Date()));
+      const { data } = await supabase.rpc('validate_demo_token', { p_token: refToken }) as { data: any[] | null };
+      setTokenValid(!!(data && data.length > 0));
     };
     validate();
   }, [refToken]);
@@ -64,11 +60,10 @@ const OtpFlow = ({ refToken }: { refToken: string }) => {
       return;
     }
     try {
-      await supabase.functions.invoke('assign-demo-role', { body: { user_id: verifyData.user?.id } });
+      await supabase.functions.invoke('assign-demo-role', { body: { user_id: verifyData.user?.id, token: refToken, email } });
     } catch (err) {
-      console.error('Failed to assign demo role:', err);
+      // Role assignment handled server-side
     }
-    await supabase.from('demo_tokens').update({ used: true, email }).eq('token', refToken);
     localStorage.setItem('demo_session_start', Date.now().toString());
     setLoading(false);
     navigate('/');
