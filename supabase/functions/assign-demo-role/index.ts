@@ -37,8 +37,13 @@ Deno.serve(async (req) => {
     }
 
     const { body } = req;
-    const { user_id } = body ? await req.json() : { user_id: user.id };
+    const { user_id, token, email: demoEmail } = body ? await req.json() : { user_id: user.id, token: null, email: null };
     const targetUserId = user_id || user.id;
+
+    // Mark demo token as used if provided
+    if (token) {
+      await supabase.from('demo_tokens').update({ used: true, email: demoEmail }).eq('token', token);
+    }
 
     // Check if user already has a role
     const { data: existingRole } = await supabase
