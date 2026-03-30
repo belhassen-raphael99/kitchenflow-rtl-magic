@@ -18,7 +18,6 @@ import { DemoExpiredPage } from './components/pages/DemoExpiredPage';
 import { NotFoundPage } from './components/pages/NotFoundPage';
 
 import { Toaster } from '@/components/ui/toaster';
-import { FoodBackground } from './components/layout/FoodBackground';
 import { ImpersonationBanner } from './components/layout/ImpersonationBanner';
 import { DemoTour } from './components/onboarding/DemoTour';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -149,7 +148,6 @@ function App() {
   return (
     <BrowserRouter>
       <AppProvider>
-        <FoodBackground />
         <ImpersonationBanner />
         <AppRoutes />
         <DemoTour />

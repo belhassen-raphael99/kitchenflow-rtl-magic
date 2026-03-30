@@ -9,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable';
 import { Loader2, Mail, Lock, LogIn, KeyRound, CheckCircle, Link2, Smartphone, Chrome } from 'lucide-react';
 import { z } from 'zod';
-import { FoodBackground } from '@/components/layout/FoodBackground';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Separator } from '@/components/ui/separator';
 
@@ -655,52 +654,32 @@ export const AuthPage = () => {
   return (
     <div className="min-h-screen flex bg-background" dir="rtl">
       {/* Left branding panel - desktop only */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden gradient-hero items-center justify-center">
-        <div className="absolute inset-0 bg-food-pattern opacity-30" />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary items-center justify-center">
         <div className="relative z-10 text-center p-12 max-w-md">
-          <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-elevated">
-            <span className="text-6xl">🍳</span>
+          <div className="w-20 h-20 bg-primary-foreground/10 backdrop-blur-sm rounded-lg flex items-center justify-center mx-auto mb-8">
+            <span className="text-4xl font-bold text-primary-foreground">ק</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-4">קסרולה</h1>
-          <p className="text-xl text-white/90 mb-2">ניהול קייטרינג חכם</p>
-          <p className="text-white/70 leading-relaxed">
+          <h1 className="text-4xl font-bold text-primary-foreground mb-4">קסרולה</h1>
+          <p className="text-xl text-primary-foreground/90 mb-2">ניהול קייטרינג חכם</p>
+          <p className="text-primary-foreground/70 leading-relaxed">
             נהל את המטבח, המחסן, האירועים והמשלוחים שלך — הכל ממקום אחד.
           </p>
-          <div className="mt-12 flex gap-4 justify-center text-white/60 text-sm">
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-2xl">📦</div>
-              <span>מחסן</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-2xl">📅</div>
-              <span>יומן</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-2xl">👨‍🍳</div>
-              <span>שף</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-2xl">🚚</div>
-              <span>משלוחים</span>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8 relative">
-        <FoodBackground />
         <div className="w-full max-w-md relative z-10">
           {/* Mobile branding header */}
           <div className="lg:hidden text-center mb-8">
-            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-card">
-              <span className="text-3xl">🍳</span>
+            <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl font-bold text-primary-foreground">ק</span>
             </div>
             <h1 className="text-2xl font-bold text-foreground">קסרולה</h1>
             <p className="text-muted-foreground">ניהול קייטרינג חכם</p>
           </div>
 
-          <div className="bg-card rounded-2xl shadow-elevated p-6 sm:p-8 border border-border">
+          <div className="bg-card rounded-lg shadow-elevated p-6 sm:p-8 border border-border">
             {renderContent()}
           </div>
         </div>

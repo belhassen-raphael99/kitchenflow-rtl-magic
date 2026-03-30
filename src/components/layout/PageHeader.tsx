@@ -31,7 +31,7 @@ export const PageHeader = ({ icon: Icon, title, description, actions, accentColo
     <div className="flex items-center justify-between gap-4 pb-2">
       <div className="flex items-center gap-3">
         {Icon && (
-          <div className={cn("w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center", accentBg[accentColor])}>
+          <div className={cn("w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center", accentBg[accentColor])}>
             <Icon className={cn("w-5 h-5 sm:w-6 sm:h-6", accentClasses[accentColor])} />
           </div>
         )}

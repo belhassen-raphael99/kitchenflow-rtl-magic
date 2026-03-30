@@ -192,7 +192,7 @@ export const RecipeDetailDialog = ({
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <div className="text-center bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <div className="text-center bg-white/20 backdrop-blur-sm rounded-md p-3">
                     <p className="text-3xl font-bold">{recipe.servings}</p>
                     <p className="text-sm">מנות</p>
                   </div>
@@ -229,7 +229,7 @@ export const RecipeDetailDialog = ({
           <ScrollArea className="max-h-[60vh]">
             <div className="p-6 space-y-6">
               {/* Batch Selector */}
-              <section className="bg-muted/30 rounded-xl p-4 space-y-3">
+              <section className="bg-muted/30 rounded-md p-4 space-y-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Users className="w-4 h-4 text-primary" />
                   <h4 className="font-bold text-sm">כמות הכנה</h4>
@@ -365,7 +365,7 @@ export const RecipeDetailDialog = ({
                     </div>
                     <div className="space-y-3">
                       {recipe.instructions.map((instruction, idx) => (
-                        <div key={idx} className="flex items-start gap-4 p-4 rounded-xl bg-muted/50 border">
+                        <div key={idx} className="flex items-start gap-4 p-4 rounded-md bg-muted/50 border">
                           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-bold text-primary-foreground shrink-0">
                             {idx + 1}
                           </div>

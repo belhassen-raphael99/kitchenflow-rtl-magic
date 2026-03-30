@@ -251,7 +251,7 @@ export const ChefDashboardPage = () => {
     const percent = task.target_quantity > 0 ? Math.round((task.completed_quantity / task.target_quantity) * 100) : 0;
     return (
       <Card key={task.id} className={cn(
-        "rounded-xl transition-all",
+        "rounded-md transition-all",
         task.status === 'completed' && "opacity-60",
         task.status === 'in-progress' && "border-blue-300 shadow-sm"
       )}>
@@ -327,25 +327,25 @@ export const ChefDashboardPage = () => {
 
       {/* Summary Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="rounded-xl">
+        <Card className="rounded-md">
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold">{totalTasks}</p>
             <p className="text-xs text-muted-foreground">סה״כ משימות</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl">
+        <Card className="rounded-md">
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold text-blue-500">{inProgressTasks}</p>
             <p className="text-xs text-muted-foreground">בביצוע</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl">
+        <Card className="rounded-md">
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold text-primary">{completedTasks}</p>
             <p className="text-xs text-muted-foreground">הושלמו</p>
           </CardContent>
         </Card>
-        <Card className="rounded-xl">
+        <Card className="rounded-md">
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold">{overallProgress}%</p>
             <Progress value={overallProgress} className="h-1.5 mt-1" />
@@ -370,7 +370,7 @@ export const ChefDashboardPage = () => {
         <TabsContent value="overview" className="space-y-4 mt-4">
           {/* Today's deliveries */}
           {deliveries.length > 0 && (
-            <Card className="rounded-2xl">
+            <Card className="rounded-lg">
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <Truck className="w-4 h-4 text-kpi-events" />
@@ -380,7 +380,7 @@ export const ChefDashboardPage = () => {
               <CardContent className="p-4 pt-0">
                 <div className="space-y-2">
                   {deliveries.map(d => (
-                    <div key={d.id} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-xl text-sm border border-border/30">
+                    <div key={d.id} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-md text-sm border border-border/30">
                       <div className="flex items-center gap-3">
                         <span className="font-bold text-base tabular-nums">{(d.delivery_time || d.time || '').slice(0, 5)}</span>
                         <div>
@@ -422,7 +422,7 @@ export const ChefDashboardPage = () => {
               <TabsContent key={dept.key} value={dept.key} className="space-y-4 mt-4">
                 {/* Low stock alerts */}
                 {deptLowStock.length > 0 && activeDept === dept.key && (
-                  <Card className="border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl">
+                  <Card className="border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 rounded-md">
                     <CardContent className="p-3">
                       <p className="text-xs font-bold flex items-center gap-1 text-amber-700 dark:text-amber-400 mb-2">
                         <AlertTriangle className="w-3.5 h-3.5" />
@@ -441,7 +441,7 @@ export const ChefDashboardPage = () => {
 
                 {/* Schedule items with stock status */}
                 {deptSchedule.length > 0 && activeDept === dept.key && (
-                  <Card className="rounded-xl">
+                  <Card className="rounded-md">
                     <CardHeader className="p-4 pb-2">
                       <CardTitle className="text-sm font-bold flex items-center gap-2">
                         <Package className="w-4 h-4" />
@@ -520,7 +520,7 @@ export const ChefDashboardPage = () => {
                           {stockTasks.length > 0 ? (
                             <div className="space-y-2">{stockTasks.map(renderTaskCard)}</div>
                           ) : (
-                            <Card className="border-dashed rounded-xl">
+                            <Card className="border-dashed rounded-md">
                               <CardContent className="py-6 text-center text-muted-foreground text-sm">אין משימות למלאי</CardContent>
                             </Card>
                           )}
@@ -536,7 +536,7 @@ export const ChefDashboardPage = () => {
                           {eventTasks.length > 0 ? (
                             <div className="space-y-2">{eventTasks.map(renderTaskCard)}</div>
                           ) : (
-                            <Card className="border-dashed rounded-xl">
+                            <Card className="border-dashed rounded-md">
                               <CardContent className="py-6 text-center text-muted-foreground text-sm">אין הזמנות לאירועים</CardContent>
                             </Card>
                           )}

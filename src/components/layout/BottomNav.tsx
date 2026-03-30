@@ -24,14 +24,14 @@ export const BottomNav = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-[60px]",
+                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md transition-all duration-200 min-w-[60px]",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <div className={cn(
-                "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200",
+                "w-8 h-8 rounded-md flex items-center justify-center transition-all duration-200",
                 isActive && "bg-primary/10 scale-110"
               )}>
                 <item.icon className={cn("w-5 h-5", isActive && "text-primary")} />

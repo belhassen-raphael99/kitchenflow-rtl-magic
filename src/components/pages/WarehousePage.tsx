@@ -88,7 +88,7 @@ export const WarehousePage = () => {
                 </Button>
               )}
               {canWrite && (
-                <Button onClick={() => { setEditingItem(null); setShowItemDialog(true); }} className="rounded-xl gap-2">
+                <Button onClick={() => { setEditingItem(null); setShowItemDialog(true); }} className="rounded-md gap-2">
                   <Plus className="w-4 h-4" />
                   קליטת סחורה
                 </Button>
@@ -127,7 +127,7 @@ export const WarehousePage = () => {
         </div>
       </div>
 
-      <div data-demo-tour="warehouse-stock" className="bg-card rounded-2xl shadow-soft overflow-hidden">
+      <div data-demo-tour="warehouse-stock" className="bg-card rounded-lg shadow-soft overflow-hidden">
         <div className="grid grid-cols-5 gap-4 p-4 bg-muted/50 border-b border-border text-sm font-medium text-muted-foreground">
           <div className="text-center">פעולות</div>
           <div className="text-center">סטטוס</div>

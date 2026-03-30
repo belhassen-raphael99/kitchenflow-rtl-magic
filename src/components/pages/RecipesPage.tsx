@@ -95,7 +95,7 @@ export const RecipesPage = () => {
         accentColor="rose"
         actions={
           canWrite ? (
-            <Button className="gap-2 rounded-xl" onClick={() => setRecipeDialogOpen(true)}>
+            <Button className="gap-2 rounded-md" onClick={() => setRecipeDialogOpen(true)}>
               <Plus className="w-4 h-4" />
               מתכון חדש
             </Button>
@@ -161,14 +161,14 @@ export const RecipesPage = () => {
           ))}
         </div>
       ) : recipes.length === 0 ? (
-        <Card className="rounded-2xl">
+        <Card className="rounded-lg">
           <CardContent className="py-16">
             <EmptyState
               icon={Database}
               title="אין מתכונים עדיין"
               description="התחל ליצור מתכונים לספר המתכונים שלך"
               action={canWrite ? (
-                <Button onClick={() => setRecipeDialogOpen(true)} className="rounded-xl">
+                <Button onClick={() => setRecipeDialogOpen(true)} className="rounded-md">
                   <Plus className="w-4 h-4 ml-2" />
                   צור מתכון ראשון
                 </Button>
@@ -177,7 +177,7 @@ export const RecipesPage = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card className="rounded-2xl">
+        <Card className="rounded-lg">
           <CardContent className="py-12">
             <EmptyState
               icon={Search}

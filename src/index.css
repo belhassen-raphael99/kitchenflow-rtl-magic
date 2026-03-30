@@ -9,106 +9,108 @@
 
 @layer base {
   :root {
-    /* Kitchen Flow - Fresh Food Theme 🍊🥬🍅 */
-    --background: 85 30% 97%;
-    --foreground: 140 25% 15%;
+    /* Minimal White — Professional Catering ERP */
+    --background: 0 0% 97%;
+    --foreground: 0 0% 7%;
 
     --card: 0 0% 100%;
-    --card-foreground: 140 25% 15%;
+    --card-foreground: 0 0% 7%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 140 25% 15%;
+    --popover-foreground: 0 0% 7%;
 
-    /* Fresh Green - Primary */
-    --primary: 142 76% 36%;
+    /* Brand accent — olive vert foncé */
+    --primary: 152 40% 25%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 140 60% 95%;
+    --primary-light: 152 30% 95%;
 
-    /* Citrus Orange - Secondary */
-    --secondary: 32 98% 50%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary — neutral */
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 7%;
 
-    /* Muted - Soft sage */
-    --muted: 100 25% 93%;
-    --muted-foreground: 140 15% 40%;
+    /* Muted */
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
 
-    /* Accent - Light lime */
-    --accent: 80 60% 92%;
-    --accent-foreground: 142 76% 28%;
+    /* Accent */
+    --accent: 0 0% 95%;
+    --accent-foreground: 0 0% 7%;
 
-    /* Tomato Red - Destructive */
-    --destructive: 4 90% 58%;
+    /* Destructive */
+    --destructive: 0 70% 45%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders */
-    --border: 100 20% 88%;
-    --input: 100 20% 88%;
-    --ring: 142 76% 36%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 152 40% 25%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Sidebar - Fresh garden feel */
-    --sidebar-background: 90 25% 98%;
-    --sidebar-foreground: 140 25% 25%;
-    --sidebar-primary: 142 76% 36%;
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 30%;
+    --sidebar-primary: 152 40% 25%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 80 50% 92%;
-    --sidebar-accent-foreground: 142 76% 28%;
-    --sidebar-border: 100 20% 88%;
-    --sidebar-ring: 142 76% 36%;
+    --sidebar-accent: 0 0% 95%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 152 40% 25%;
 
-    /* Custom colors */
-    --kpi-events: 217 91% 60%;
-    --kpi-alerts: 4 90% 58%;
-    --kpi-reserve: 280 65% 60%;
-    --frozen: 200 80% 55%;
-    --fresh: 142 76% 36%;
-
-    /* Fruity gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(80 70% 45%) 50%, hsl(32 98% 50%) 100%);
-    --gradient-hero-soft: linear-gradient(135deg, hsl(142 76% 36% / 0.9) 0%, hsl(100 60% 50% / 0.85) 100%);
-    --gradient-fresh: linear-gradient(180deg, hsl(85 30% 97%) 0%, hsl(100 40% 94%) 100%);
-    --gradient-citrus: linear-gradient(135deg, hsl(55 90% 65% / 0.15) 0%, hsl(32 95% 55% / 0.1) 100%);
+    /* KPI — muted tones */
+    --kpi-events: 210 60% 45%;
+    --kpi-alerts: 0 70% 45%;
+    --kpi-reserve: 260 40% 50%;
+    --frozen: 200 60% 50%;
+    --fresh: 152 40% 30%;
   }
 
   .dark {
-    --background: 140 20% 8%;
-    --foreground: 85 30% 95%;
+    /* Executive Dark */
+    --background: 225 18% 11%;
+    --foreground: 220 20% 90%;
 
-    --card: 140 20% 11%;
-    --card-foreground: 85 30% 95%;
+    --card: 225 18% 13%;
+    --card-foreground: 220 20% 90%;
 
-    --popover: 140 20% 11%;
-    --popover-foreground: 85 30% 95%;
+    --popover: 225 18% 13%;
+    --popover-foreground: 220 20% 90%;
 
-    --primary: 142 70% 45%;
+    /* Brand accent — steel blue */
+    --primary: 210 80% 55%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 142 40% 18%;
+    --primary-light: 210 40% 18%;
 
-    --secondary: 32 90% 50%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 225 15% 20%;
+    --secondary-foreground: 220 20% 90%;
 
-    --muted: 140 15% 18%;
-    --muted-foreground: 100 20% 60%;
+    --muted: 225 15% 18%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 100 30% 18%;
-    --accent-foreground: 142 70% 65%;
+    --accent: 225 15% 17%;
+    --accent-foreground: 210 80% 65%;
 
-    --destructive: 4 70% 45%;
+    --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 140 15% 20%;
-    --input: 140 15% 20%;
-    --ring: 142 70% 45%;
+    --border: 225 15% 20%;
+    --input: 225 15% 20%;
+    --ring: 210 80% 55%;
 
-    --sidebar-background: 140 20% 10%;
-    --sidebar-foreground: 85 25% 85%;
-    --sidebar-primary: 142 70% 45%;
+    --sidebar-background: 225 20% 10%;
+    --sidebar-foreground: 220 15% 65%;
+    --sidebar-primary: 210 80% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 100 30% 18%;
-    --sidebar-accent-foreground: 142 70% 65%;
-    --sidebar-border: 140 15% 20%;
-    --sidebar-ring: 142 70% 45%;
+    --sidebar-accent: 225 15% 17%;
+    --sidebar-accent-foreground: 210 80% 65%;
+    --sidebar-border: 225 15% 20%;
+    --sidebar-ring: 210 80% 55%;
+
+    --kpi-events: 210 80% 60%;
+    --kpi-alerts: 0 70% 55%;
+    --kpi-reserve: 260 50% 60%;
+    --frozen: 200 80% 55%;
+    --fresh: 152 60% 45%;
   }
 }
 
@@ -124,39 +126,14 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Heebo', sans-serif;
-    background-image: 
-      radial-gradient(ellipse at 20% 20%, hsl(142 76% 36% / 0.04) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 80%, hsl(32 98% 50% / 0.04) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, hsl(80 70% 50% / 0.03) 0%, transparent 60%);
-    background-attachment: fixed;
-  }
-}
-
-@layer utilities {
-  .gradient-hero {
-    background: var(--gradient-hero);
-  }
-  
-  .gradient-hero-soft {
-    background: var(--gradient-hero-soft);
+    font-size: 15px;
+    line-height: 1.6;
+    transition: background-color 0.2s, color 0.2s;
   }
 
-  .gradient-fresh {
-    background: var(--gradient-fresh);
-  }
-
-  .gradient-citrus {
-    background: var(--gradient-citrus);
-  }
-
-  .bg-food-pattern {
-    background-image: 
-      radial-gradient(ellipse at 15% 25%, hsl(142 76% 36% / 0.06) 0%, transparent 40%),
-      radial-gradient(ellipse at 85% 75%, hsl(32 98% 50% / 0.05) 0%, transparent 45%),
-      radial-gradient(ellipse at 50% 10%, hsl(4 90% 58% / 0.03) 0%, transparent 35%),
-      radial-gradient(ellipse at 75% 30%, hsl(55 90% 60% / 0.04) 0%, transparent 40%);
-    background-attachment: fixed;
-  }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.2px; }
+  h3 { font-size: 15px; font-weight: 500; }
 }
 
 /* RTL Support */
@@ -164,24 +141,14 @@
   text-align: right;
 }
 
-/* Custom animations */
-@keyframes scale-bounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(0.95); }
-}
-
-@keyframes pulse-gentle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-}
-
-@keyframes slide-in-right {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+/* Custom animations — minimal set */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes fade-in-up {
-  from { transform: translateY(10px); opacity: 0; }
+  from { transform: translateY(8px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
@@ -190,34 +157,12 @@
   100% { background-position: 200% 0; }
 }
 
-@keyframes nav-indicator {
-  from { height: 0; opacity: 0; }
-  to { height: 2rem; opacity: 1; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(var(--rotate, 0deg)); }
-  50% { transform: translateY(-8px) rotate(var(--rotate, 0deg)); }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-scale-bounce {
-  animation: scale-bounce 0.2s ease-in-out;
-}
-
-.animate-pulse-gentle {
-  animation: pulse-gentle 2s ease-in-out infinite;
-}
-
-.animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out;
+.animate-fade-in {
+  animation: fade-in 0.2s ease;
 }
 
 .animate-fade-in-up {
-  animation: fade-in-up 0.4s ease-out;
+  animation: fade-in-up 0.3s ease-out;
 }
 
 .animate-shimmer {
@@ -226,15 +171,11 @@
   animation: shimmer 1.5s infinite;
 }
 
-.animate-nav-indicator {
-  animation: nav-indicator 0.3s ease-out;
-}
-
-/* Staggered animations */
-.stagger-1 { animation-delay: 0.1s; }
-.stagger-2 { animation-delay: 0.2s; }
-.stagger-3 { animation-delay: 0.3s; }
-.stagger-4 { animation-delay: 0.4s; }
+/* Stagger — max 0.05s */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
 
 /* Print styles */
 @media print {

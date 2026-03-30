@@ -289,7 +289,7 @@ export const DeliveryPage = () => {
         description="ניהול משלוחים והזמנות"
         accentColor="blue"
         actions={
-          <Button variant="outline" size="sm" className="gap-2 no-print rounded-xl" onClick={() => window.print()}>
+          <Button variant="outline" size="sm" className="gap-2 no-print rounded-md" onClick={() => window.print()}>
             <Printer className="w-4 h-4" />
             הדפס יום
           </Button>
