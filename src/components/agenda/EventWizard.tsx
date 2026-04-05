@@ -481,6 +481,7 @@ export const EventWizard = ({
                 value={form.delivery_time}
                 onChange={(e) => setForm(prev => ({ ...prev, delivery_time: e.target.value }))}
                 className="mt-1"
+                dir="ltr"
               />
             </div>
 
