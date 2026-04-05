@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
-import { BottomNav } from './BottomNav';
+
 import { DemoBanner } from './DemoBanner';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/hooks/useAuth';
