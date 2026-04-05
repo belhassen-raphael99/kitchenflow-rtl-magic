@@ -271,6 +271,7 @@ export type Database = {
           invoice_status: string | null
           name: string
           notes: string | null
+          quote_number: string | null
           status: string
           time: string
           updated_at: string | null
@@ -294,6 +295,7 @@ export type Database = {
           invoice_status?: string | null
           name: string
           notes?: string | null
+          quote_number?: string | null
           status?: string
           time?: string
           updated_at?: string | null
@@ -317,6 +319,7 @@ export type Database = {
           invoice_status?: string | null
           name?: string
           notes?: string | null
+          quote_number?: string | null
           status?: string
           time?: string
           updated_at?: string | null
