@@ -30,6 +30,8 @@ export const AgendaPage = () => {
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [successOpen, setSuccessOpen] = useState(false);
   const [successDepts, setSuccessDepts] = useState<string[]>([]);
+  const [importOpen, setImportOpen] = useState(false);
+  const [prefillData, setPrefillData] = useState<PrefillData | null>(null);
 
   const { events, loading: eventsLoading, getEventsForDate, getDatesWithEvents, createEventFromWizard, updateEvent, deleteEvent, fetchEvents } = useEvents();
   const { clients, loading: clientsLoading, createClient } = useClients();
