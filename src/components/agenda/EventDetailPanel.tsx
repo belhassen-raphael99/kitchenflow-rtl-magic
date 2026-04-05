@@ -175,6 +175,7 @@ export const EventDetailPanel = ({
           {eventData.delivery_time && <p className="flex items-center gap-2"><Truck className="w-4 h-4" />משלוח: {eventData.delivery_time?.slice(0, 5)}</p>}
           {eventData.client_phone && <p className="flex items-center gap-2"><Phone className="w-4 h-4" />{eventData.client_phone}</p>}
           {eventData.client_email && <p className="flex items-center gap-2"><Mail className="w-4 h-4" />{eventData.client_email}</p>}
+          {eventData.quote_number && <p className="flex items-center gap-2"><ClipboardList className="w-4 h-4" />הצעת מחיר: {eventData.quote_number}</p>}
         </div>
 
         {/* Quick status changes */}

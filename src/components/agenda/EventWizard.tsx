@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import {
   CalendarIcon, Loader2, Plus, Trash2, Search, Check,
-  User, CalendarDays, ShoppingCart, ClipboardCheck, ChevronRight, ChevronLeft
+  User, CalendarDays, ShoppingCart, ClipboardCheck, ChevronRight, ChevronLeft, AlertTriangle
 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
@@ -75,6 +75,24 @@ export interface EventWizardData {
   delivery_time: string;
   notes: string;
   items: OrderItem[];
+  quote_number?: string;
+}
+
+export interface PrefillData {
+  client: { name: string; city?: string; phone?: string };
+  event: { date: string; time: string; delivery_time?: string; guests: number };
+  quote_number?: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    catalog_id: string | null;
+    recipe_id: string | null;
+    department: string | null;
+    unit: string;
+    matched: boolean;
+    catalog_name: string | null;
+  }>;
+  unmatchedCount: number;
 }
 
 interface EventWizardProps {
@@ -84,10 +102,11 @@ interface EventWizardProps {
   recipes: Recipe[];
   onSubmit: (data: EventWizardData) => Promise<boolean>;
   selectedDate?: Date;
+  prefillData?: PrefillData | null;
 }
 
 export const EventWizard = ({
-  open, onOpenChange, clients, recipes, onSubmit, selectedDate
+  open, onOpenChange, clients, recipes, onSubmit, selectedDate, prefillData
 }: EventWizardProps) => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,7 +115,6 @@ export const EventWizard = ({
   const [recipePopoverOpen, setRecipePopoverOpen] = useState(false);
   const [catalogItems, setCatalogItems] = useState<CatalogItemForWizard[]>([]);
   const [catalogSearch, setCatalogSearch] = useState('');
-  const [useCatalog, setUseCatalog] = useState(true);
 
   const [form, setForm] = useState<EventWizardData>({
     client_name: '',
@@ -121,6 +139,40 @@ export const EventWizard = ({
       delivery_time: '16:00', notes: '', items: [],
     });
   };
+
+  // Apply prefill data when it changes
+  useEffect(() => {
+    if (prefillData && open) {
+      const eventDate = prefillData.event.date ? new Date(prefillData.event.date) : selectedDate || new Date();
+      
+      const prefillItems: OrderItem[] = prefillData.items
+        .filter(i => i.matched)
+        .map(i => ({
+          recipe_id: i.recipe_id || i.catalog_id || '',
+          recipe_name: i.catalog_name || i.name,
+          quantity: i.quantity,
+          unit: i.unit || 'מנות',
+          department: i.department || 'מטבח',
+          notes: '',
+        }));
+
+      setForm({
+        client_name: prefillData.client.name || '',
+        client_phone: prefillData.client.phone || '',
+        client_email: '',
+        event_type: 'אירוע פרטי',
+        date: eventDate,
+        time: prefillData.event.time || '18:00',
+        guests: prefillData.event.guests || 1,
+        delivery_address: prefillData.client.city || '',
+        delivery_time: prefillData.event.delivery_time || '16:00',
+        notes: '',
+        items: prefillItems,
+        quote_number: prefillData.quote_number,
+      });
+      setStep(1);
+    }
+  }, [prefillData, open]);
 
   // Fetch catalog items
   useEffect(() => {
@@ -213,11 +265,19 @@ export const EventWizard = ({
     { num: 4, label: 'אישור', icon: ClipboardCheck },
   ];
 
+  const isPrefilled = !!prefillData;
+  const unmatchedItems = prefillData?.items.filter(i => !i.matched) || [];
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle>הזמנה חדשה</DialogTitle>
+          <DialogTitle>
+            {isPrefilled ? `הזמנה חדשה — מיובא מ-Priority` : 'הזמנה חדשה'}
+          </DialogTitle>
+          {isPrefilled && form.quote_number && (
+            <Badge variant="outline" className="w-fit text-xs">📋 הצעת מחיר: {form.quote_number}</Badge>
+          )}
         </DialogHeader>
 
         {/* Step indicator */}
@@ -243,7 +303,10 @@ export const EventWizard = ({
         {step === 1 && (
           <div className="space-y-4 pt-2">
             <div>
-              <Label>שם הלקוח *</Label>
+              <Label className="flex items-center gap-2">
+                שם הלקוח *
+                {isPrefilled && form.client_name && <Badge variant="secondary" className="text-[10px]">✅ מיובא</Badge>}
+              </Label>
               <Popover open={clientPopoverOpen} onOpenChange={setClientPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Input
@@ -281,7 +344,10 @@ export const EventWizard = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>טלפון *</Label>
+                <Label className="flex items-center gap-2">
+                  טלפון *
+                  {isPrefilled && form.client_phone && <Badge variant="secondary" className="text-[10px]">✅ מיובא</Badge>}
+                </Label>
                 <Input
                   value={form.client_phone}
                   onChange={(e) => setForm(prev => ({ ...prev, client_phone: e.target.value }))}
@@ -327,7 +393,10 @@ export const EventWizard = ({
           <div className="space-y-4 pt-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col">
-                <Label>תאריך האירוע *</Label>
+                <Label className="flex items-center gap-2">
+                  תאריך האירוע *
+                  {isPrefilled && <Badge variant="secondary" className="text-[10px]">✅ מיובא</Badge>}
+                </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -352,9 +421,17 @@ export const EventWizard = ({
                     />
                   </PopoverContent>
                 </Popover>
+                {isPrefilled && form.date < new Date(new Date().toDateString()) && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> התאריך בעבר
+                  </p>
+                )}
               </div>
               <div>
-                <Label>שעת האירוע *</Label>
+                <Label className="flex items-center gap-2">
+                  שעת האירוע *
+                  {isPrefilled && <Badge variant="secondary" className="text-[10px]">✅ מיובא</Badge>}
+                </Label>
                 <Input
                   type="time"
                   value={form.time}
@@ -365,7 +442,10 @@ export const EventWizard = ({
             </div>
 
             <div>
-              <Label>מספר אורחים *</Label>
+              <Label className="flex items-center gap-2">
+                מספר אורחים *
+                {isPrefilled && <Badge variant="secondary" className="text-[10px]">✅ מיובא</Badge>}
+              </Label>
               <Input
                 type="number"
                 min={1}
@@ -376,7 +456,10 @@ export const EventWizard = ({
             </div>
 
             <div>
-              <Label>כתובת המשלוח *</Label>
+              <Label className="flex items-center gap-2">
+                כתובת המשלוח *
+                {isPrefilled && form.delivery_address && <Badge variant="secondary" className="text-[10px]">✅ מיובא</Badge>}
+              </Label>
               <Input
                 value={form.delivery_address}
                 onChange={(e) => setForm(prev => ({ ...prev, delivery_address: e.target.value }))}
@@ -386,15 +469,24 @@ export const EventWizard = ({
             </div>
 
             <div>
-              <Label>שעת משלוח *</Label>
+              <Label className="flex items-center gap-2">
+                שעת משלוח *
+                {isPrefilled && <Badge variant="secondary" className="text-[10px]">✅ מיובא</Badge>}
+              </Label>
               <Input
                 type="time"
                 value={form.delivery_time}
                 onChange={(e) => setForm(prev => ({ ...prev, delivery_time: e.target.value }))}
                 className="mt-1"
               />
-              <p className="text-xs text-muted-foreground mt-1">מתי צריך להגיע לאירוע?</p>
             </div>
+
+            {isPrefilled && form.quote_number && (
+              <div>
+                <Label>מספר הצעת מחיר</Label>
+                <Input value={form.quote_number} readOnly className="mt-1 bg-muted" />
+              </div>
+            )}
 
             <div>
               <Label>הערות</Label>
@@ -408,9 +500,33 @@ export const EventWizard = ({
           </div>
         )}
 
-        {/* Step 3: Order Items — Catalog-based */}
+        {/* Step 3: Order Items */}
         {step === 3 && (
           <div className="space-y-4 pt-2">
+            {/* Unmatched items warning */}
+            {isPrefilled && unmatchedItems.length > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  {unmatchedItems.length} פריט{unmatchedItems.length > 1 ? 'ים' : ''} לא זוה{unmatchedItems.length > 1 ? 'ו' : ''} — אנא בדוק לפני המשך
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {unmatchedItems.map((item, i) => (
+                    <li key={i} className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                      ⚠️ {item.name} ×{item.quantity} — לא נמצא בקטלוג
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Import summary badge */}
+            {isPrefilled && (
+              <Badge variant="outline" className="text-xs">
+                📄 מיובא מ-Priority — {form.items.length} פריטים מותאמים
+              </Badge>
+            )}
+
             {/* Search */}
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -568,6 +684,9 @@ export const EventWizard = ({
           <div className="space-y-4 pt-2">
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <h3 className="font-bold flex items-center gap-2">📋 סיכום הזמנה</h3>
+              {form.quote_number && (
+                <Badge variant="outline" className="text-xs">הצעת מחיר: {form.quote_number}</Badge>
+              )}
               <Separator />
               <div className="space-y-1 text-sm">
                 <p><strong>לקוח:</strong> {form.client_name} | {form.client_phone}</p>

@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.generate-delivery-slip]
 verify_jwt = false
+
+[functions.parse-priority-pdf]
+verify_jwt = false

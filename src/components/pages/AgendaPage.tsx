@@ -4,15 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format, isSameDay } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { CalendarDays, Plus, Clock, Loader2, List, LayoutGrid, Printer } from 'lucide-react';
+import { CalendarDays, Plus, Clock, Loader2, List, LayoutGrid, Printer, FileUp } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useEvents, EventWithClient } from '@/hooks/useEvents';
 import { useClients } from '@/hooks/useClients';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useAuth } from '@/hooks/useAuth';
 import { EventCard } from '@/components/agenda/EventCard';
-import { EventWizard, EventWizardData } from '@/components/agenda/EventWizard';
+import { EventWizard, EventWizardData, PrefillData } from '@/components/agenda/EventWizard';
 import { EventDialog } from '@/components/agenda/EventDialog';
+import { PriorityImportDialog } from '@/components/agenda/PriorityImportDialog';
 import { ClientDialog } from '@/components/agenda/ClientDialog';
 import { DeleteEventDialog } from '@/components/agenda/DeleteEventDialog';
 import { EventDetailPanel } from '@/components/agenda/EventDetailPanel';
@@ -29,6 +30,8 @@ export const AgendaPage = () => {
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [successOpen, setSuccessOpen] = useState(false);
   const [successDepts, setSuccessDepts] = useState<string[]>([]);
+  const [importOpen, setImportOpen] = useState(false);
+  const [prefillData, setPrefillData] = useState<PrefillData | null>(null);
 
   const { events, loading: eventsLoading, getEventsForDate, getDatesWithEvents, createEventFromWizard, updateEvent, deleteEvent, fetchEvents } = useEvents();
   const { clients, loading: clientsLoading, createClient } = useClients();
@@ -102,10 +105,16 @@ export const AgendaPage = () => {
               <List className="w-4 h-4" />
             </Button>
             {canWrite && (
-              <Button className="gap-2 rounded-md" onClick={handleNewEvent}>
-                <Plus className="w-4 h-4" />
-                הזמנה חדשה
-              </Button>
+              <>
+                <Button variant="outline" className="gap-2 rounded-md" onClick={() => setImportOpen(true)}>
+                  <FileUp className="w-4 h-4" />
+                  ייבא מ-Priority
+                </Button>
+                <Button className="gap-2 rounded-md" onClick={handleNewEvent}>
+                  <Plus className="w-4 h-4" />
+                  הזמנה חדשה
+                </Button>
+              </>
             )}
           </div>
         }
@@ -243,11 +252,21 @@ export const AgendaPage = () => {
       {/* Dialogs */}
       <EventWizard
         open={wizardOpen}
-        onOpenChange={setWizardOpen}
+        onOpenChange={(v) => { setWizardOpen(v); if (!v) setPrefillData(null); }}
         clients={clients}
         recipes={recipes}
         onSubmit={handleWizardSubmit}
         selectedDate={selectedDate}
+        prefillData={prefillData}
+      />
+
+      <PriorityImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={(data) => {
+          setPrefillData(data);
+          setWizardOpen(true);
+        }}
       />
 
       <EventDialog
