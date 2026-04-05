@@ -105,10 +105,16 @@ export const AgendaPage = () => {
               <List className="w-4 h-4" />
             </Button>
             {canWrite && (
-              <Button className="gap-2 rounded-md" onClick={handleNewEvent}>
-                <Plus className="w-4 h-4" />
-                הזמנה חדשה
-              </Button>
+              <>
+                <Button variant="outline" className="gap-2 rounded-md" onClick={() => setImportOpen(true)}>
+                  <FileUp className="w-4 h-4" />
+                  ייבא מ-Priority
+                </Button>
+                <Button className="gap-2 rounded-md" onClick={handleNewEvent}>
+                  <Plus className="w-4 h-4" />
+                  הזמנה חדשה
+                </Button>
+              </>
             )}
           </div>
         }
