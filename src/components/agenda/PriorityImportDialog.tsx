@@ -71,14 +71,61 @@ export const PriorityImportDialog = ({ open, onOpenChange, onImportComplete }: P
         .select('id, name_website, name_internal, department, recipe_id, unit_type');
 
       const matchedItems = foodItems.map((item: any) => {
-        const match = (catalogItems || []).find((c: any) =>
-          c.name_website === item.name ||
-          c.name_internal === item.name ||
-          item.name.includes(c.name_website?.split(' ')[0]) ||
-          c.name_website?.includes(item.name.split(' ')[0])
+        const pdfName = (item.name || '').trim();
+        const pdfFullName = (item.full_name || item.name || '').trim();
+        const catalog = catalogItems || [];
+
+        // Strategy 1: exact match on name_website
+        let match = catalog.find((c: any) =>
+          c.name_website?.trim() === pdfName ||
+          c.name_website?.trim() === pdfFullName
         );
+
+        // Strategy 2: exact match on name_internal
+        if (!match) match = catalog.find((c: any) =>
+          c.name_internal?.trim() === pdfName ||
+          c.name_internal?.trim() === pdfFullName
+        );
+
+        // Strategy 3: catalog name_website contained in PDF name (or vice versa)
+        if (!match) match = catalog.find((c: any) =>
+          c.name_website && (
+            pdfName.includes(c.name_website.trim()) ||
+            c.name_website.trim().includes(pdfName)
+          )
+        );
+
+        // Strategy 4: first meaningful word match (min 3 chars)
+        if (!match) {
+          const pdfFirstWord = pdfName.split(' ').find((w: string) => w.length >= 3) || '';
+          if (pdfFirstWord) {
+            match = catalog.find((c: any) =>
+              c.name_website?.startsWith(pdfFirstWord) ||
+              c.name_internal?.startsWith(pdfFirstWord)
+            );
+          }
+        }
+
+        // Strategy 5: hardcoded overrides for known mismatches
+        const overrides: Record<string, string> = {
+          'פחזניות קסרולה': 'הפחזניות של קסרולה',
+          'עוגת קראנץ שוקולד': 'עוגת שוקולד קראנץ',
+          'פסטה איטלקית': 'פסטה ברוטב עגבניות ובזיליקום',
+          'מקרון': 'מקרון צרפתי',
+        };
+
+        if (!match) {
+          for (const [pdfKey, catalogKey] of Object.entries(overrides)) {
+            if (pdfName.includes(pdfKey) || pdfFullName.includes(pdfKey)) {
+              match = catalog.find((c: any) => c.name_website === catalogKey);
+              if (match) break;
+            }
+          }
+        }
+
         return {
-          name: item.name,
+          name: pdfFullName || pdfName,
+          short_name: pdfName,
           quantity: item.quantity,
           catalog_id: match?.id || null,
           recipe_id: match?.recipe_id || null,
