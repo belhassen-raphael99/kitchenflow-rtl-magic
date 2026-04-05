@@ -143,7 +143,9 @@ export const EventWizard = ({
   // Apply prefill data when it changes
   useEffect(() => {
     if (prefillData && open) {
-      const eventDate = prefillData.event.date ? new Date(prefillData.event.date) : selectedDate || new Date();
+      const eventDate = prefillData.event.date
+        ? new Date(prefillData.event.date + 'T00:00:00')
+        : selectedDate || new Date();
       
       const prefillItems: OrderItem[] = prefillData.items
         .filter(i => i.matched)
@@ -437,6 +439,7 @@ export const EventWizard = ({
                   value={form.time}
                   onChange={(e) => setForm(prev => ({ ...prev, time: e.target.value }))}
                   className="mt-1"
+                  dir="ltr"
                 />
               </div>
             </div>
@@ -478,6 +481,7 @@ export const EventWizard = ({
                 value={form.delivery_time}
                 onChange={(e) => setForm(prev => ({ ...prev, delivery_time: e.target.value }))}
                 className="mt-1"
+                dir="ltr"
               />
             </div>
 
