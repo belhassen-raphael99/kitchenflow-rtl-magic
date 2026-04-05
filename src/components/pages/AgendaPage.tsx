@@ -252,11 +252,21 @@ export const AgendaPage = () => {
       {/* Dialogs */}
       <EventWizard
         open={wizardOpen}
-        onOpenChange={setWizardOpen}
+        onOpenChange={(v) => { setWizardOpen(v); if (!v) setPrefillData(null); }}
         clients={clients}
         recipes={recipes}
         onSubmit={handleWizardSubmit}
         selectedDate={selectedDate}
+        prefillData={prefillData}
+      />
+
+      <PriorityImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={(data) => {
+          setPrefillData(data);
+          setWizardOpen(true);
+        }}
       />
 
       <EventDialog
