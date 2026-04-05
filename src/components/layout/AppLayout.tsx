@@ -31,7 +31,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           {children}
         </div>
       </main>
-      <BottomNav />
+      
     </div>
   );
 };
