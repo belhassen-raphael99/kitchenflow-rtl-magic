@@ -143,7 +143,9 @@ export const EventWizard = ({
   // Apply prefill data when it changes
   useEffect(() => {
     if (prefillData && open) {
-      const eventDate = prefillData.event.date ? new Date(prefillData.event.date) : selectedDate || new Date();
+      const eventDate = prefillData.event.date
+        ? new Date(prefillData.event.date + 'T00:00:00')
+        : selectedDate || new Date();
       
       const prefillItems: OrderItem[] = prefillData.items
         .filter(i => i.matched)
