@@ -53,20 +53,12 @@ Deno.serve(async (req) => {
     const prompt = `Extract data from this Priority catering quote PDF. Return ONLY valid JSON, no other text or markdown:
 {
   "quote_number": "string",
-  "client": {
-    "name": "full name",
-    "city": "city",
-    "phone": "phone number"
-  },
-  "event": {
-    "date": "YYYY-MM-DD",
-    "time": "HH:MM",
-    "delivery_time": "HH:MM",
-    "guests": number
-  },
+  "client": { "name": "full name", "city": "city", "phone": "phone number" },
+  "event": { "date": "YYYY-MM-DD", "time": "HH:MM", "delivery_time": "HH:MM", "guests": number },
   "items": [
     {
-      "name": "product name in Hebrew exactly as written in PDF",
+      "name": "short product name in Hebrew — remove size info like '2.5 ליטר', '1 קג', quantities in parentheses",
+      "full_name": "complete product name exactly as written in PDF",
       "quantity": number,
       "is_service": boolean
     }
@@ -76,8 +68,10 @@ Rules:
 - date format must be YYYY-MM-DD
 - time format must be HH:MM
 - guests must be a number
+- Extract the SHORT name for matching (e.g. "סלט פסטה" not "סלט פסטה- 2.5 ליטר")
+- Keep full_name with the complete original text from PDF
 - items: include ALL product lines
-- is_service = true for: כלים חד פעמיים, דמי משלוח, בקבוקי שתיה, anything non-food
+- is_service = true ONLY for: כלים חד פעמיים, דמי משלוח, בקבוקי שתיה
 - is_service = false for all food items
 - Do NOT include any prices
 - If this is not a Priority quote PDF, return: {"error": "not_priority_quote"}`;
