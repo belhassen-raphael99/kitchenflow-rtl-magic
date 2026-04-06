@@ -124,7 +124,7 @@ export const TwoFactorTab = () => {
           <div className="flex items-center gap-3">
             <span className="text-sm">סטטוס:</span>
             {isEnabled ? (
-              <Badge variant="default" className="bg-green-500/10 text-green-600 border-green-500/30">מופעל</Badge>
+              <Badge variant="default" className="bg-primary/10 text-primary border-primary/30">מופעל</Badge>
             ) : (
               <Badge variant="secondary">לא מופעל</Badge>
             )}
