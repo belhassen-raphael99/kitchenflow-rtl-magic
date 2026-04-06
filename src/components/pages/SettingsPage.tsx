@@ -60,6 +60,13 @@ export const SettingsPage = () => {
               <ShieldQuestion className="w-4 h-4" />
               שאלת אבטחה
             </TabsTrigger>
+            <TabsTrigger
+              value="two-factor"
+              className="justify-start gap-2 w-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg px-4 py-3"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              אימות דו-שלבי
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 min-w-0">
