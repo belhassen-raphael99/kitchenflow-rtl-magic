@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
                 <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <p><strong>פרטי התחברות:</strong></p>
                   <p>📧 אימייל: <strong>${escapeHtml(email)}</strong></p>
-                  <p>🔑 סיסמה זמנית: <strong>${escapeHtml(password)}</strong></p>
+                  <p>🔑 סיסמה: <strong>נמסרה לך ע"י מנהל המערכת</strong></p>
                 </div>
                 <p style="color: #d32f2f;">⚠️ מומלץ לשנות את הסיסמה מיד לאחר ההתחברות הראשונה</p>
               </div>

@@ -325,19 +325,25 @@ export const AuthPage = () => {
     }
     setLoading(true);
     try {
-      const { data: hashData, error: hashError } = await supabase.functions.invoke('hash-security-answer', {
-        body: { answer: securityAnswer.trim() },
-      });
-
-      if (hashError || !hashData?.hash) throw new Error('שגיאה באימות');
-
+      // Get the stored hash for verification
       const { data: sq } = await supabase
         .from('security_questions')
         .select('answer_hash')
         .eq('user_id', recoveryUserId)
         .maybeSingle();
 
-      if (!sq || sq.answer_hash !== hashData.hash) {
+      if (!sq) {
+        toast({ title: 'שגיאה', description: 'שאלת אבטחה לא נמצאה', variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
+      // Use the verify mode of hash-security-answer (PBKDF2 with salt)
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke('hash-security-answer', {
+        body: { answer: securityAnswer.trim(), existingHash: sq.answer_hash },
+      });
+
+      if (verifyError || !verifyData?.match) {
         toast({ title: 'שגיאה', description: 'התשובה שגויה', variant: 'destructive' });
         setLoading(false);
         return;
