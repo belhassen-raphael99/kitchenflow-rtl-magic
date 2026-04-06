@@ -1,11 +1,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.89.0';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('Origin') || '';
+  const envOrigin = Deno.env.get('ALLOWED_ORIGIN');
+  if (envOrigin && origin === envOrigin) return origin;
+  if (origin.endsWith('.lovable.app')) return origin;
+  return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
+}
 
 Deno.serve(async (req) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,7 +32,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate email format
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
         JSON.stringify({ error: 'כתובת אימייל לא תקינה' }),
@@ -32,7 +39,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 1. Validate demo token
     const { data: tokenData, error: tokenError } = await supabaseAdmin
       .from('demo_tokens')
       .select('*')
@@ -47,7 +53,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check expiry
     if (tokenData.expires_at && new Date(tokenData.expires_at) < new Date()) {
       return new Response(
         JSON.stringify({ error: 'קישור הדמו פג תוקפו' }),
@@ -55,7 +60,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. Rate limiting — max 3 OTP attempts per token
     const currentAttempts = tokenData.otp_attempts || 0;
     if (currentAttempts >= 3) {
       return new Response(
@@ -64,13 +68,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Increment attempts
     await supabaseAdmin
       .from('demo_tokens')
       .update({ otp_attempts: currentAttempts + 1, email })
       .eq('id', tokenData.id);
 
-    // 3. Send OTP using admin API (bypasses signup restrictions)
     const { error: otpError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
       email,
@@ -84,7 +86,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 4. Send OTP email using service role client (bypasses all restrictions)
     const { error: sendError } = await supabaseAdmin.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: false },
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
     console.error('demo-otp-signup error:', err);
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' } }
     );
   }
 });

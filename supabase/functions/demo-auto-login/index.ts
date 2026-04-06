@@ -1,9 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.89.0';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('Origin') || '';
+  const envOrigin = Deno.env.get('ALLOWED_ORIGIN');
+  if (envOrigin && origin === envOrigin) return origin;
+  if (origin.endsWith('.lovable.app')) return origin;
+  return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
+}
 
 const DEMO_EMAIL = 'demo@casserole.app';
 
@@ -84,6 +87,11 @@ const resetDemoState = async (supabaseAdmin: ReturnType<typeof createClient>) =>
 };
 
 Deno.serve(async (req) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -97,7 +105,6 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Generate a fresh random password for each demo login
     const demoPassword = generateRandomPassword();
 
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
@@ -181,7 +188,7 @@ Deno.serve(async (req) => {
     console.error('demo-auto-login error:', err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
     });
   }
 });

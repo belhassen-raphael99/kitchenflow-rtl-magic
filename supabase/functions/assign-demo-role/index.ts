@@ -1,11 +1,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.89.0';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('Origin') || '';
+  const envOrigin = Deno.env.get('ALLOWED_ORIGIN');
+  if (envOrigin && origin === envOrigin) return origin;
+  if (origin.endsWith('.lovable.app')) return origin;
+  return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
+}
 
 Deno.serve(async (req) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -23,7 +31,6 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Get user from JWT
     const anonClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!);
     const { data: { user }, error: userError } = await anonClient.auth.getUser(
       authHeader.replace('Bearer ', '')
@@ -40,12 +47,10 @@ Deno.serve(async (req) => {
     const { user_id, token, email: demoEmail } = body ? await req.json() : { user_id: user.id, token: null, email: null };
     const targetUserId = user_id || user.id;
 
-    // Mark demo token as used if provided
     if (token) {
       await supabase.from('demo_tokens').update({ used: true, email: demoEmail }).eq('token', token);
     }
 
-    // Check if user already has a role
     const { data: existingRole } = await supabase
       .from('user_roles')
       .select('id, role')
@@ -53,14 +58,12 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingRole) {
-      // If already demo or admin, don't change
       if (existingRole.role === 'demo' || existingRole.role === 'admin') {
         return new Response(JSON.stringify({ success: true, existing: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // If employee (assigned by trigger), update to demo
       const { error: updateError } = await supabase
         .from('user_roles')
         .update({ role: 'demo' })
@@ -78,7 +81,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // No role exists — assign demo
     const { error: insertError } = await supabase
       .from('user_roles')
       .insert({ user_id: targetUserId, role: 'demo' });
@@ -96,7 +98,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
     });
   }
 });
