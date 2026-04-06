@@ -6,7 +6,13 @@ const corsHeaders = {
 };
 
 const DEMO_EMAIL = 'demo@casserole.app';
-const DEMO_PASSWORD = 'Demo@Casserole2026!Secure';
+
+function generateRandomPassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => chars[b % chars.length]).join('');
+}
 
 const resetDemoState = async (supabaseAdmin: ReturnType<typeof createClient>) => {
   const eventResets = [
@@ -91,13 +97,16 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Generate a fresh random password for each demo login
+    const demoPassword = generateRandomPassword();
+
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
     const demoUser = existingUsers?.users?.find((user) => user.email === DEMO_EMAIL);
 
     if (!demoUser) {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: DEMO_EMAIL,
-        password: DEMO_PASSWORD,
+        password: demoPassword,
         email_confirm: true,
         user_metadata: { full_name: 'משתמש דמו' },
       });
@@ -114,7 +123,7 @@ Deno.serve(async (req) => {
       await resetDemoState(supabaseAdmin);
     } else {
       await supabaseAdmin.auth.admin.updateUserById(demoUser.id, {
-        password: DEMO_PASSWORD,
+        password: demoPassword,
         email_confirm: true,
         user_metadata: { full_name: 'משתמש דמו' },
       });
@@ -141,7 +150,7 @@ Deno.serve(async (req) => {
 
     const { data: signInData, error: signInError } = await anonClient.auth.signInWithPassword({
       email: DEMO_EMAIL,
-      password: DEMO_PASSWORD,
+      password: demoPassword,
     });
 
     if (signInError || !signInData.session) {

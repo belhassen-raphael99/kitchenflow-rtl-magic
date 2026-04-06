@@ -49,6 +49,8 @@ export const AuthPage = () => {
   const [securityQuestion, setSecurityQuestion] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [recoveryUserId, setRecoveryUserId] = useState('');
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
@@ -155,7 +157,13 @@ export const AuthPage = () => {
       return;
     }
 
-    // Login
+    // Login — check lockout first
+    if (lockoutUntil && new Date() < lockoutUntil) {
+      const seconds = Math.ceil((lockoutUntil.getTime() - Date.now()) / 1000);
+      toast({ title: 'חשבון נעול', description: `נסה שוב בעוד ${seconds} שניות`, variant: 'destructive' });
+      return;
+    }
+
     const validation = loginSchema.safeParse({ email, password });
     if (!validation.success) {
       toast({ title: 'שגיאה', description: validation.error.errors[0].message, variant: 'destructive' });
@@ -166,12 +174,21 @@ export const AuthPage = () => {
     try {
       const { error } = await signIn(email, password);
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          toast({ title: 'שגיאה', description: 'אימייל או סיסמה שגויים', variant: 'destructive' });
+        const newAttempts = loginAttempts + 1;
+        setLoginAttempts(newAttempts);
+        if (newAttempts >= 5) {
+          const lockout = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+          setLockoutUntil(lockout);
+          setLoginAttempts(0);
+          toast({ title: 'חשבון נעול', description: 'יותר מדי ניסיונות — נסה שוב בעוד 5 דקות', variant: 'destructive' });
+        } else if (error.message.includes('Invalid login credentials')) {
+          toast({ title: 'שגיאה', description: `אימייל או סיסמה שגויים (ניסיון ${newAttempts}/5)`, variant: 'destructive' });
         } else {
           toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
         }
       } else {
+        setLoginAttempts(0);
+        setLockoutUntil(null);
         toast({ title: 'ברוך הבא!', description: 'התחברת בהצלחה' });
         navigate('/');
       }

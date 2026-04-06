@@ -62,6 +62,14 @@ export function useAuth() {
       .eq('user_id', userId)
       .maybeSingle();
 
+    if (error) {
+      // Fail-closed: sign out if we can't verify the role
+      console.error('Failed to fetch user role:', error);
+      await supabase.auth.signOut();
+      setAuthState(prev => ({ ...prev, role: null, loading: false, user: null, session: null }));
+      return;
+    }
+
     if (data) {
       setAuthState(prev => ({ 
         ...prev, 
@@ -69,23 +77,14 @@ export function useAuth() {
         loading: false 
       }));
     } else {
-      setAuthState(prev => ({ ...prev, role: 'employee', loading: false }));
+      // No role assigned — deny access (fail-closed)
+      console.warn('No role found for user:', userId);
+      await supabase.auth.signOut();
+      setAuthState(prev => ({ ...prev, role: null, loading: false, user: null, session: null }));
     }
   };
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: { full_name: fullName },
-      },
-    });
-    return { error };
-  };
+  // signUp removed — user creation is invite-only via admin edge function
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -111,7 +110,6 @@ export function useAuth() {
     isDemo: authState.role === 'demo',
     canWrite: authState.role === 'admin' || authState.role === 'demo',
     canDelete: authState.role === 'admin',
-    signUp,
     signIn,
     signOut,
   };
