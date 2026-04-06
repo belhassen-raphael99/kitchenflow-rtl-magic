@@ -49,6 +49,8 @@ export const AuthPage = () => {
   const [securityQuestion, setSecurityQuestion] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [recoveryUserId, setRecoveryUserId] = useState('');
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<Date | null>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
