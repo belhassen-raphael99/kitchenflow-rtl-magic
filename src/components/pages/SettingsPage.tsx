@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Shield, KeyRound, ShieldQuestion } from 'lucide-react';
+import { User, Shield, KeyRound, ShieldQuestion, ShieldCheck } from 'lucide-react';
 import { ProfileTab } from '@/components/settings/ProfileTab';
 import { SecurityTab } from '@/components/settings/SecurityTab';
 import { LoginMethodsTab } from '@/components/settings/LoginMethodsTab';
 import { SecurityQuestionTab } from '@/components/settings/SecurityQuestionTab';
+import { TwoFactorTab } from '@/components/settings/TwoFactorTab';
 import { cn } from '@/lib/utils';
 
 export const SettingsPage = () => {
@@ -59,6 +60,13 @@ export const SettingsPage = () => {
               <ShieldQuestion className="w-4 h-4" />
               שאלת אבטחה
             </TabsTrigger>
+            <TabsTrigger
+              value="two-factor"
+              className="justify-start gap-2 w-full data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg px-4 py-3"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              אימות דו-שלבי
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 min-w-0">
@@ -73,6 +81,9 @@ export const SettingsPage = () => {
             </TabsContent>
             <TabsContent value="security-question" className="mt-0">
               <SecurityQuestionTab />
+            </TabsContent>
+            <TabsContent value="two-factor" className="mt-0">
+              <TwoFactorTab />
             </TabsContent>
           </div>
         </div>
