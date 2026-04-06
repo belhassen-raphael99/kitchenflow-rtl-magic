@@ -103,14 +103,14 @@ Deno.serve(async (req) => {
 
   // Only allow POST
   if (req.method !== 'POST') {
-    return errorResponse('Méthode non autorisée', 405);
+    return errorResponse('Méthode non autorisée', 405, corsHeaders);
   }
 
   try {
     // 1. AUTHENTICATION
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return errorResponse('Non authentifié', 401, 'Missing authorization header');
+      return errorResponse('Non authentifié', 401, corsHeaders, 'Missing authorization header');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
 
     const { data: { user: callerUser }, error: userError } = await userClient.auth.getUser();
     if (userError || !callerUser) {
-      return errorResponse('Session invalide', 401, `Auth error: ${userError?.message}`);
+      return errorResponse('Session invalide', 401, corsHeaders, `Auth error: ${userError?.message}`);
     }
 
     // 2. AUTHORIZATION - Admin only
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
 
     if (!roleData) {
       auditLog('UNAUTHORIZED_DELETE_ATTEMPT', callerUser.id, { email: callerUser.email });
-      return errorResponse('Permissions insuffisantes', 403, 'Non-admin attempted to delete user');
+      return errorResponse('Permissions insuffisantes', 403, corsHeaders, 'Non-admin attempted to delete user');
     }
 
     // 3. RATE LIMITING
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
 
     if (!rateLimitPassed) {
       auditLog('RATE_LIMITED', callerUser.id, { action: 'delete_user' });
-      return errorResponse('Trop de tentatives. Veuillez patienter.', 429);
+      return errorResponse('Trop de tentatives. Veuillez patienter.', 429, corsHeaders);
     }
 
     // 4. INPUT VALIDATION
@@ -160,26 +160,26 @@ Deno.serve(async (req) => {
     try {
       requestBody = await req.json();
     } catch {
-      return errorResponse('Format de requête invalide', 400, 'Invalid JSON body');
+      return errorResponse('Format de requête invalide', 400, corsHeaders, 'Invalid JSON body');
     }
 
     const validationResult = deleteUserSchema.safeParse(requestBody);
     if (!validationResult.success) {
       const errors = validationResult.error.errors.map(e => e.message).join(', ');
-      return errorResponse('Données invalides', 400, `Validation failed: ${errors}`);
+      return errorResponse('Données invalides', 400, corsHeaders, `Validation failed: ${errors}`);
     }
 
     const { userId } = validationResult.data;
 
     // 5. PREVENT SELF-DELETION
     if (userId === callerUser.id) {
-      return errorResponse('Action non autorisée', 400, 'Attempted self-deletion');
+      return errorResponse('Action non autorisée', 400, corsHeaders, 'Attempted self-deletion');
     }
 
     // 6. VERIFY TARGET USER EXISTS
     const { data: targetUser, error: targetError } = await adminClient.auth.admin.getUserById(userId);
     if (targetError || !targetUser.user) {
-      return errorResponse('Utilisateur introuvable', 404, `User not found: ${userId}`);
+      return errorResponse('Utilisateur introuvable', 404, corsHeaders, `User not found: ${userId}`);
     }
 
     auditLog('DELETE_USER_START', callerUser.id, { 
@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
         targetUserId: userId, 
         error: deleteError.message 
       });
-      return errorResponse('Erreur lors de la suppression', 500, deleteError.message);
+      return errorResponse('Erreur lors de la suppression', 500, corsHeaders, deleteError.message);
     }
 
     // 9. SUCCESS AUDIT
@@ -230,6 +230,6 @@ Deno.serve(async (req) => {
 
   } catch (error: unknown) {
     console.error('Unexpected error:', error);
-    return errorResponse('Une erreur est survenue', 500);
+    return errorResponse('Une erreur est survenue', 500, corsHeaders);
   }
 });
