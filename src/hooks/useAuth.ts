@@ -110,7 +110,6 @@ export function useAuth() {
     isDemo: authState.role === 'demo',
     canWrite: authState.role === 'admin' || authState.role === 'demo',
     canDelete: authState.role === 'admin',
-    signUp,
     signIn,
     signOut,
   };
