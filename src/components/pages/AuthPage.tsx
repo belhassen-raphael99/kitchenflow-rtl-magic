@@ -35,7 +35,7 @@ const passwordSchema = z.object({
   path: ['confirmPassword'],
 });
 
-type ViewMode = 'login' | 'forgot-password' | 'reset-password' | 'magic-link' | 'otp-send' | 'otp-verify' | 'security-question-recovery';
+type ViewMode = 'login' | 'forgot-password' | 'reset-password' | 'magic-link' | 'otp-send' | 'otp-verify' | 'security-question-recovery' | 'totp-verify';
 
 export const AuthPage = () => {
   const [searchParams] = useSearchParams();
