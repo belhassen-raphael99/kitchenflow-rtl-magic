@@ -956,6 +956,47 @@ export type Database = {
         }
         Relationships: []
       }
+      user_totp: {
+        Row: {
+          backup_codes: Json | null
+          created_at: string
+          id: string
+          is_enabled: boolean
+          secret_encrypted: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          backup_codes?: Json | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          secret_encrypted: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          backup_codes?: Json | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          secret_encrypted?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_totp_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       warehouse_items: {
         Row: {
           category_id: string | null
