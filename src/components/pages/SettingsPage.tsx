@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Shield, KeyRound, ShieldQuestion } from 'lucide-react';
+import { User, Shield, KeyRound, ShieldQuestion, ShieldCheck } from 'lucide-react';
 import { ProfileTab } from '@/components/settings/ProfileTab';
 import { SecurityTab } from '@/components/settings/SecurityTab';
 import { LoginMethodsTab } from '@/components/settings/LoginMethodsTab';
 import { SecurityQuestionTab } from '@/components/settings/SecurityQuestionTab';
+import { TwoFactorTab } from '@/components/settings/TwoFactorTab';
 import { cn } from '@/lib/utils';
 
 export const SettingsPage = () => {
