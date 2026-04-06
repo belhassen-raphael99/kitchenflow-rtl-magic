@@ -6,7 +6,13 @@ const corsHeaders = {
 };
 
 const DEMO_EMAIL = 'demo@casserole.app';
-const DEMO_PASSWORD = 'Demo@Casserole2026!Secure';
+
+function generateRandomPassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => chars[b % chars.length]).join('');
+}
 
 const resetDemoState = async (supabaseAdmin: ReturnType<typeof createClient>) => {
   const eventResets = [
