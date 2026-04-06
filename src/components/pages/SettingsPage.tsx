@@ -82,6 +82,9 @@ export const SettingsPage = () => {
             <TabsContent value="security-question" className="mt-0">
               <SecurityQuestionTab />
             </TabsContent>
+            <TabsContent value="two-factor" className="mt-0">
+              <TwoFactorTab />
+            </TabsContent>
           </div>
         </div>
       </Tabs>
