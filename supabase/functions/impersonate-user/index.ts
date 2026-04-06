@@ -155,9 +155,10 @@ Deno.serve(async (req: Request) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error in impersonate-user:", error);
+    const errorOrigin = getAllowedOrigin(req);
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
-      headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
+      headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': errorOrigin, 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' },
     });
   }
 });

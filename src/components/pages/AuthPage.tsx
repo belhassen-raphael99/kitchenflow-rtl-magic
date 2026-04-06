@@ -678,6 +678,68 @@ export const AuthPage = () => {
     </div>
   );
 
+  const handleVerifyTotp = async () => {
+    if (totpCode.length !== 6) {
+      toast({ title: 'שגיאה', description: 'נא להזין קוד בן 6 ספרות', variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('totp-verify', {
+        body: { code: totpCode, action: 'validate' },
+      });
+      if (error || !data?.valid) {
+        toast({ title: 'שגיאה', description: 'קוד שגוי, נסה שוב', variant: 'destructive' });
+        return;
+      }
+      setLoginAttempts(0);
+      setLockoutUntil(null);
+      setTotpCode('');
+      toast({ title: 'ברוך הבא!', description: 'התחברת בהצלחה' });
+      navigate('/');
+    } catch (err: any) {
+      toast({ title: 'שגיאה', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderTotpVerify = () => (
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <KeyRound className="w-12 h-12 text-primary mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-foreground">אימות דו-שלבי</h2>
+        <p className="text-sm text-muted-foreground">הזן את הקוד מ-Google Authenticator</p>
+      </div>
+
+      <div className="flex justify-center" dir="ltr">
+        <InputOTP maxLength={6} value={totpCode} onChange={setTotpCode}>
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
+      </div>
+
+      <Button onClick={handleVerifyTotp} className="w-full" disabled={loading || totpCode.length !== 6}>
+        {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+        אמת קוד
+      </Button>
+
+      <Button variant="ghost" className="w-full" onClick={async () => {
+        await supabase.auth.signOut();
+        setTotpCode('');
+        setViewMode('login');
+      }}>
+        חזור להתחברות
+      </Button>
+    </div>
+  );
+
   const renderContent = () => {
     switch (viewMode) {
       case 'reset-password': return renderResetPassword();
@@ -686,6 +748,7 @@ export const AuthPage = () => {
       case 'otp-send': return renderOtpSend();
       case 'otp-verify': return renderOtpVerify();
       case 'security-question-recovery': return renderSecurityQuestionRecovery();
+      case 'totp-verify': return renderTotpVerify();
       default: return renderLogin();
     }
   };
