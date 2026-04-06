@@ -178,7 +178,7 @@ export const AuthPage = () => {
         const newAttempts = loginAttempts + 1;
         setLoginAttempts(newAttempts);
         if (newAttempts >= 5) {
-          const lockout = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+          const lockout = new Date(Date.now() + 5 * 60 * 1000);
           setLockoutUntil(lockout);
           setLoginAttempts(0);
           toast({ title: 'חשבון נעול', description: 'יותר מדי ניסיונות — נסה שוב בעוד 5 דקות', variant: 'destructive' });
@@ -188,6 +188,21 @@ export const AuthPage = () => {
           toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
         }
       } else {
+        // Check if user has 2FA enabled
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const { data: totpData } = await supabase
+            .from('user_totp')
+            .select('is_enabled')
+            .eq('user_id', currentUser.id)
+            .maybeSingle();
+
+          if (totpData?.is_enabled) {
+            setViewMode('totp-verify');
+            setLoading(false);
+            return;
+          }
+        }
         setLoginAttempts(0);
         setLockoutUntil(null);
         toast({ title: 'ברוך הבא!', description: 'התחברת בהצלחה' });
