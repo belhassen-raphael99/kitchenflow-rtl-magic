@@ -113,7 +113,7 @@ export const TwoFactorTab = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {isEnabled ? <ShieldCheck className="w-5 h-5 text-green-500" /> : <ShieldOff className="w-5 h-5 text-muted-foreground" />}
+            {isEnabled ? <ShieldCheck className="w-5 h-5 text-primary" /> : <ShieldOff className="w-5 h-5 text-muted-foreground" />}
             אימות דו-שלבי (2FA)
           </CardTitle>
           <CardDescription>
