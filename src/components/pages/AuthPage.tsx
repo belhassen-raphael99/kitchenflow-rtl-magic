@@ -281,15 +281,18 @@ export const AuthPage = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
       });
-      if (error) {
-        toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+      if (result.error) {
+        toast({ title: 'שגיאה', description: result.error.message, variant: 'destructive' });
+        return;
       }
+      if (result.redirected) {
+        return;
+      }
+      // Session set — navigate
+      navigate('/');
     } catch (err: any) {
       toast({ title: 'שגיאה', description: err.message, variant: 'destructive' });
     }
