@@ -105,9 +105,10 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error('demo-otp-signup error:', err);
+    const errorOrigin = getAllowedOrigin(req);
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
-      { status: 500, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' } }
+      { status: 500, headers: { 'Access-Control-Allow-Origin': errorOrigin, 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Content-Type': 'application/json' } }
     );
   }
 });
