@@ -97,13 +97,16 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Generate a fresh random password for each demo login
+    const demoPassword = generateRandomPassword();
+
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
     const demoUser = existingUsers?.users?.find((user) => user.email === DEMO_EMAIL);
 
     if (!demoUser) {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: DEMO_EMAIL,
-        password: DEMO_PASSWORD,
+        password: demoPassword,
         email_confirm: true,
         user_metadata: { full_name: 'משתמש דמו' },
       });
@@ -120,7 +123,7 @@ Deno.serve(async (req) => {
       await resetDemoState(supabaseAdmin);
     } else {
       await supabaseAdmin.auth.admin.updateUserById(demoUser.id, {
-        password: DEMO_PASSWORD,
+        password: demoPassword,
         email_confirm: true,
         user_metadata: { full_name: 'משתמש דמו' },
       });
@@ -147,7 +150,7 @@ Deno.serve(async (req) => {
 
     const { data: signInData, error: signInError } = await anonClient.auth.signInWithPassword({
       email: DEMO_EMAIL,
-      password: DEMO_PASSWORD,
+      password: demoPassword,
     });
 
     if (signInError || !signInData.session) {
