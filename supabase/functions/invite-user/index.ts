@@ -97,9 +97,9 @@ async function checkRateLimit(
 function errorResponse(
   userMessage: string,
   status: number,
+  corsHeaders: Record<string, string>,
   technicalDetails?: string
 ): Response {
-  // Log technique uniquement côté serveur
   if (technicalDetails) {
     console.error(`[ERROR] ${technicalDetails}`);
   }

@@ -59,6 +59,7 @@ async function checkRateLimit(
 function errorResponse(
   userMessage: string,
   status: number,
+  corsHeaders: Record<string, string>,
   technicalDetails?: string
 ): Response {
   if (technicalDetails) {
