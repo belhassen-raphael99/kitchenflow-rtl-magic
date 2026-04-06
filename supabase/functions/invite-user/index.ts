@@ -4,13 +4,13 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 // ============================================
 // CORS HEADERS
 // ============================================
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-};
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('Origin') || '';
+  const envOrigin = Deno.env.get('ALLOWED_ORIGIN');
+  if (envOrigin && origin === envOrigin) return origin;
+  if (origin.endsWith('.lovable.app')) return origin;
+  return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
+}
 
 // ============================================
 // VALIDATION SCHEMAS (Zod)
@@ -97,9 +97,9 @@ async function checkRateLimit(
 function errorResponse(
   userMessage: string,
   status: number,
+  corsHeaders: Record<string, string>,
   technicalDetails?: string
 ): Response {
-  // Log technique uniquement côté serveur
   if (technicalDetails) {
     console.error(`[ERROR] ${technicalDetails}`);
   }
@@ -130,6 +130,14 @@ function auditLog(action: string, userId: string, details: Record<string, unknow
 // MAIN HANDLER
 // ============================================
 Deno.serve(async (req) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  };
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -137,14 +145,14 @@ Deno.serve(async (req) => {
 
   // Only allow POST
   if (req.method !== 'POST') {
-    return errorResponse('Méthode non autorisée', 405);
+    return errorResponse('Méthode non autorisée', 405, corsHeaders);
   }
 
   try {
     // 1. AUTHENTICATION - Vérifier le token JWT
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return errorResponse('Non authentifié', 401, 'Missing authorization header');
+      return errorResponse('Non authentifié', 401, corsHeaders, 'Missing authorization header');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -157,7 +165,7 @@ Deno.serve(async (req) => {
 
     const { data: { user: callerUser }, error: userError } = await userClient.auth.getUser();
     if (userError || !callerUser) {
-      return errorResponse('Session invalide', 401, `Auth error: ${userError?.message}`);
+      return errorResponse('Session invalide', 401, corsHeaders, `Auth error: ${userError?.message}`);
     }
 
     // 2. AUTHORIZATION - Vérifier le rôle admin
@@ -172,7 +180,7 @@ Deno.serve(async (req) => {
 
     if (!roleData) {
       auditLog('UNAUTHORIZED_INVITE_ATTEMPT', callerUser.id, { email: callerUser.email });
-      return errorResponse('Permissions insuffisantes', 403, 'Non-admin attempted to invite user');
+      return errorResponse('Permissions insuffisantes', 403, corsHeaders, 'Non-admin attempted to invite user');
     }
 
     // 3. RATE LIMITING - Limiter les invitations
@@ -187,7 +195,7 @@ Deno.serve(async (req) => {
 
     if (!rateLimitPassed) {
       auditLog('RATE_LIMITED', callerUser.id, { action: 'invite_user' });
-      return errorResponse('Trop de tentatives. Veuillez patienter.', 429);
+      return errorResponse('Trop de tentatives. Veuillez patienter.', 429, corsHeaders);
     }
 
     // 4. INPUT VALIDATION - Validation stricte avec Zod
@@ -195,13 +203,13 @@ Deno.serve(async (req) => {
     try {
       requestBody = await req.json();
     } catch {
-      return errorResponse('Format de requête invalide', 400, 'Invalid JSON body');
+      return errorResponse('Format de requête invalide', 400, corsHeaders, 'Invalid JSON body');
     }
 
     const validationResult = inviteUserSchema.safeParse(requestBody);
     if (!validationResult.success) {
       const errors = validationResult.error.errors.map(e => e.message).join(', ');
-      return errorResponse('Données invalides', 400, `Validation failed: ${errors}`);
+      return errorResponse('Données invalides', 400, corsHeaders, `Validation failed: ${errors}`);
     }
 
     const { email, fullName, password, role } = validationResult.data;
@@ -219,9 +227,9 @@ Deno.serve(async (req) => {
     if (createError) {
       // Messages génériques pour ne pas révéler si l'email existe
       if (createError.message.includes('already exists') || createError.message.includes('duplicate')) {
-        return errorResponse('Impossible de créer cet utilisateur', 400, `User exists: ${email}`);
+        return errorResponse('Impossible de créer cet utilisateur', 400, corsHeaders, `User exists: ${email}`);
       }
-      return errorResponse('Erreur lors de la création du compte', 400, createError.message);
+      return errorResponse('Erreur lors de la création du compte', 400, corsHeaders, createError.message);
     }
 
     // 6. ROLE ASSIGNMENT
@@ -263,7 +271,7 @@ Deno.serve(async (req) => {
                 <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                   <p><strong>פרטי התחברות:</strong></p>
                   <p>📧 אימייל: <strong>${escapeHtml(email)}</strong></p>
-                  <p>🔑 סיסמה זמנית: <strong>${escapeHtml(password)}</strong></p>
+                  <p>🔑 סיסמה: <strong>נמסרה לך ע"י מנהל המערכת</strong></p>
                 </div>
                 <p style="color: #d32f2f;">⚠️ מומלץ לשנות את הסיסמה מיד לאחר ההתחברות הראשונה</p>
               </div>
@@ -307,6 +315,6 @@ Deno.serve(async (req) => {
 
   } catch (error: unknown) {
     console.error('Unexpected error:', error);
-    return errorResponse('Une erreur est survenue', 500);
+    return errorResponse('Une erreur est survenue', 500, corsHeaders);
   }
 });

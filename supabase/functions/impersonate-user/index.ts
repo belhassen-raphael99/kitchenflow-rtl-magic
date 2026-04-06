@@ -1,15 +1,22 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-};
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('Origin') || '';
+  const envOrigin = Deno.env.get('ALLOWED_ORIGIN');
+  if (envOrigin && origin === envOrigin) return origin;
+  if (origin.endsWith('.lovable.app')) return origin;
+  return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
+}
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': getAllowedOrigin(req),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+  };
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -19,7 +26,6 @@ serve(async (req: Request) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify the caller is authenticated
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -28,7 +34,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Verify caller identity
     const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -43,7 +48,6 @@ serve(async (req: Request) => {
 
     const adminUserId = callerUser.id;
 
-    // Check admin role using service client
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: adminRole } = await serviceClient
@@ -62,9 +66,7 @@ serve(async (req: Request) => {
 
     const { target_user_id, action } = await req.json();
 
-    // === HANDLE EXIT IMPERSONATION ===
     if (action === "exit") {
-      // Log impersonation end
       await serviceClient.from("audit_logs").insert({
         user_id: adminUserId,
         action: "IMPERSONATION_END",
@@ -79,7 +81,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // === HANDLE START IMPERSONATION ===
     if (!target_user_id) {
       return new Response(JSON.stringify({ error: "target_user_id required" }), {
         status: 400,
@@ -87,7 +88,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Cannot impersonate self
     if (target_user_id === adminUserId) {
       return new Response(JSON.stringify({ error: "Cannot impersonate yourself" }), {
         status: 400,
@@ -95,7 +95,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Check target is not admin
     const { data: targetRole } = await serviceClient
       .from("user_roles")
       .select("role")
@@ -110,7 +109,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Get target user info
     const { data: targetUser, error: targetError } = await serviceClient.auth.admin.getUserById(target_user_id);
     if (targetError || !targetUser?.user) {
       return new Response(JSON.stringify({ error: "User not found" }), {
@@ -119,7 +117,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Generate a magic link for the target user
     const { data: linkData, error: linkError } = await serviceClient.auth.admin.generateLink({
       type: "magiclink",
       email: targetUser.user.email!,
@@ -133,7 +130,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Log impersonation start
     await serviceClient.from("audit_logs").insert({
       user_id: adminUserId,
       action: "IMPERSONATION_START",
@@ -161,7 +157,7 @@ serve(async (req: Request) => {
     console.error("Error in impersonate-user:", error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      headers: { "Content-Type": "application/json", 'Access-Control-Allow-Origin': '*' },
     });
   }
 });
