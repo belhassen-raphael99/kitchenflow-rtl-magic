@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable';
 
 import { Loader2, Mail, Lock, LogIn, KeyRound, CheckCircle, Link2, Smartphone, Chrome } from 'lucide-react';
 import { z } from 'zod';
