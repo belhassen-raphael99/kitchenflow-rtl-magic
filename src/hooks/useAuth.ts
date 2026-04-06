@@ -62,6 +62,14 @@ export function useAuth() {
       .eq('user_id', userId)
       .maybeSingle();
 
+    if (error) {
+      // Fail-closed: sign out if we can't verify the role
+      console.error('Failed to fetch user role:', error);
+      await supabase.auth.signOut();
+      setAuthState(prev => ({ ...prev, role: null, loading: false, user: null, session: null }));
+      return;
+    }
+
     if (data) {
       setAuthState(prev => ({ 
         ...prev, 
@@ -69,7 +77,10 @@ export function useAuth() {
         loading: false 
       }));
     } else {
-      setAuthState(prev => ({ ...prev, role: 'employee', loading: false }));
+      // No role assigned — deny access (fail-closed)
+      console.warn('No role found for user:', userId);
+      await supabase.auth.signOut();
+      setAuthState(prev => ({ ...prev, role: null, loading: false, user: null, session: null }));
     }
   };
 
