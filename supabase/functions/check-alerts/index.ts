@@ -1,13 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-};
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('Origin') || '';
+  const envOrigin = Deno.env.get('ALLOWED_ORIGIN');
+  if (envOrigin && origin === envOrigin) return origin;
+  if (origin.endsWith('.lovable.app')) return origin;
+  return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
+}
 
 interface NotificationPayload {
   type: string;
