@@ -1,9 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+function getAllowedOrigin(req: Request): string {
+  const origin = req.headers.get('Origin') || '';
+  const envOrigin = Deno.env.get('ALLOWED_ORIGIN');
+  if (envOrigin && origin === envOrigin) return origin;
+  if (origin.endsWith('.lovable.app')) return origin;
+  return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
