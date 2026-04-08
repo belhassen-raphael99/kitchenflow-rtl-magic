@@ -57,12 +57,38 @@ Deno.serve(async (req: Request) => {
 
     console.log("Checking for alerts...");
 
-    // 1. Low stock warehouse
-    const { data: warehouseItems } = await supabase
-      .from("warehouse_items")
-      .select("id, name, quantity, min_stock, unit")
-      .or("quantity.eq.0,quantity.lte.min_stock");
+    // 1-4. Parallel queries for independent checks
+    const [
+      { data: warehouseItems },
+      { data: reserveItems },
+      { data: expiringItems },
+      { data: upcomingEvents },
+    ] = await Promise.all([
+      supabase
+        .from("warehouse_items")
+        .select("id, name, quantity, min_stock, unit")
+        .or("quantity.eq.0,quantity.lte.min_stock"),
+      supabase
+        .from("reserve_items")
+        .select("id, name, quantity, min_stock, unit")
+        .or("quantity.eq.0,quantity.lte.min_stock"),
+      supabase
+        .from("reserve_items")
+        .select("id, name, expiry_date, quantity, unit")
+        .not("expiry_date", "is", null)
+        .lte("expiry_date", weekFromNow)
+        .gt("quantity", 0),
+      supabase
+        .from("events")
+        .select("id, name, date, time, guests, client:clients(name)")
+        .gte("date", today)
+        .lte("date", tomorrow)
+        .neq("status", "cancelled")
+        .order("date")
+        .order("time"),
+    ]);
 
+    // Process warehouse low stock
     if (warehouseItems) {
       for (const item of warehouseItems) {
         const isCritical = item.quantity === 0;
@@ -77,12 +103,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 2. Low stock reserve
-    const { data: reserveItems } = await supabase
-      .from("reserve_items")
-      .select("id, name, quantity, min_stock, unit")
-      .or("quantity.eq.0,quantity.lte.min_stock");
-
+    // Process reserve low stock
     if (reserveItems) {
       for (const item of reserveItems) {
         const isCritical = item.quantity === 0;
@@ -97,14 +118,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 3. Expiring reserve items (within 7 days)
-    const { data: expiringItems } = await supabase
-      .from("reserve_items")
-      .select("id, name, expiry_date, quantity, unit")
-      .not("expiry_date", "is", null)
-      .lte("expiry_date", weekFromNow)
-      .gt("quantity", 0);
-
+    // Process expiring reserve items
     if (expiringItems) {
       for (const item of expiringItems) {
         const isExpired = new Date(item.expiry_date) < new Date();
@@ -119,16 +133,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 4. Upcoming events (today + tomorrow)
-    const { data: upcomingEvents } = await supabase
-      .from("events")
-      .select("id, name, date, time, guests, client:clients(name)")
-      .gte("date", today)
-      .lte("date", tomorrow)
-      .neq("status", "cancelled")
-      .order("date")
-      .order("time");
-
+    // Process upcoming events
     if (upcomingEvents) {
       for (const event of upcomingEvents) {
         const isToday = event.date === today;

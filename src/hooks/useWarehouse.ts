@@ -45,7 +45,7 @@ export function useWarehouse() {
   const fetchData = useCallback(async () => {
     setLoading(true);
 
-    // Always fetch categories and suppliers (small tables)
+    // Fetch categories and suppliers for dropdowns
     const [categoriesRes, suppliersRes] = await Promise.all([
       supabase.from('categories').select('id, name, color, icon').order('name'),
       supabase.from('suppliers').select('id, name, contact_info').order('name'),
@@ -54,10 +54,14 @@ export function useWarehouse() {
     if (categoriesRes.data) setCategories(categoriesRes.data);
     if (suppliersRes.data) setSuppliers(suppliersRes.data);
 
-    // Build paginated query
+    // Build paginated query with joins
     let query = supabase
       .from('warehouse_items')
-      .select('id, name, code, quantity, min_stock, price, unit, status, category_id, supplier_id, waste_percent', { count: 'exact' })
+      .select(`
+        id, name, code, quantity, min_stock, price, unit, status, category_id, supplier_id, waste_percent,
+        category:categories(id, name, color, icon),
+        supplier:suppliers(id, name, contact_info)
+      `, { count: 'exact' })
       .order('name');
 
     if (search) {
@@ -76,14 +80,12 @@ export function useWarehouse() {
     setTotalCount(itemsRes.count ?? 0);
 
     if (itemsRes.data) {
-      const enrichedItems = itemsRes.data.map(item => ({
+      const items = itemsRes.data.map(item => ({
         ...item,
         price: item.price ?? 0,
         waste_percent: item.waste_percent ?? 0,
-        category: categoriesRes.data?.find(c => c.id === item.category_id),
-        supplier: suppliersRes.data?.find(s => s.id === item.supplier_id),
       }));
-      setItems(enrichedItems);
+      setItems(items);
     }
 
     setLoading(false);

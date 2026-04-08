@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import * as OTPAuth from "https://esm.sh/otpauth@9.3.5";
+import { decrypt } from "../_shared/crypto.ts";
 
 function getAllowedOrigin(req: Request): string {
   const origin = req.headers.get('Origin') || '';
@@ -92,14 +93,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate TOTP code
+    // Decrypt and validate TOTP code
+    const decryptedSecret = await decrypt(totpRecord.secret_encrypted);
     const totp = new OTPAuth.TOTP({
       issuer: 'KitchenFlow',
       label: user.email || user.id,
       algorithm: 'SHA1',
       digits: 6,
       period: 30,
-      secret: OTPAuth.Secret.fromBase32(totpRecord.secret_encrypted),
+      secret: OTPAuth.Secret.fromBase32(decryptedSecret),
     });
 
     const delta = totp.validate({ token: code, window: 1 });
