@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,7 @@ function getPasswordStrength(password: string): { label: string; color: string; 
 }
 
 export const SecurityTab = () => {
-  const { user, isDemo, signOut } = useAuth();
+  const { user, isDemo, signOut } = useAuthContext();
   const navigate = useNavigate();
 
   // Password change state

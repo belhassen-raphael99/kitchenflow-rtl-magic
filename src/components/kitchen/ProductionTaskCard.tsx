@@ -26,7 +26,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { ProductionTask, TaskStatus } from '@/hooks/useKitchenOps';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -47,7 +47,7 @@ export const ProductionTaskCard = ({
   onStatusChange,
   departmentColor,
 }: ProductionTaskCardProps) => {
-  const { isAdmin, isDemo } = useAuth();
+  const { isAdmin, isDemo } = useAuthContext();
   const [completing, setCompleting] = useState(false);
   const [starting, setStarting] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);

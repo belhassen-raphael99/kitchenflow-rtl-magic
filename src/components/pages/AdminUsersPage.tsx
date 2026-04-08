@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { useImpersonation } from '@/hooks/useImpersonation';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -80,7 +80,7 @@ interface DemoToken {
 }
 
 export const AdminUsersPage = () => {
-  const { isAdmin, user: currentUser } = useAuth();
+  const { isAdmin, user: currentUser } = useAuthContext();
   const { startImpersonation, isImpersonating } = useImpersonation();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);

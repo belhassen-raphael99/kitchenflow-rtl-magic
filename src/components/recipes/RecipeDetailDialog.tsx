@@ -12,7 +12,7 @@ import {
   AlertTriangle, Printer, Package,
 } from 'lucide-react';
 import { Recipe, RecipeIngredient, useRecipes } from '@/hooks/useRecipes';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { IngredientDialog } from './IngredientDialog';
 import { IngredientList } from './IngredientList';
 import { cn } from '@/lib/utils';
@@ -33,7 +33,7 @@ interface WarehouseStock {
 export const RecipeDetailDialog = ({
   open, onOpenChange, recipeId,
 }: RecipeDetailDialogProps) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useAuthContext();
   const {
     fetchRecipeWithIngredients, addIngredient, updateIngredient,
     deleteIngredient, calculateRecipeCost,

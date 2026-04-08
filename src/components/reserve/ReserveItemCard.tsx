@@ -15,7 +15,7 @@ import {
   ChefHat,
 } from 'lucide-react';
 import { ReserveItem } from '@/hooks/useReserve';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -35,7 +35,7 @@ export const ReserveItemCard = ({
   onProduce,
   onConsume,
 }: ReserveItemCardProps) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useAuthContext();
 
   const isLowStock = item.quantity <= item.min_stock;
   const isExpiringSoon = item.expiry_date && differenceInDays(new Date(item.expiry_date), new Date()) <= 7;

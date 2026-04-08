@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, ExternalLink, SkipForward, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 
 type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 
@@ -173,7 +173,7 @@ const getTooltipPosition = (rect: DOMRect | null, placement: TooltipPlacement = 
 export const DemoTour = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isDemo } = useAuth();
+  const { isDemo } = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);

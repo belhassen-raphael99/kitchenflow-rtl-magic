@@ -21,13 +21,13 @@ import {
   CheckCheck,
 } from 'lucide-react';
 import { useNotifications, Notification, NotificationType, NotificationSeverity } from '@/hooks/useNotifications';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { he } from 'date-fns/locale';
 
 export const NotificationBell = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useAuthContext();
   const {
     notifications,
     unreadCount,

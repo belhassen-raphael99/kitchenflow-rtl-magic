@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/layout/EmptyState';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { CatalogItemDialog } from '@/components/catalog/CatalogItemDialog';
@@ -40,7 +40,7 @@ export const CatalogPage = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState<string | null>(null);
-  const { canWrite, canDelete } = useAuth();
+  const { canWrite, canDelete } = useAuthContext();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CatalogItem | null>(null);

@@ -1,5 +1,5 @@
 import { useApp } from '@/context/AppContext';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useTheme } from '@/hooks/useTheme';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -90,7 +90,7 @@ const navSections: NavSection[] = [
 
 export const Sidebar = () => {
   const { sidebarOpen, setSidebarOpen, toggleFullscreen, clientInfo } = useApp();
-  const { signOut, isAdmin, user, role } = useAuth();
+  const { signOut, isAdmin, user, role } = useAuthContext();
   const { full_name, avatar_url } = useUserProfile();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();

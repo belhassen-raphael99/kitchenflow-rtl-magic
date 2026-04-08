@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Loader2, ShieldCheck, ShieldOff, Copy, QrCode } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export const TwoFactorTab = () => {
-  const { user, isDemo } = useAuth();
+  const { user, isDemo } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);

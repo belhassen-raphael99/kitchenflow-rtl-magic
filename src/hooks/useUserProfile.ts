@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 
 interface UserProfile {
   full_name: string | null;
@@ -8,7 +8,7 @@ interface UserProfile {
 }
 
 export function useUserProfile() {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [profile, setProfile] = useState<UserProfile>({ full_name: null, avatar_url: null });
 
   useEffect(() => {
