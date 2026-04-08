@@ -8,6 +8,16 @@ function getAllowedOrigin(req: Request): string {
   return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
 }
 
+function esc(unsafe: string | null | undefined): string {
+  if (!unsafe) return "—";
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': getAllowedOrigin(req),
@@ -27,9 +37,49 @@ Deno.serve(async (req) => {
       });
     }
 
+    // === AUTHENTICATION ===
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    const callerClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: userError } = await callerClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify admin role
+    const adminClient = createClient(supabaseUrl, serviceKey);
+    const { data: roleData } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Use adminClient for DB queries (service role bypasses RLS)
+    const supabase = adminClient;
 
     // Fetch event
     const { data: event, error: eventErr } = await supabase
@@ -79,13 +129,13 @@ Deno.serve(async (req) => {
 
     const now = new Date().toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" });
 
-    // Build HTML
+    // Build HTML with XSS-escaped values
     const html = `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>בון משלוח — ${event.client_name || event.name}</title>
+  <title>בון משלוח — ${esc(event.client_name || event.name)}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -233,7 +283,7 @@ Deno.serve(async (req) => {
   <div class="slip">
     <div class="header">
       <h1>📦 בון משלוח</h1>
-      <div class="subtitle">${event.event_type || "אירוע"} — ${event.client_name || event.name}</div>
+      <div class="subtitle">${esc(event.event_type) === "—" ? "אירוע" : esc(event.event_type)} — ${esc(event.client_name || event.name)}</div>
     </div>
 
     <div class="meta">
@@ -243,19 +293,19 @@ Deno.serve(async (req) => {
       </div>
       <div class="meta-item">
         <span class="meta-label">⏰ שעת משלוח</span>
-        <span class="meta-value">${event.delivery_time || event.time || "—"}</span>
+        <span class="meta-value">${esc(event.delivery_time || event.time)}</span>
       </div>
       <div class="meta-item">
         <span class="meta-label">👤 לקוח</span>
-        <span class="meta-value">${event.client_name || "—"}</span>
+        <span class="meta-value">${esc(event.client_name)}</span>
       </div>
       <div class="meta-item">
         <span class="meta-label">📞 טלפון</span>
-        <span class="meta-value">${event.client_phone || "—"}</span>
+        <span class="meta-value">${esc(event.client_phone)}</span>
       </div>
       <div class="meta-item">
         <span class="meta-label">📍 כתובת משלוח</span>
-        <span class="meta-value">${event.delivery_address || "—"}</span>
+        <span class="meta-value">${esc(event.delivery_address)}</span>
       </div>
       <div class="meta-item">
         <span class="meta-label">👥 מספר אורחים</span>
@@ -267,7 +317,7 @@ Deno.serve(async (req) => {
     <div class="section">
       <div class="section-title">
         <span class="dept-dot" style="background: ${deptColors[dept] || "#607D8B"}"></span>
-        ${dept} (${(deptItems || []).length} פריטים)
+        ${esc(dept)} (${(deptItems || []).length} פריטים)
       </div>
       <ul class="checklist">
         ${(deptItems || []).map(item => `
@@ -275,8 +325,8 @@ Deno.serve(async (req) => {
           <div class="checkbox"></div>
           <span class="qty">${item.quantity}×</span>
           <div>
-            <div class="item-name">${item.name}</div>
-            ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ""}
+            <div class="item-name">${esc(item.name)}</div>
+            ${item.notes ? `<div class="item-notes">${esc(item.notes)}</div>` : ""}
           </div>
         </li>`).join("")}
       </ul>
@@ -291,9 +341,9 @@ Deno.serve(async (req) => {
           const statusLabel = t.status === "completed" ? "✓ הושלם" : t.status === "in-progress" ? "בביצוע" : "ממתין";
           return `
         <div class="task-card">
-          <div class="dept">${t.department === "kitchen" ? "מטבח" : t.department === "bakery" ? "מאפייה" : t.department}</div>
-          <div class="name">${t.name}</div>
-          <div class="progress">${t.completed_quantity}/${t.target_quantity} ${t.unit}</div>
+          <div class="dept">${esc(t.department === "kitchen" ? "מטבח" : t.department === "bakery" ? "מאפייה" : t.department)}</div>
+          <div class="name">${esc(t.name)}</div>
+          <div class="progress">${t.completed_quantity}/${t.target_quantity} ${esc(t.unit)}</div>
           <span class="status-badge ${statusClass}">${statusLabel}</span>
         </div>`;
         }).join("")}
@@ -303,7 +353,7 @@ Deno.serve(async (req) => {
     ${event.notes ? `
     <div class="section">
       <div class="section-title">📝 הערות</div>
-      <div class="notes-box">${event.notes}</div>
+      <div class="notes-box">${esc(event.notes)}</div>
     </div>` : ""}
 
     <div class="signature-area">
@@ -324,20 +374,25 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    // Save the URL to the event
-    // Store HTML as a data URI in the delivery_slip_url field
+    // Upload HTML to storage
     const slipBlob = new Blob([html], { type: "text/html" });
     const slipPath = `${event_id}/slip_${Date.now()}.html`;
 
-    // Upload to storage
     const { error: uploadErr } = await supabase.storage
       .from("delivery-proofs")
       .upload(slipPath, slipBlob, { contentType: "text/html", upsert: true });
 
     let slipUrl = "";
     if (!uploadErr) {
-      const { data: urlData } = supabase.storage.from("delivery-proofs").getPublicUrl(slipPath);
-      slipUrl = urlData.publicUrl;
+      // Use signed URL instead of public URL
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("delivery-proofs")
+        .createSignedUrl(slipPath, 3600);
+
+      if (signedError) {
+        console.error("Error creating signed URL:", signedError);
+      }
+      slipUrl = signedData?.signedUrl || "";
 
       // Update event
       await supabase.from("events").update({
@@ -351,9 +406,10 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    const errorOrigin = getAllowedOrigin(req);
     return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: (err as Error).message }),
+      { status: 500, headers: { 'Access-Control-Allow-Origin': errorOrigin, 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', "Content-Type": "application/json" } }
     );
   }
 });
