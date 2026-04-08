@@ -112,11 +112,11 @@ export function useImpersonation() {
         title: 'מצב התחזות פעיל',
         description: `צופה כ-${userEmail}`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearImpersonationState();
       toast({
         title: 'שגיאה',
-        description: error.message || 'לא ניתן להתחזות למשתמש',
+        description: error instanceof Error ? error.message : 'שגיאה לא ידועה' || 'לא ניתן להתחזות למשתמש',
         variant: 'destructive',
       });
     }
@@ -170,7 +170,7 @@ export function useImpersonation() {
         title: 'חזרת לחשבון המנהל',
         description: 'מצב ההתחזות הסתיים',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearImpersonationState();
       await supabase.auth.signOut();
       navigate('/auth');

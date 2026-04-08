@@ -64,11 +64,11 @@ export const useEvents = () => {
 
       if (error) throw error;
       setEvents((data as EventWithClient[]) || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching events:', error);
       toast({
         title: 'שגיאה בטעינת אירועים',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'שגיאה לא ידועה',
         variant: 'destructive',
       });
     } finally {
@@ -177,11 +177,11 @@ export const useEvents = () => {
       });
 
       return { success: true, departments };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating event:', error);
       toast({
         title: 'שגיאה ביצירת אירוע',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'שגיאה לא ידועה',
         variant: 'destructive',
       });
       return { success: false, departments: [] };
@@ -207,9 +207,9 @@ export const useEvents = () => {
       await fetchEvents();
       toast({ title: 'אירוע עודכן בהצלחה' });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating event:', error);
-      toast({ title: 'שגיאה בעדכון אירוע', description: error.message, variant: 'destructive' });
+      toast({ title: 'שגיאה בעדכון אירוע', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
       return false;
     }
   };
@@ -224,9 +224,9 @@ export const useEvents = () => {
       setEvents(prev => prev.filter(event => event.id !== id));
       toast({ title: 'אירוע נמחק בהצלחה' });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting event:', error);
-      toast({ title: 'שגיאה במחיקת אירוע', description: error.message, variant: 'destructive' });
+      toast({ title: 'שגיאה במחיקת אירוע', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
       return false;
     }
   };

@@ -124,8 +124,8 @@ export function WarehouseItemDialog({
       }
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
