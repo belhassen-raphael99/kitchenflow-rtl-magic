@@ -116,7 +116,7 @@ export function useImpersonation() {
       clearImpersonationState();
       toast({
         title: 'שגיאה',
-        description: error instanceof Error ? error.message : 'שגיאה לא ידועה' || 'לא ניתן להתחזות למשתמש',
+        description: error instanceof Error ? error.message : 'לא ניתן להתחזות למשתמש',
         variant: 'destructive',
       });
     }
