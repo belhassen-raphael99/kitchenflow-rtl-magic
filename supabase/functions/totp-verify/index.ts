@@ -55,6 +55,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    // === RATE LIMITING TOTP ===
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: rateLimitOk } = await adminClient.rpc("check_rate_limit", {
+      p_identifier: user.id,
+      p_action: "totp_verify",
+      p_max_requests: 5,
+      p_window_seconds: 900,
+    });
+
+    if (rateLimitOk === false) {
+      return new Response(JSON.stringify({ 
+        error: "Trop de tentatives. Compte temporairement bloqué.", 
+        valid: false 
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Fetch TOTP record
     const { data: totpRecord, error: fetchError } = await supabase
       .from('user_totp')

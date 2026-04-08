@@ -1,4 +1,5 @@
 import { encode as hexEncode } from "https://deno.land/std@0.190.0/encoding/hex.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 function getAllowedOrigin(req: Request): string {
   const origin = req.headers.get('Origin') || '';
@@ -21,6 +22,28 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // === AUTHENTICATION ===
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const client = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authError } = await client.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { answer, existingHash } = await req.json();
     if (!answer || typeof answer !== 'string' || answer.trim().length < 3) {
       return new Response(JSON.stringify({ error: 'Answer must be at least 3 characters' }), {

@@ -307,7 +307,6 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         user: { id: newUser.user.id, email: newUser.user.email },
-        credentials: { email, password, fullName },
         emailSent
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -105,6 +105,23 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // === RATE LIMITING ===
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+
+    const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", {
+      p_identifier: clientIp,
+      p_action: "demo_auto_login",
+      p_max_requests: 2,
+      p_window_seconds: 60,
+    });
+
+    if (rateLimitOk === false) {
+      return new Response(JSON.stringify({ error: "Trop de tentatives. Veuillez patienter." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const demoPassword = generateRandomPassword();
 
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
