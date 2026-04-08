@@ -57,77 +57,36 @@ Deno.serve(async (req: Request) => {
 
     console.log("Checking for alerts...");
 
-    // 1. Low stock warehouse
-    const { data: warehouseItems } = await supabase
-      .from("warehouse_items")
-      .select("id, name, quantity, min_stock, unit")
-      .or("quantity.eq.0,quantity.lte.min_stock");
-
-    if (warehouseItems) {
-      for (const item of warehouseItems) {
-        const isCritical = item.quantity === 0;
-        notifications.push({
-          type: "low_stock",
-          title: isCritical ? `מלאי אזל: ${item.name}` : `מלאי נמוך: ${item.name}`,
-          message: `${item.name}: ${item.quantity} ${item.unit} (מינימום: ${item.min_stock})`,
-          severity: isCritical ? "critical" : "warning",
-          related_table: "warehouse_items",
-          related_id: item.id,
-        });
-      }
-    }
-
-    // 2. Low stock reserve
-    const { data: reserveItems } = await supabase
-      .from("reserve_items")
-      .select("id, name, quantity, min_stock, unit")
-      .or("quantity.eq.0,quantity.lte.min_stock");
-
-    if (reserveItems) {
-      for (const item of reserveItems) {
-        const isCritical = item.quantity === 0;
-        notifications.push({
-          type: "low_stock",
-          title: isCritical ? `רזרבה אזלה: ${item.name}` : `רזרבה נמוכה: ${item.name}`,
-          message: `${item.name}: ${item.quantity} ${item.unit} (מינימום: ${item.min_stock})`,
-          severity: isCritical ? "critical" : "warning",
-          related_table: "reserve_items",
-          related_id: item.id,
-        });
-      }
-    }
-
-    // 3. Expiring reserve items (within 7 days)
-    const { data: expiringItems } = await supabase
-      .from("reserve_items")
-      .select("id, name, expiry_date, quantity, unit")
-      .not("expiry_date", "is", null)
-      .lte("expiry_date", weekFromNow)
-      .gt("quantity", 0);
-
-    if (expiringItems) {
-      for (const item of expiringItems) {
-        const isExpired = new Date(item.expiry_date) < new Date();
-        notifications.push({
-          type: "expiring",
-          title: isExpired ? `פג תוקף: ${item.name}` : `תוקף קרוב: ${item.name}`,
-          message: `${item.name} (${item.quantity} ${item.unit}) - תאריך תפוגה: ${item.expiry_date}`,
-          severity: isExpired ? "critical" : "warning",
-          related_table: "reserve_items",
-          related_id: item.id,
-        });
-      }
-    }
-
-    // 4. Upcoming events (today + tomorrow)
-    const { data: upcomingEvents } = await supabase
-      .from("events")
-      .select("id, name, date, time, guests, client:clients(name)")
-      .gte("date", today)
-      .lte("date", tomorrow)
-      .neq("status", "cancelled")
-      .order("date")
-      .order("time");
+    // 1-4. Parallel queries for independent checks
+    const [
+      { data: warehouseItems },
+      { data: reserveItems },
+      { data: expiringItems },
+      { data: upcomingEvents },
+    ] = await Promise.all([
+      supabase
+        .from("warehouse_items")
+        .select("id, name, quantity, min_stock, unit")
+        .or("quantity.eq.0,quantity.lte.min_stock"),
+      supabase
+        .from("reserve_items")
+        .select("id, name, quantity, min_stock, unit")
+        .or("quantity.eq.0,quantity.lte.min_stock"),
+      supabase
+        .from("reserve_items")
+        .select("id, name, expiry_date, quantity, unit")
+        .not("expiry_date", "is", null)
+        .lte("expiry_date", weekFromNow)
+        .gt("quantity", 0),
+      supabase
+        .from("events")
+        .select("id, name, date, time, guests, client:clients(name)")
+        .gte("date", today)
+        .lte("date", tomorrow)
+        .neq("status", "cancelled")
+        .order("date")
+        .order("time"),
+    ]);
 
     if (upcomingEvents) {
       for (const event of upcomingEvents) {

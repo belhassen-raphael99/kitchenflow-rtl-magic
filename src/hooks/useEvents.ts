@@ -42,14 +42,20 @@ export interface EventFormData {
   notes?: string;
 }
 
+const PAGE_SIZE = 100;
+
 export const useEvents = () => {
   const [events, setEvents] = useState<EventWithClient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(0);
 
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, error, count } = await supabase
         .from('events')
         .select(`
           *,
@@ -58,11 +64,13 @@ export const useEvents = () => {
             name,
             phone
           )
-        `)
+        `, { count: 'exact' })
         .order('date', { ascending: true })
-        .order('time', { ascending: true });
+        .order('time', { ascending: true })
+        .range(from, to);
 
       if (error) throw error;
+      setTotalCount(count ?? 0);
       setEvents((data as EventWithClient[]) || []);
     } catch (error: unknown) {
       console.error('Error fetching events:', error);
@@ -74,7 +82,7 @@ export const useEvents = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page]);
 
   const getEventsForDate = useCallback((date: Date): EventWithClient[] => {
     return events.filter(event => isSameDay(parseISO(event.date), date));
@@ -244,5 +252,9 @@ export const useEvents = () => {
     createEventFromWizard,
     updateEvent,
     deleteEvent,
+    page,
+    setPage,
+    totalCount,
+    totalPages: Math.ceil(totalCount / PAGE_SIZE),
   };
 };

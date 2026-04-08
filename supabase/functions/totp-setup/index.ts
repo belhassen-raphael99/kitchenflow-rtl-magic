@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import * as OTPAuth from "https://esm.sh/otpauth@9.3.5";
+import { encrypt } from "../_shared/crypto.ts";
 
 function getAllowedOrigin(req: Request): string {
   const origin = req.headers.get('Origin') || '';
@@ -80,12 +81,15 @@ Deno.serve(async (req) => {
       backupCodes.push(code);
     }
 
+    // Encrypt the secret before storing
+    const secretEncrypted = await encrypt(secret);
+
     // Upsert the TOTP record (not enabled until verified)
     const { error: upsertError } = await supabase
       .from('user_totp')
       .upsert({
         user_id: user.id,
-        secret_encrypted: secret,
+        secret_encrypted: secretEncrypted,
         is_enabled: false,
         backup_codes: backupCodes,
         verified_at: null,
