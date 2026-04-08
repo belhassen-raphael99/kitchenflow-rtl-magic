@@ -213,9 +213,9 @@ export const AdminUsersPage = () => {
       // Close invite dialog and open credentials dialog
       setInviteDialogOpen(false);
       setCreatedUserCredentials({
-        email: data.credentials?.email || email,
-        password: data.credentials?.password || password,
-        fullName: data.credentials?.fullName || fullName,
+        email,
+        password,
+        fullName,
         emailSent: data.emailSent || false,
       });
       setCredentialsDialogOpen(true);
