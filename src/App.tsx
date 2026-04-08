@@ -1,7 +1,9 @@
 // @refresh reset
 import { AppProvider } from '@/context/AppContext';
+import { AuthProvider } from '@/context/AuthContext';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
+import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { AuthPage } from './components/pages/AuthPage';
 import { DashboardPage } from './components/pages/DashboardPage';
 import { AgendaPage } from './components/pages/AgendaPage';
@@ -146,14 +148,18 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppProvider>
-        <ImpersonationBanner />
-        <AppRoutes />
-        <DemoTour />
-        <Toaster />
-      </AppProvider>
-    </BrowserRouter>
+    <ErrorBoundary context="App">
+      <BrowserRouter>
+        <AppProvider>
+          <AuthProvider>
+            <ImpersonationBanner />
+            <AppRoutes />
+            <DemoTour />
+            <Toaster />
+          </AuthProvider>
+        </AppProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
