@@ -121,7 +121,7 @@ export const useEvents = () => {
           delivery_time: data.delivery_time || null,
           event_type: data.event_type,
           invoice_status: 'sent',
-          quote_number: (data as any).quote_number || null,
+          quote_number: data.quote_number || null,
         })
         .select()
         .single();
