@@ -27,7 +27,6 @@ export function useImpersonation() {
       if (startedAt) {
         const elapsed = Date.now() - parseInt(startedAt, 10);
         if (elapsed > MAX_DURATION_MS) {
-          // Stale impersonation — auto-clear
           clearImpersonationState();
           return;
         }
@@ -63,7 +62,12 @@ export function useImpersonation() {
   }, [isImpersonating]);
 
   const clearImpersonationState = useCallback(() => {
-    Object.values(KEYS).forEach(key => localStorage.removeItem(key));
+    // adminRefreshToken uses sessionStorage, others use localStorage
+    localStorage.removeItem(KEYS.active);
+    localStorage.removeItem(KEYS.targetEmail);
+    localStorage.removeItem(KEYS.targetId);
+    localStorage.removeItem(KEYS.startedAt);
+    sessionStorage.removeItem(KEYS.adminRefreshToken);
     setIsImpersonating(false);
     setTargetEmail(null);
     setTargetId(null);
@@ -71,13 +75,11 @@ export function useImpersonation() {
 
   const startImpersonation = useCallback(async (userId: string, userEmail: string) => {
     try {
-      // Store current admin session
       const { data: { session: adminSession } } = await supabase.auth.getSession();
       if (!adminSession?.refresh_token) {
         throw new Error('No active admin session');
       }
 
-      // Call edge function
       const { data, error } = await supabase.functions.invoke('impersonate-user', {
         body: { target_user_id: userId },
       });
@@ -89,10 +91,9 @@ export function useImpersonation() {
       localStorage.setItem(KEYS.active, 'true');
       localStorage.setItem(KEYS.targetEmail, userEmail);
       localStorage.setItem(KEYS.targetId, userId);
-      localStorage.setItem(KEYS.adminRefreshToken, adminSession.refresh_token);
+      sessionStorage.setItem(KEYS.adminRefreshToken, adminSession.refresh_token);
       localStorage.setItem(KEYS.startedAt, Date.now().toString());
 
-      // Use the magic link token to sign in as the target user
       const { error: otpError } = await supabase.auth.verifyOtp({
         token_hash: data.token_hash,
         type: 'magiclink',
@@ -124,27 +125,23 @@ export function useImpersonation() {
 
   const exitImpersonation = useCallback(async () => {
     try {
-      const adminRefreshToken = localStorage.getItem(KEYS.adminRefreshToken);
+      const adminRefreshToken = sessionStorage.getItem(KEYS.adminRefreshToken);
       const storedTargetId = localStorage.getItem(KEYS.targetId);
 
       if (!adminRefreshToken) {
-        // No admin token to restore — just sign out
         clearImpersonationState();
         await supabase.auth.signOut();
         navigate('/auth');
         return;
       }
 
-      // Log impersonation end via edge function (using current session)
       try {
-        // We need to restore admin session first to have admin privileges
         const { error: refreshError } = await supabase.auth.refreshSession({
           refresh_token: adminRefreshToken,
         });
 
         if (refreshError) throw refreshError;
 
-        // Now call exit with admin privileges
         await supabase.functions.invoke('impersonate-user', {
           body: { action: 'exit', target_user_id: storedTargetId },
         });
@@ -152,7 +149,6 @@ export function useImpersonation() {
         console.error('Failed to log impersonation exit:', logError);
       }
 
-      // Restore admin session
       const { error: restoreError } = await supabase.auth.refreshSession({
         refresh_token: adminRefreshToken,
       });
