@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Shield, KeyRound, ShieldQuestion, ShieldCheck } from 'lucide-react';
 import { ProfileTab } from '@/components/settings/ProfileTab';
@@ -10,7 +10,7 @@ import { TwoFactorTab } from '@/components/settings/TwoFactorTab';
 import { cn } from '@/lib/utils';
 
 export const SettingsPage = () => {
-  const { isDemo } = useAuth();
+  const { isDemo } = useAuthContext();
   const [activeTab, setActiveTab] = useState('profile');
 
   return (

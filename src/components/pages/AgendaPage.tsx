@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useEvents, EventWithClient } from '@/hooks/useEvents';
 import { useClients } from '@/hooks/useClients';
 import { useRecipes } from '@/hooks/useRecipes';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { EventCard } from '@/components/agenda/EventCard';
 import { EventWizard, EventWizardData, PrefillData } from '@/components/agenda/EventWizard';
 import { EventDialog } from '@/components/agenda/EventDialog';
@@ -36,7 +36,7 @@ export const AgendaPage = () => {
   const { events, loading: eventsLoading, getEventsForDate, getDatesWithEvents, createEventFromWizard, updateEvent, deleteEvent, fetchEvents } = useEvents();
   const { clients, loading: clientsLoading, createClient } = useClients();
   const { recipes, loading: recipesLoading } = useRecipes();
-  const { isAdmin, canWrite } = useAuth();
+  const { isAdmin, canWrite } = useAuthContext();
 
   const formattedDate = format(selectedDate, 'dd MMMM yyyy', { locale: he });
   const eventsForSelectedDate = getEventsForDate(selectedDate);

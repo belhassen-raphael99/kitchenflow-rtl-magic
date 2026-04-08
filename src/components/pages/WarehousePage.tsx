@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useWarehouse, WarehouseItem } from '@/hooks/useWarehouse';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { WarehouseItemDialog } from '@/components/warehouse/WarehouseItemDialog';
@@ -12,7 +12,7 @@ import { PurchaseListDialog } from '@/components/warehouse/PurchaseListDialog';
 
 export const WarehousePage = () => {
   const { items, categories, suppliers, loading, refetch, page, setPage, totalPages, totalCount, search, setSearch, categoryFilter, setCategoryFilter } = useWarehouse();
-  const { canWrite } = useAuth();
+  const { canWrite } = useAuthContext();
   const [showItemDialog, setShowItemDialog] = useState(false);
   const [showStockDialog, setShowStockDialog] = useState(false);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);

@@ -16,7 +16,7 @@ import {
   Database,
 } from 'lucide-react';
 import { useRecipes, Recipe, RecipeFormData } from '@/hooks/useRecipes';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { RecipeCard } from '@/components/recipes/RecipeCard';
 import { RecipeDialog } from '@/components/recipes/RecipeDialog';
 import { RecipeDetailDialog } from '@/components/recipes/RecipeDetailDialog';
@@ -26,7 +26,7 @@ import { CardSkeleton } from '@/components/layout/CardSkeleton';
 import { EmptyState } from '@/components/layout/EmptyState';
 
 export const RecipesPage = () => {
-  const { canWrite } = useAuth();
+  const { canWrite } = useAuthContext();
   const { 
     recipes, 
     loading, 

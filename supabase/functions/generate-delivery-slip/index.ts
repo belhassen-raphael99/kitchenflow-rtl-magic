@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 
 function getAllowedOrigin(req: Request): string {
   const origin = req.headers.get('Origin') || '';

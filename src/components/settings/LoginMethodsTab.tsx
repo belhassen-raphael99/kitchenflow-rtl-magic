@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ interface LoginMethods {
 const defaultMethods: LoginMethods = { password: true, magic_link: false, otp: false, google: false };
 
 export const LoginMethodsTab = () => {
-  const { user, isDemo } = useAuth();
+  const { user, isDemo } = useAuthContext();
   const [methods, setMethods] = useState<LoginMethods>(defaultMethods);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);

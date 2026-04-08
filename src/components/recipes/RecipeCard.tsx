@@ -10,7 +10,7 @@ import {
   ChefHat
 } from 'lucide-react';
 import { Recipe } from '@/hooks/useRecipes';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import { recipeImages } from '@/assets/recipes';
 
@@ -22,7 +22,7 @@ interface RecipeCardProps {
 }
 
 export const RecipeCard = ({ recipe, onEdit, onDelete, onClick }: RecipeCardProps) => {
-  const { isAdmin, canWrite, canDelete } = useAuth();
+  const { isAdmin, canWrite, canDelete } = useAuthContext();
 
   const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0);
   const imageUrl = recipe.image_url || recipeImages[recipe.id];

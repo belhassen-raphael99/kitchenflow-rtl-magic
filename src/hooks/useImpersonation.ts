@@ -112,11 +112,11 @@ export function useImpersonation() {
         title: 'מצב התחזות פעיל',
         description: `צופה כ-${userEmail}`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       clearImpersonationState();
       toast({
         title: 'שגיאה',
-        description: error.message || 'לא ניתן להתחזות למשתמש',
+        description: error instanceof Error ? error.message : 'לא ניתן להתחזות למשתמש',
         variant: 'destructive',
       });
     }
@@ -138,7 +138,7 @@ export function useImpersonation() {
       // Log impersonation end via edge function (using current session)
       try {
         // We need to restore admin session first to have admin privileges
-        const { data: sessionData, error: refreshError } = await supabase.auth.refreshSession({
+        const { error: refreshError } = await supabase.auth.refreshSession({
           refresh_token: adminRefreshToken,
         });
 
@@ -170,7 +170,7 @@ export function useImpersonation() {
         title: 'חזרת לחשבון המנהל',
         description: 'מצב ההתחזות הסתיים',
       });
-    } catch (error: any) {
+    } catch (_error: unknown) {
       clearImpersonationState();
       await supabase.auth.signOut();
       navigate('/auth');

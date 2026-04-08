@@ -1,7 +1,8 @@
 // @refresh reset
 // AppContext v4 - Simplified UI State Management Only
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { clientInfo, ClientInfo, Recipe } from '@/types';
+import { createContext, useContext, useState, ReactNode } from 'react';
+import { clientInfo, ClientInfo } from '@/types';
+import type { Recipe } from '@/hooks/useRecipes';
 
 interface AppContextType {
   // UI State only

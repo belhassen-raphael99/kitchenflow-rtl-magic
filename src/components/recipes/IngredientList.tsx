@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Link } from 'lucide-react';
 import { RecipeIngredient } from '@/hooks/useRecipes';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 
 interface IngredientListProps {
   ingredients: RecipeIngredient[];
@@ -11,7 +11,7 @@ interface IngredientListProps {
 }
 
 export const IngredientList = ({ ingredients, onEdit, onDelete }: IngredientListProps) => {
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useAuthContext();
 
   if (ingredients.length === 0) {
     return (

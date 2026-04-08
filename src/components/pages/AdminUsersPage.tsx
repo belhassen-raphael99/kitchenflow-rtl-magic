@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { useImpersonation } from '@/hooks/useImpersonation';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -80,7 +80,7 @@ interface DemoToken {
 }
 
 export const AdminUsersPage = () => {
-  const { isAdmin, user: currentUser } = useAuth();
+  const { isAdmin, user: currentUser } = useAuthContext();
   const { startImpersonation, isImpersonating } = useImpersonation();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +122,7 @@ export const AdminUsersPage = () => {
       .single();
 
     if (error) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
     } else if (data) {
       const url = `${window.location.origin}/demo?ref=${data.token}`;
       await navigator.clipboard.writeText(url);
@@ -135,7 +135,7 @@ export const AdminUsersPage = () => {
   const handleRevokeDemoToken = async (tokenId: string) => {
     const { error } = await supabase.from('demo_tokens').delete().eq('id', tokenId);
     if (error) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
     } else {
       toast({ title: 'הצלחה', description: 'הקישור בוטל' });
       fetchDemoTokens();
@@ -177,8 +177,8 @@ export const AdminUsersPage = () => {
       });
 
       setUsers(usersWithRoles);
-    } catch (error: any) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -197,7 +197,7 @@ export const AdminUsersPage = () => {
     const validation = inviteSchema.safeParse({ email, fullName, password, role });
     if (!validation.success) {
       const error = validation.error.errors[0];
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
       return;
     }
 
@@ -221,8 +221,8 @@ export const AdminUsersPage = () => {
       setCredentialsDialogOpen(true);
       resetForm();
       fetchUsers();
-    } catch (error: any) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
     } finally {
       setInviting(false);
     }
@@ -267,8 +267,8 @@ export const AdminUsersPage = () => {
 
       toast({ title: 'הצלחה!', description: 'התפקיד עודכן בהצלחה' });
       fetchUsers();
-    } catch (error: any) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
     }
   };
 
@@ -315,8 +315,8 @@ export const AdminUsersPage = () => {
 
       toast({ title: 'הצלחה!', description: 'המשתמש נמחק בהצלחה' });
       fetchUsers();
-    } catch (error: any) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
     } finally {
       setDeletingUserId(null);
     }
@@ -329,8 +329,8 @@ export const AdminUsersPage = () => {
       });
       if (error) throw error;
       toast({ title: 'הצלחה!', description: `אימייל איפוס סיסמה נשלח ל-${userEmail}` });
-    } catch (error: any) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
     }
   };
 

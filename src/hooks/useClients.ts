@@ -35,11 +35,11 @@ export const useClients = () => {
 
       if (error) throw error;
       setClients(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching clients:', error);
       toast({
         title: 'שגיאה בטעינת לקוחות',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'שגיאה לא ידועה',
         variant: 'destructive',
       });
     } finally {
@@ -69,11 +69,11 @@ export const useClients = () => {
         description: `${clientData.name} נוסף לרשימת הלקוחות`,
       });
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating client:', error);
       toast({
         title: 'שגיאה ביצירת לקוח',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'שגיאה לא ידועה',
         variant: 'destructive',
       });
       return null;
@@ -101,11 +101,11 @@ export const useClients = () => {
         title: 'לקוח עודכן בהצלחה',
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating client:', error);
       toast({
         title: 'שגיאה בעדכון לקוח',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'שגיאה לא ידועה',
         variant: 'destructive',
       });
       return false;
@@ -126,11 +126,11 @@ export const useClients = () => {
         title: 'לקוח נמחק בהצלחה',
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting client:', error);
       toast({
         title: 'שגיאה במחיקת לקוח',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'שגיאה לא ידועה',
         variant: 'destructive',
       });
       return false;

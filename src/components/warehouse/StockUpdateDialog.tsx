@@ -66,8 +66,8 @@ export function StockUpdateDialog({ open, onOpenChange, item, onSuccess }: Props
       onSuccess();
       onOpenChange(false);
       setQuantityChange(0);
-    } catch (error: any) {
-      toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
     } finally {
       setLoading(false);
     }

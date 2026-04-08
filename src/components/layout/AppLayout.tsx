@@ -1,9 +1,9 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
-
+import { ErrorBoundary } from './ErrorBoundary';
 import { DemoBanner } from './DemoBanner';
 import { useApp } from '@/context/AppContext';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -12,7 +12,7 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const { sidebarOpen } = useApp();
-  const { isDemo } = useAuth();
+  const { isDemo } = useAuthContext();
   const isImpersonating = localStorage.getItem('impersonation_active') === 'true';
 
   return (
@@ -28,10 +28,11 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         )}
       >
         <div className="p-4 md:p-6 lg:p-8 max-w-6xl">
-          {children}
+          <ErrorBoundary context="Page">
+            {children}
+          </ErrorBoundary>
         </div>
       </main>
-      
     </div>
   );
 };

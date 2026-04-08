@@ -16,7 +16,7 @@ import {
   Factory,
 } from 'lucide-react';
 import { useReserve, ReserveItem, ReserveItemFormData } from '@/hooks/useReserve';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { ReserveItemCard } from '@/components/reserve/ReserveItemCard';
 import { ReserveItemDialog } from '@/components/reserve/ReserveItemDialog';
 import { QuantityDialog } from '@/components/reserve/QuantityDialog';
@@ -26,7 +26,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/layout/EmptyState';
 
 export const ReservePage = () => {
-  const { canWrite } = useAuth();
+  const { canWrite } = useAuthContext();
   const {
     items,
     loading,

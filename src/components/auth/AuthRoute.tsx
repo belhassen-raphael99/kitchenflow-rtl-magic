@@ -1,6 +1,6 @@
 // @refresh reset
 import { Navigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 interface AuthRouteProps {
@@ -8,7 +8,7 @@ interface AuthRouteProps {
 }
 
 export const AuthRoute = ({ children }: AuthRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuthContext();
   const [searchParams] = useSearchParams();
 
   // Don't redirect during password recovery flow
