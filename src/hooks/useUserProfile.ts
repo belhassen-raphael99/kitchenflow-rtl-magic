@@ -37,8 +37,8 @@ export function useUserProfile() {
         table: 'profiles',
         filter: `id=eq.${user.id}`,
       }, (payload) => {
-        const newData = payload.new as any;
-        setProfile({ full_name: newData.full_name, avatar_url: newData.avatar_url });
+        const newData = payload.new as Record<string, unknown>;
+        setProfile({ full_name: newData.full_name as string | null, avatar_url: newData.avatar_url as string | null });
       })
       .subscribe();
 
