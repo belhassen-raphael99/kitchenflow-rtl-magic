@@ -88,6 +88,52 @@ Deno.serve(async (req: Request) => {
         .order("time"),
     ]);
 
+    // Process warehouse low stock
+    if (warehouseItems) {
+      for (const item of warehouseItems) {
+        const isCritical = item.quantity === 0;
+        notifications.push({
+          type: "low_stock",
+          title: isCritical ? `מלאי אזל: ${item.name}` : `מלאי נמוך: ${item.name}`,
+          message: `${item.name}: ${item.quantity} ${item.unit} (מינימום: ${item.min_stock})`,
+          severity: isCritical ? "critical" : "warning",
+          related_table: "warehouse_items",
+          related_id: item.id,
+        });
+      }
+    }
+
+    // Process reserve low stock
+    if (reserveItems) {
+      for (const item of reserveItems) {
+        const isCritical = item.quantity === 0;
+        notifications.push({
+          type: "low_stock",
+          title: isCritical ? `רזרבה אזלה: ${item.name}` : `רזרבה נמוכה: ${item.name}`,
+          message: `${item.name}: ${item.quantity} ${item.unit} (מינימום: ${item.min_stock})`,
+          severity: isCritical ? "critical" : "warning",
+          related_table: "reserve_items",
+          related_id: item.id,
+        });
+      }
+    }
+
+    // Process expiring reserve items
+    if (expiringItems) {
+      for (const item of expiringItems) {
+        const isExpired = new Date(item.expiry_date) < new Date();
+        notifications.push({
+          type: "expiring",
+          title: isExpired ? `פג תוקף: ${item.name}` : `תוקף קרוב: ${item.name}`,
+          message: `${item.name} (${item.quantity} ${item.unit}) - תאריך תפוגה: ${item.expiry_date}`,
+          severity: isExpired ? "critical" : "warning",
+          related_table: "reserve_items",
+          related_id: item.id,
+        });
+      }
+    }
+
+    // Process upcoming events
     if (upcomingEvents) {
       for (const event of upcomingEvents) {
         const isToday = event.date === today;
