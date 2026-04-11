@@ -84,6 +84,7 @@ export const ChefDashboardPage = () => {
   const [generating, setGenerating] = useState(false);
   const [showFullWeek, setShowFullWeek] = useState(false);
   const [expandedCompleted, setExpandedCompleted] = useState<Set<string>>(new Set());
+  const [mainTab, setMainTab] = useState('plan');
   const { toast } = useToast();
 
   const today = new Date();
@@ -245,8 +246,6 @@ export const ChefDashboardPage = () => {
   // Split tasks by type
   const stockTasks = deptTasks.filter(t => t.task_type === 'stock');
   const eventTasks = deptTasks.filter(t => t.task_type === 'event');
-
-  const [mainTab, setMainTab] = useState('plan');
 
   // Auto-select tab when tasks load
   useEffect(() => {
