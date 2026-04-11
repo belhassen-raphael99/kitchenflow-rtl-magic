@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuthContext();
+  const { user, role, loading } = useAuthContext();
 
   if (loading) {
     return (
@@ -18,7 +18,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  if (!user) {
+  if (!user || !role) {
     return <Navigate to="/auth" replace />;
   }
 

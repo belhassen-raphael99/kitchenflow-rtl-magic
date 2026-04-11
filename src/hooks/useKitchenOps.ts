@@ -265,7 +265,11 @@ export function useKitchenOps() {
       (existingTasks || []).map(t => `${t.event_id}-${t.name}`)
     );
 
-    let createdCount = 0;
+    const newTasks: Array<{
+      date: string; department: string; task_type: string;
+      event_id: string; recipe_id: string | null;
+      name: string; target_quantity: number; unit: string; priority: number;
+    }> = [];
 
     for (const event of events) {
       const items = (event.items || []) as Array<{
@@ -279,7 +283,7 @@ export function useKitchenOps() {
         const key = `${event.id}-${item.name}`;
         if (existingKeys.has(key)) continue;
 
-        await supabase.from('production_tasks').insert([{
+        newTasks.push({
           date: dateStr,
           department,
           task_type: 'event',
@@ -289,11 +293,15 @@ export function useKitchenOps() {
           target_quantity: item.quantity,
           unit: 'מנה',
           priority: 1,
-        }]);
-
-        createdCount++;
+        });
       }
     }
+
+    if (newTasks.length > 0) {
+      await supabase.from('production_tasks').insert(newTasks);
+    }
+
+    const createdCount = newTasks.length;
 
     if (createdCount > 0) {
       toast({
