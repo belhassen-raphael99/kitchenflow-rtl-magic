@@ -199,6 +199,9 @@ export const AuthPage = () => {
             .maybeSingle();
 
           if (totpData?.is_enabled) {
+            // Revoke the JWT immediately — credentials stay in state (email, password)
+            // for re-authentication AFTER TOTP is verified
+            await supabase.auth.signOut();
             setViewMode('totp-verify');
             setLoading(false);
             return;
@@ -694,19 +697,32 @@ export const AuthPage = () => {
     }
     setLoading(true);
     try {
+      // Re-authenticate to get a fresh JWT scoped only to this TOTP check
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        toast({ title: 'שגיאה', description: 'שגיאת אימות — נסה להתחבר מחדש', variant: 'destructive' });
+        setViewMode('login');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('totp-verify', {
         body: { code: totpCode, action: 'validate' },
       });
+
       if (error || !data?.valid) {
+        // TOTP failed — revoke the re-issued JWT immediately
+        await supabase.auth.signOut();
         toast({ title: 'שגיאה', description: 'קוד שגוי, נסה שוב', variant: 'destructive' });
         return;
       }
+
       setLoginAttempts(0);
       setLockoutUntil(null);
       setTotpCode('');
       toast({ title: 'ברוך הבא!', description: 'התחברת בהצלחה' });
       navigate('/');
     } catch (err: any) {
+      await supabase.auth.signOut();
       toast({ title: 'שגיאה', description: err.message, variant: 'destructive' });
     } finally {
       setLoading(false);
