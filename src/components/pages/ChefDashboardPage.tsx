@@ -246,11 +246,9 @@ export const ChefDashboardPage = () => {
   const stockTasks = deptTasks.filter(t => t.task_type === 'stock');
   const eventTasks = deptTasks.filter(t => t.task_type === 'event');
 
-  // Auto-select tab: if tasks exist and some are pending/in-progress → go to tasks tab
-  const defaultTab = (pendingTasks > 0 || inProgressTasks > 0) ? 'tasks' : 'plan';
-  const [mainTab, setMainTab] = useState(defaultTab);
+  const [mainTab, setMainTab] = useState('plan');
 
-  // Update default tab when tasks load
+  // Auto-select tab when tasks load
   useEffect(() => {
     if (!loading) {
       setMainTab((pendingTasks > 0 || inProgressTasks > 0) ? 'tasks' : 'plan');
