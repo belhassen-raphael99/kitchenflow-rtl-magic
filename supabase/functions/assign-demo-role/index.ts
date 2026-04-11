@@ -43,9 +43,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { body } = req;
-    const { user_id, token, email: demoEmail } = body ? await req.json() : { user_id: user.id, token: null, email: null };
-    const targetUserId = user_id || user.id;
+    const contentLength = req.headers.get('content-length');
+    const { token, email: demoEmail } = (contentLength && contentLength !== '0')
+      ? await req.json()
+      : { token: null, email: null };
+    const targetUserId = user.id; // always use the authenticated caller's ID
 
     if (token) {
       await supabase.from('demo_tokens').update({ used: true, email: demoEmail }).eq('token', token);

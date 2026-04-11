@@ -85,6 +85,7 @@ export function useDashboardStats(): DashboardStats {
   });
 
   useEffect(() => {
+    let cancelled = false;
     const fetchStats = async () => {
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
@@ -190,30 +191,35 @@ export function useDashboardStats(): DashboardStats {
 
       const alertCount = lowStockList.length + expiringItems.length + urgentTasks.length;
 
-      setStats({
-        totalRecipes: recipesRes.count ?? 0,
-        eventsThisWeek: weekEventsData.length,
-        guestsThisWeek: weekEventsData.reduce((sum, e) => sum + (e.guests || 0), 0),
-        activeTasks: tasksRes.count ?? 0,
-        totalWarehouseItems: totalItemsRes.count ?? 0,
-        lowStockItems: lowRes.count ?? 0,
-        criticalStockItems: criticalRes.count ?? 0,
-        pendingInvoices: invoiceRes.count ?? 0,
-        monthlyRevenue,
-        todayDeliveries: todayEventsData.length,
-        alertCount,
-        nextEvent: weekEvents.find(e => e.daysUntil >= 0) || null,
-        weekEvents,
-        todayDeliveryEvents,
-        lowStockList,
-        expiringItems,
-        urgentTasks,
-        nextWeekEvents,
-        loading: false,
-      });
+      if (!cancelled) {
+        setStats({
+          totalRecipes: recipesRes.count ?? 0,
+          eventsThisWeek: weekEventsData.length,
+          guestsThisWeek: weekEventsData.reduce((sum, e) => sum + (e.guests || 0), 0),
+          activeTasks: tasksRes.count ?? 0,
+          totalWarehouseItems: totalItemsRes.count ?? 0,
+          lowStockItems: lowRes.count ?? 0,
+          criticalStockItems: criticalRes.count ?? 0,
+          pendingInvoices: invoiceRes.count ?? 0,
+          monthlyRevenue,
+          todayDeliveries: todayEventsData.length,
+          alertCount,
+          nextEvent: weekEvents.find(e => e.daysUntil >= 0) || null,
+          weekEvents,
+          todayDeliveryEvents,
+          lowStockList,
+          expiringItems,
+          urgentTasks,
+          nextWeekEvents,
+          loading: false,
+        });
+      }
     };
 
-    fetchStats();
+    fetchStats().catch(() => {
+      if (!cancelled) setStats(prev => ({ ...prev, loading: false }));
+    });
+    return () => { cancelled = true; };
   }, []);
 
   return stats;

@@ -313,8 +313,10 @@ export const AuthPage = () => {
         .eq('email', email)
         .maybeSingle();
 
+      const genericError = 'לא ניתן לאפס סיסמה בשיטה זו. פנה למנהל המערכת.';
+
       if (!profile) {
-        toast({ title: 'שגיאה', description: 'לא נמצא משתמש עם אימייל זה', variant: 'destructive' });
+        toast({ title: 'שגיאה', description: genericError, variant: 'destructive' });
         setLoading(false);
         return;
       }
@@ -326,7 +328,7 @@ export const AuthPage = () => {
         .maybeSingle();
 
       if (!sq) {
-        toast({ title: 'שגיאה', description: 'לא הוגדרה שאלת אבטחה עבור חשבון זה', variant: 'destructive' });
+        toast({ title: 'שגיאה', description: genericError, variant: 'destructive' });
         setLoading(false);
         return;
       }
