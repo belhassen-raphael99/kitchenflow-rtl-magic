@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import {
   ChefHat, Truck, Users, Clock, Printer, Loader2,
   CheckCircle, PlayCircle, Package, AlertTriangle, RefreshCw,
-  Scale, ClipboardList, Eye,
+  Scale, ClipboardList, Eye, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -82,8 +82,8 @@ export const ChefDashboardPage = () => {
   const [activeDept, setActiveDept] = useState('מטבח');
   const [updating, setUpdating] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [mainTab, setMainTab] = useState('overview');
   const [showFullWeek, setShowFullWeek] = useState(false);
+  const [expandedCompleted, setExpandedCompleted] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const today = new Date();
@@ -232,49 +232,161 @@ export const ChefDashboardPage = () => {
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const inProgressTasks = tasks.filter(t => t.status === 'in-progress').length;
+  const pendingTasks = tasks.filter(t => t.status === 'pending').length;
   const overallProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const nonCompletedCount = totalTasks - completedTasks;
+  const hasActiveWork = inProgressTasks > 0;
 
   const deptLowStock = reserveStock.filter(s => {
     const scheduleItem = schedule.find(sc => sc.product_name === s.name && sc.department === activeDept);
     return scheduleItem && s.quantity < s.min_stock;
   });
 
-  const statusIcon = (status: string) => {
-    if (status === 'completed') return <CheckCircle className="w-4 h-4 text-primary" />;
-    if (status === 'in-progress') return <PlayCircle className="w-4 h-4 text-blue-500 animate-pulse" />;
-    return <Clock className="w-4 h-4 text-muted-foreground" />;
-  };
-
   // Split tasks by type
   const stockTasks = deptTasks.filter(t => t.task_type === 'stock');
   const eventTasks = deptTasks.filter(t => t.task_type === 'event');
+
+  // Auto-select tab: if tasks exist and some are pending/in-progress → go to tasks tab
+  const defaultTab = (pendingTasks > 0 || inProgressTasks > 0) ? 'tasks' : 'plan';
+  const [mainTab, setMainTab] = useState(defaultTab);
+
+  // Update default tab when tasks load
+  useEffect(() => {
+    if (!loading) {
+      setMainTab((pendingTasks > 0 || inProgressTasks > 0) ? 'tasks' : 'plan');
+    }
+  }, [loading, pendingTasks, inProgressTasks]);
 
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
+  const toggleCompletedExpand = (id: string) => {
+    setExpandedCompleted(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // --- Step guide ---
+  const StepGuide = () => {
+    // Collapse if user already has tasks in progress
+    if (hasActiveWork) return null;
+
+    const steps = [
+      { num: 1, label: 'צור משימות', desc: 'לחץ "ייצור אוטומטי" ליצירת משימות מהתכנית', icon: RefreshCw, done: totalTasks > 0 },
+      { num: 2, label: 'התחל הכנה', desc: 'עבור ל"משימות לביצוע" ולחץ "התחל הכנה"', icon: PlayCircle, done: inProgressTasks > 0 || completedTasks > 0 },
+      { num: 3, label: 'סיים ועדכן מלאי', desc: 'לחץ "סיימתי" — המלאי מתעדכן אוטומטית', icon: CheckCircle, done: completedTasks > 0 },
+    ];
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 no-print">
+        {steps.map(step => (
+          <Card key={step.num} className={cn(
+            "rounded-lg border-2 transition-all",
+            step.done 
+              ? "border-primary/30 bg-primary/5" 
+              : "border-dashed border-muted-foreground/20"
+          )}>
+            <CardContent className="p-3 flex items-start gap-3">
+              <div className={cn(
+                "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                step.done 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {step.done ? '✓' : step.num}
+              </div>
+              <div className="min-w-0">
+                <p className={cn("font-semibold text-sm", step.done && "text-primary")}>{step.label}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  // --- Task card with improved UX ---
   const renderTaskCard = (task: ChefTask) => {
     const percent = task.target_quantity > 0 ? Math.round((task.completed_quantity / task.target_quantity) * 100) : 0;
+    const isCompleted = task.status === 'completed';
+    const isExpanded = expandedCompleted.has(task.id);
+
+    // Collapsed completed card
+    if (isCompleted && !isExpanded) {
+      return (
+        <Card
+          key={task.id}
+          className="rounded-md bg-muted/30 border-muted cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => toggleCompletedExpand(task.id)}
+        >
+          <CardContent className="p-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-sm text-muted-foreground line-through">{task.name}</span>
+              {task.task_type === 'event' && (
+                <Badge variant="outline" className="text-[10px] border-kpi-events/30 text-kpi-events">אירוע</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">✅ הושלם</Badge>
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
       <Card key={task.id} className={cn(
         "rounded-md transition-all",
-        task.status === 'completed' && "opacity-60",
-        task.status === 'in-progress' && "border-blue-300 shadow-sm"
+        isCompleted && "bg-muted/30 border-muted",
+        task.status === 'in-progress' && "border-blue-300 shadow-sm ring-1 ring-blue-200/50"
       )}>
-        <CardContent className="p-3 space-y-2">
+        <CardContent className="p-3 space-y-2.5">
+          {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {statusIcon(task.status)}
+              {task.status === 'completed' && <CheckCircle className="w-4 h-4 text-primary" />}
+              {task.status === 'in-progress' && <PlayCircle className="w-4 h-4 text-blue-500 animate-pulse" />}
+              {task.status === 'pending' && <Clock className="w-4 h-4 text-muted-foreground" />}
               <span className="font-medium text-sm">{task.name}</span>
               {task.task_type === 'event' && (
                 <Badge variant="outline" className="text-[10px] border-kpi-events/30 text-kpi-events">אירוע</Badge>
               )}
             </div>
-            <Badge variant="secondary" className="text-xs gap-1">
-              <Scale className="w-3 h-3" />
-              {task.target_quantity} {task.unit}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Scale className="w-3 h-3" />
+                {task.target_quantity} {task.unit}
+              </Badge>
+              {isCompleted && (
+                <button onClick={() => toggleCompletedExpand(task.id)} className="text-muted-foreground hover:text-foreground">
+                  <ChevronUp className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Mini status breadcrumb — always visible on pending/in-progress */}
+          {!isCompleted && (
+            <div className="flex items-center gap-1.5 text-[11px]">
+              <span className={cn(
+                "px-1.5 py-0.5 rounded",
+                task.status === 'pending' ? "bg-muted font-semibold text-foreground" : "text-muted-foreground"
+              )}>⏳ ממתין</span>
+              <span className="text-muted-foreground">→</span>
+              <span className={cn(
+                "px-1.5 py-0.5 rounded",
+                task.status === 'in-progress' ? "bg-blue-100 dark:bg-blue-950 font-semibold text-blue-700 dark:text-blue-300" : "text-muted-foreground"
+              )}>▶️ בביצוע</span>
+              <span className="text-muted-foreground">→</span>
+              <span className="text-muted-foreground">✅ הושלם</span>
+            </div>
+          )}
 
           {task.notes && (
             <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">{task.notes}</p>
@@ -288,15 +400,15 @@ export const ChefDashboardPage = () => {
             </span>
             <div className="flex gap-1.5 no-print">
               {task.status === 'pending' && (
-                <Button size="sm" variant="outline" className="gap-1 h-7 text-xs" onClick={() => handleStartTask(task)} disabled={updating === task.id}>
+                <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => handleStartTask(task)} disabled={updating === task.id}>
                   {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <PlayCircle className="w-3 h-3" />}
-                  התחל
+                  התחל הכנה
                 </Button>
               )}
-              {(task.status === 'in-progress' || task.status === 'pending') && (
-                <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => handleCompleteTask(task)} disabled={updating === task.id}>
+              {task.status === 'in-progress' && (
+                <Button size="sm" variant="default" className="gap-1 h-7 text-xs bg-primary hover:bg-primary/90" onClick={() => handleCompleteTask(task)} disabled={updating === task.id}>
                   {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                  סיים
+                  סיימתי
                 </Button>
               )}
               {task.status === 'completed' && (
@@ -331,6 +443,9 @@ export const ChefDashboardPage = () => {
         </div>
       </div>
 
+      {/* Step Guide */}
+      <StepGuide />
+
       {/* Summary Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="rounded-md">
@@ -355,25 +470,49 @@ export const ChefDashboardPage = () => {
           <CardContent className="p-3 text-center">
             <p className="text-2xl font-bold">{overallProgress}%</p>
             <Progress value={overallProgress} className="h-1.5 mt-1" />
+            <p className="text-[10px] text-muted-foreground mt-1">הושלמו {completedTasks} מתוך {totalTasks} משימות</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Tabs: Day Overview + Production Tasks */}
+      {/* Main Tabs */}
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList className="no-print grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="overview" className="gap-2">
-            <Eye className="w-4 h-4" />
-            סקירת יום
+          <TabsTrigger value="plan" className="gap-2">
+            📋 תכנית היום
           </TabsTrigger>
           <TabsTrigger value="tasks" className="gap-2">
-            <ClipboardList className="w-4 h-4" />
-            משימות ייצור
+            ⚡ משימות לביצוע
+            {nonCompletedCount > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 h-4 mr-1">{nonCompletedCount}</Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab A: Day Overview */}
-        <TabsContent value="overview" className="space-y-4 mt-4">
+        {/* Tab 1: תכנית היום (read-only plan) */}
+        <TabsContent value="plan" className="space-y-4 mt-4">
+          {/* Read-only notice */}
+          <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2 no-print">
+            📖 תצוגת תכנית בלבד — למשימות לחץ על הכרטיסייה &quot;משימות לביצוע&quot;
+          </p>
+
+          {/* CTA when no tasks exist */}
+          {totalTasks === 0 && (
+            <Card className="rounded-lg border-2 border-dashed border-primary/30 no-print">
+              <CardContent className="py-8 flex flex-col items-center gap-3 text-center">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">🔄</div>
+                <h3 className="font-bold text-base">לא נוצרו משימות עדיין</h3>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  לחץ על &quot;ייצור אוטומטי&quot; כדי ליצור משימות לפי תכנית הייצור ומצב המלאי הנוכחי
+                </p>
+                <Button size="lg" className="gap-2 mt-1" onClick={handleGenerateFromSchedule} disabled={generating}>
+                  {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                  ייצור אוטומטי
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Today's deliveries */}
           {deliveries.length > 0 && (
             <Card className="rounded-lg">
@@ -513,12 +652,12 @@ export const ChefDashboardPage = () => {
           </Tabs>
         </TabsContent>
 
-        {/* Tab B: Production Tasks (merged Kitchen Ops) */}
+        {/* Tab 2: משימות לביצוע (action tab) */}
         <TabsContent value="tasks" className="space-y-4 mt-4">
           <Tabs value={activeDept} onValueChange={setActiveDept}>
             <TabsList className="no-print w-full justify-start">
               {departments.map(d => {
-                const count = tasks.filter(t => t.department === d.key).length;
+                const count = tasks.filter(t => t.department === d.key && t.status !== 'completed').length;
                 return (
                   <TabsTrigger key={d.key} value={d.key} className="text-xs sm:text-sm gap-1">
                     <span>{d.icon}</span>
@@ -534,7 +673,20 @@ export const ChefDashboardPage = () => {
                 {activeDept === dept.key && (
                   <>
                     {deptTasks.length === 0 ? (
-                      <EmptyState icon={Package} title={`אין משימות ל${dept.label} היום`} description="לחץ 'ייצור אוטומטי' ליצירת משימות לפי תכנית הייצור" />
+                      /* Improved empty state with CTA */
+                      <Card className="rounded-lg border-2 border-dashed border-primary/30">
+                        <CardContent className="py-10 flex flex-col items-center gap-3 text-center">
+                          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-3xl">🔄</div>
+                          <h3 className="font-bold text-lg">לא נוצרו משימות עדיין</h3>
+                          <p className="text-sm text-muted-foreground max-w-sm">
+                            לחץ על &quot;ייצור אוטומטי&quot; כדי ליצור משימות לפי תכנית הייצור ומצב המלאי
+                          </p>
+                          <Button size="lg" className="gap-2 mt-2" onClick={handleGenerateFromSchedule} disabled={generating}>
+                            {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                            ייצור אוטומטי
+                          </Button>
+                        </CardContent>
+                      </Card>
                     ) : (
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {/* Stock Tasks */}
