@@ -22,7 +22,7 @@
       ]
     },
     "skipLibCheck": true,
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals", "@react-three/fiber"],
     "strict": false,
     "target": "ES2020",
     "useDefineForClassFields": true
