@@ -1,3 +1,4 @@
+/// <reference types="@react-three/fiber" />
 import { Suspense, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, Environment, Sparkles, MeshDistortMaterial } from '@react-three/drei';
