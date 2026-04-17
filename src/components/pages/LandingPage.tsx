@@ -1,304 +1,141 @@
-import { Suspense, lazy } from 'react';
+import { ArrowLeft, ChefHat } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { HeroScene } from '@/components/landing/HeroScene';
+import { LandingFeatureGrid } from '@/components/landing/LandingFeatureGrid';
+import { LandingShowcase } from '@/components/landing/LandingShowcase';
 import { Button } from '@/components/ui/button';
-import {
-  Calendar,
-  ChefHat,
-  Package,
-  Sparkles,
-  Truck,
-  Boxes,
-  Bell,
-  BarChart3,
-  ArrowLeft,
-} from 'lucide-react';
-
-import screenAgenda from '@/assets/landing/screen-agenda.jpg';
-import screenRecipes from '@/assets/landing/screen-recipes.jpg';
-import screenWarehouse from '@/assets/landing/screen-warehouse.jpg';
-import screenChef from '@/assets/landing/screen-chef.jpg';
-
-// Lazy-load the 3D scene so it never blocks first paint
-const HeroScene = lazy(() =>
-  import('@/components/landing/HeroScene').then((m) => ({ default: m.HeroScene })),
-);
-
-const features = [
-  {
-    icon: Calendar,
-    title: 'ניהול אירועים',
-    desc: 'יומן חכם, ייבוא הזמנות מ־PDF, פרטי לקוח ולוגיסטיקה במקום אחד.',
-  },
-  {
-    icon: ChefHat,
-    title: 'לוח בקרה לשף',
-    desc: 'תכנית יומית, יצירה אוטומטית של משימות לפי מלאי ואירועים.',
-  },
-  {
-    icon: Boxes,
-    title: 'ניהול מלאי',
-    desc: 'מעקב כמויות, התראות חוסר, תאריכי תפוגה ורשימות קניה אוטומטיות.',
-  },
-  {
-    icon: Sparkles,
-    title: 'מאגר מתכונים',
-    desc: 'מתכונים מודולריים עם מרכיבים, עלויות, ומכפילי כמות חכמים.',
-  },
-  {
-    icon: Package,
-    title: 'רזרבה וייצור',
-    desc: 'ניהול חיי מדף, תאריכי הקפאה, ולוח ייצור שבועי לפי מחלקה.',
-  },
-  {
-    icon: Truck,
-    title: 'משלוחים',
-    desc: 'תעודות משלוח, אישור קבלה, וניהול לוגיסטיקה ביום האירוע.',
-  },
-  {
-    icon: Bell,
-    title: 'התראות חכמות',
-    desc: 'מלאי קריטי, אירועים מתקרבים, מוצרים שעומדים לפוג — בזמן אמת.',
-  },
-  {
-    icon: BarChart3,
-    title: 'אנליטיקס',
-    desc: 'דוחות, מדדי ביצוע, ותמונה רחבה של הפעילות העסקית.',
-  },
-];
-
-const screens = [
-  { src: screenAgenda, title: 'יומן אירועים', desc: 'תצוגה חודשית עם פרטי כל אירוע, לקוחות וצוות.' },
-  { src: screenChef, title: 'לוח השף', desc: 'משימות יומיות לפי מחלקה, עם התקדמות בזמן אמת.' },
-  { src: screenWarehouse, title: 'מחסן ומלאי', desc: 'מעקב כמויות, סטטוס קריטי והתראות אוטומטיות.' },
-  { src: screenRecipes, title: 'מתכונים', desc: 'ספרייה מלאה עם מרכיבים, עלויות וזמני הכנה.' },
-];
 
 export const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-[#08070a] text-zinc-100 overflow-x-hidden">
-      {/* Header */}
-      <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-[#08070a]/70 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-[0_0_24px_rgba(255,138,26,0.55)]">
-              <ChefHat className="w-4 h-4 text-black" />
+    <div dir="rtl" className="min-h-screen overflow-x-hidden bg-landing-shell text-landing-ink">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border/50 bg-landing-shell/90 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-soft">
+              <ChefHat className="h-5 w-5" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">קסרולה</span>
+            <div>
+              <p className="text-base font-semibold tracking-tight">קסרולה</p>
+              <p className="text-xs text-muted-foreground">פלטפורמת תפעול לקייטרינג מקצועי</p>
+            </div>
           </div>
+
           <nav className="flex items-center gap-2">
-            <Link to="/auth">
-              <Button
-                variant="ghost"
-                className="text-zinc-200 hover:text-white hover:bg-white/5"
-              >
-                התחברות
-              </Button>
-            </Link>
-            <Link to="/auth?mode=signup">
-              <Button className="bg-gradient-to-r from-amber-500 to-orange-600 text-black font-semibold hover:from-amber-400 hover:to-orange-500 shadow-[0_0_24px_rgba(255,138,26,0.4)]">
-                הרשמה
-              </Button>
-            </Link>
+            <Button asChild variant="ghost">
+              <Link to="/auth">התחברות</Link>
+            </Button>
+            <Button asChild variant="cta">
+              <Link to="/auth?mode=signup">צור חשבון</Link>
+            </Button>
           </nav>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative pt-32 pb-24 min-h-[100vh] flex items-center">
-        {/* 3D background */}
-        <Suspense fallback={null}>
-          <HeroScene className="absolute inset-0 w-full h-full" />
-        </Suspense>
-
-        {/* Radial glow overlay */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(ellipse at 50% 40%, rgba(255,138,26,0.18) 0%, rgba(8,7,10,0) 55%)',
-          }}
-        />
-
-        {/* Content */}
-        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/5 text-amber-300 text-xs mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(255,170,80,0.9)]" />
-            פלטפורמת ניהול לקייטרינג מקצועי
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.05]">
-            <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-400">
-              המטבח שלך,
-            </span>
-            <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-orange-400 to-amber-500">
-              במלוא העוצמה.
-            </span>
-          </h1>
-
-          <p className="mt-6 text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto">
-            ניהול אירועים, מתכונים, מלאי ולוח שף — הכל במקום אחד, חכם, מהיר ומדויק.
-          </p>
-
-          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link to="/auth?mode=signup">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-amber-500 to-orange-600 text-black font-semibold hover:from-amber-400 hover:to-orange-500 shadow-[0_0_40px_rgba(255,138,26,0.45)] px-8 h-12 text-base"
-              >
-                התחל עכשיו
-                <ArrowLeft className="mr-2 w-4 h-4" />
-              </Button>
-            </Link>
-            <Link to="/demo">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:border-white/25 px-8 h-12 text-base"
-              >
-                צפה בדמו
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Bottom fade */}
-        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-b from-transparent to-[#08070a]" />
-      </section>
-
-      {/* Features */}
-      <section className="relative py-24 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-400">
-                כל מה שצריך,
-              </span>{' '}
-              <span className="text-amber-400">מערכת אחת.</span>
-            </h2>
-            <p className="mt-4 text-zinc-400 max-w-2xl mx-auto">
-              שמונה כלים מקצועיים שמדברים אחד עם השני — בלי לעבור בין מערכות.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {features.map((f) => (
+      <main>
+        <section className="px-4 pb-12 pt-24 sm:px-6">
+          <div className="mx-auto max-w-7xl">
+            <div className="relative min-h-[calc(100svh-7rem)] overflow-hidden rounded-[2.5rem] border border-landing-surface/85 shadow-landing">
+              <HeroScene className="absolute inset-0" />
               <div
-                key={f.title}
-                className="group relative rounded-2xl border border-white/5 bg-gradient-to-b from-white/[0.03] to-transparent p-6 hover:border-amber-500/30 transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,138,26,0.12)]"
-              >
-                <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 group-hover:bg-amber-500/15 group-hover:border-amber-400/40 transition-colors">
-                  <f.icon className="w-5 h-5 text-amber-400" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
-                <p className="text-sm text-zinc-400 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(115deg, hsl(var(--landing-shell) / 0.08) 12%, hsl(var(--landing-shell) / 0.72) 46%, hsl(var(--landing-shell) / 0.96) 100%)',
+                }}
+              />
 
-      {/* Screenshots */}
-      <section className="relative py-24 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-              <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-400">
-                תראה את הפלטפורמה
-              </span>{' '}
-              <span className="text-amber-400">בפעולה.</span>
-            </h2>
-            <p className="mt-4 text-zinc-400">ממשק מלוטש, מהיר ומותאם לעבודה אמיתית במטבח.</p>
-          </div>
+              <div className="relative z-20 flex min-h-[calc(100svh-7rem)] items-end p-5 sm:p-8 lg:p-12">
+                <div className="max-w-2xl rounded-[2rem] border border-landing-surface/90 bg-landing-surface/80 p-6 shadow-landing backdrop-blur-xl sm:p-8">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+                    חוויה אינטראקטיבית לקייטרינג מקצועי
+                  </div>
 
-          <div className="space-y-24">
-            {screens.map((s, i) => (
-              <div
-                key={s.title}
-                className={`grid grid-cols-1 lg:grid-cols-2 gap-10 items-center ${
-                  i % 2 === 1 ? 'lg:[&>*:first-child]:order-2' : ''
-                }`}
-              >
-                <div className="relative group">
-                  <div
-                    className="absolute -inset-6 rounded-[2rem] opacity-50 blur-2xl transition-opacity group-hover:opacity-70"
-                    style={{
-                      background:
-                        'radial-gradient(ellipse, rgba(255,138,26,0.35), transparent 70%)',
-                    }}
-                  />
-                  <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-zinc-900/50 shadow-2xl">
-                    <img
-                      src={s.src}
-                      alt={s.title}
-                      loading="lazy"
-                      width={1280}
-                      height={832}
-                      className="w-full h-auto"
-                    />
+                  <h1 className="mt-6 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-7xl">
+                    פלטפורמה אחת
+                    <span className="block text-primary">לכל מה שקורה בקייטרינג.</span>
+                  </h1>
+
+                  <p className="mt-5 max-w-xl text-base leading-8 text-muted-foreground sm:text-lg">
+                    מהתכנון הראשוני, דרך ההכנות במטבח, ועד היציאה לשירות באירוע — קסרולה מחברת בין הצוות, המלאי והביצוע בזמן אמת.
+                  </p>
+
+                  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                    <Button asChild size="lg" variant="cta">
+                      <Link to="/auth?mode=signup">
+                        התחל עכשיו
+                        <ArrowLeft className="h-4 w-4" />
+                      </Link>
+                    </Button>
+
+                    <Button asChild size="lg" variant="outline">
+                      <Link to="/auth">התחבר למערכת</Link>
+                    </Button>
+                  </div>
+
+                  <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                    {[
+                      'ניהול אירועים והפקות',
+                      'לוח מטבח אינטראקטיבי',
+                      'מלאי, רכש ומשלוחים',
+                    ].map((item) => (
+                      <div
+                        key={item}
+                        className="rounded-2xl border border-border/60 bg-card/70 px-4 py-3 text-sm font-medium text-landing-ink shadow-soft"
+                      >
+                        {item}
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div>
-                  <div className="inline-block text-xs font-mono text-amber-400 mb-3 tracking-widest">
-                    0{i + 1}
-                  </div>
-                  <h3 className="text-3xl md:text-4xl font-bold mb-4">{s.title}</h3>
-                  <p className="text-zinc-400 text-lg leading-relaxed">{s.desc}</p>
-                </div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA */}
-      <section className="relative py-24 border-t border-white/5">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="relative rounded-3xl border border-amber-500/20 bg-gradient-to-b from-amber-500/[0.06] to-transparent p-12 overflow-hidden">
+        <LandingFeatureGrid />
+        <LandingShowcase />
+
+        <section className="border-t border-border/60 py-24">
+          <div className="mx-auto max-w-5xl px-6">
             <div
-              className="absolute inset-0 pointer-events-none opacity-60"
+              className="overflow-hidden rounded-[2.25rem] border border-landing-surface/85 p-8 shadow-landing md:p-12"
               style={{
-                background:
-                  'radial-gradient(circle at 50% 0%, rgba(255,138,26,0.25), transparent 60%)',
+                backgroundImage:
+                  'linear-gradient(135deg, hsl(var(--landing-surface)) 0%, hsl(var(--landing-warm-soft)) 100%)',
               }}
-            />
-            <h2 className="relative text-4xl md:text-5xl font-bold tracking-tight">
-              מוכן להתחיל?
-            </h2>
-            <p className="relative mt-4 text-zinc-400 text-lg">
-              הצטרף לצוות שכבר משדרג את ניהול המטבח שלו.
-            </p>
-            <div className="relative mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <Link to="/auth?mode=signup">
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-amber-500 to-orange-600 text-black font-semibold hover:from-amber-400 hover:to-orange-500 shadow-[0_0_40px_rgba(255,138,26,0.45)] px-8 h-12 text-base"
-                >
-                  צור חשבון
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:border-white/25 px-8 h-12 text-base"
-                >
-                  כבר יש לי חשבון
-                </Button>
-              </Link>
+            >
+              <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-sm font-medium text-primary">מוכנים לעבוד מסודר יותר?</p>
+                  <h2 className="mt-3 text-3xl font-semibold tracking-tight text-landing-ink sm:text-4xl lg:text-5xl">
+                    תנו לצוות שלכם לראות הכול במקום אחד — ולהוציא כל אירוע בראש שקט.
+                  </h2>
+                  <p className="mt-5 text-base leading-8 text-muted-foreground sm:text-lg">
+                    התחברות, יצירת חשבון וניהול ההפקות מתחילים כאן — עם חוויית עבודה שנבנתה לקצב של קייטרינג אמיתי.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button asChild size="lg" variant="cta">
+                    <Link to="/auth?mode=signup">צור חשבון</Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline">
+                    <Link to="/auth">כבר יש לי חשבון</Link>
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 py-10">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row gap-4 items-center justify-between text-sm text-zinc-500">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center">
-              <ChefHat className="w-3 h-3 text-black" />
+      <footer className="border-t border-border/60 py-10">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 text-sm text-muted-foreground md:flex-row">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <ChefHat className="h-4 w-4" />
             </div>
-            <span>קסרולה — Kitchen Flow</span>
+            <span>קסרולה — מערכת ניהול לקייטרינג</span>
           </div>
           <div>© {new Date().getFullYear()} כל הזכויות שמורות.</div>
         </div>
