@@ -1,11 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import '@fontsource/heebo/400.css';
 @import '@fontsource/heebo/500.css';
 @import '@fontsource/heebo/600.css';
 @import '@fontsource/heebo/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   :root {
@@ -63,6 +63,20 @@
     --kpi-reserve: 260 40% 50%;
     --frozen: 200 60% 50%;
     --fresh: 152 40% 30%;
+
+    /* Landing — premium catering */
+    --landing-shell: 40 40% 96%;
+    --landing-surface: 42 33% 99%;
+    --landing-surface-strong: 36 30% 92%;
+    --landing-ink: 24 16% 18%;
+    --landing-warm: 18 58% 62%;
+    --landing-warm-soft: 18 72% 88%;
+    --landing-sage: 152 28% 33%;
+    --landing-sage-soft: 152 32% 90%;
+    --landing-glow: 38 74% 85%;
+
+    --shadow-landing-card: 0 24px 80px hsl(24 18% 24% / 0.08);
+    --shadow-landing-float: 0 18px 44px hsl(18 30% 35% / 0.14);
   }
 
   .dark {
@@ -111,6 +125,19 @@
     --kpi-reserve: 260 50% 60%;
     --frozen: 200 80% 55%;
     --fresh: 152 60% 45%;
+
+    --landing-shell: 40 40% 96%;
+    --landing-surface: 42 33% 99%;
+    --landing-surface-strong: 36 30% 92%;
+    --landing-ink: 24 16% 18%;
+    --landing-warm: 18 58% 62%;
+    --landing-warm-soft: 18 72% 88%;
+    --landing-sage: 152 28% 33%;
+    --landing-sage-soft: 152 32% 90%;
+    --landing-glow: 38 74% 85%;
+
+    --shadow-landing-card: 0 24px 80px hsl(24 18% 24% / 0.08);
+    --shadow-landing-float: 0 18px 44px hsl(18 30% 35% / 0.14);
   }
 }
 
@@ -210,4 +237,15 @@
 /* Safe area for bottom nav */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@layer components {
+  .landing-grid {
+    background-image:
+      linear-gradient(180deg, hsl(var(--landing-surface) / 0.14), transparent 34%),
+      linear-gradient(hsl(var(--border) / 0.32) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.32) 1px, transparent 1px);
+    background-size: 100% 100%, 34px 34px, 34px 34px;
+    background-position: center;
+  }
 }
