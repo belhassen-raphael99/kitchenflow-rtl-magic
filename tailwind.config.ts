@@ -68,17 +68,6 @@ export default {
         },
         frozen: "hsl(var(--frozen))",
         fresh: "hsl(var(--fresh))",
-        landing: {
-          shell: "hsl(var(--landing-shell))",
-          surface: "hsl(var(--landing-surface))",
-          "surface-strong": "hsl(var(--landing-surface-strong))",
-          ink: "hsl(var(--landing-ink))",
-          warm: "hsl(var(--landing-warm))",
-          "warm-soft": "hsl(var(--landing-warm-soft))",
-          sage: "hsl(var(--landing-sage))",
-          "sage-soft": "hsl(var(--landing-sage-soft))",
-          glow: "hsl(var(--landing-glow))",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -89,8 +78,6 @@ export default {
         'soft': '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
         'card': '0 2px 8px -2px rgba(0, 0, 0, 0.08)',
         'elevated': '0 4px 24px rgba(0, 0, 0, 0.08)',
-        'landing': 'var(--shadow-landing-card)',
-        'landing-float': 'var(--shadow-landing-float)',
       },
       keyframes: {
         "accordion-down": {

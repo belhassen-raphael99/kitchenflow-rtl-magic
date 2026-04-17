@@ -18,7 +18,6 @@ import { SettingsPage } from './components/pages/SettingsPage';
 import { DemoPage } from './components/pages/DemoPage';
 import { DemoExpiredPage } from './components/pages/DemoExpiredPage';
 import { NotFoundPage } from './components/pages/NotFoundPage';
-import { LandingPage } from './components/pages/LandingPage';
 
 import { Toaster } from '@/components/ui/toaster';
 import { ImpersonationBanner } from './components/layout/ImpersonationBanner';
@@ -40,12 +39,8 @@ const AppRoutes = () => {
       />
       <Route path="/demo" element={<DemoPage />} />
       <Route path="/demo-expired" element={<DemoExpiredPage />} />
-      {/* Public landing page */}
-      <Route path="/" element={<LandingPage />} />
-
-      {/* App entry once authenticated */}
       <Route
-        path="/dashboard"
+        path="/"
         element={
           <ProtectedRoute>
             <AppLayout>
