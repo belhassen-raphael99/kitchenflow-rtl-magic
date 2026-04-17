@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.89.0';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'https://esm.sh/zod@3.23.8';
 
 // ============================================
 // CORS HEADERS
