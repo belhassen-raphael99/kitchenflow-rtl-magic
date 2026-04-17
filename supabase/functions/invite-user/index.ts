@@ -7,8 +7,14 @@ import { z } from 'https://esm.sh/zod@3.23.8';
 function getAllowedOrigin(req: Request): string {
   const origin = req.headers.get('Origin') || '';
   const envOrigin = Deno.env.get('ALLOWED_ORIGIN');
+
   if (envOrigin && origin === envOrigin) return origin;
-  if (origin.endsWith('.lovable.app')) return origin;
+
+  const allowedPreviewHosts = ['.lovable.app', '.lovableproject.com'];
+  if (allowedPreviewHosts.some((suffix) => origin.endsWith(suffix))) {
+    return origin;
+  }
+
   return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
 }
 
