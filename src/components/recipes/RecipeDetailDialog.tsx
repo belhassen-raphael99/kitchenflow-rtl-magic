@@ -227,7 +227,7 @@ export const RecipeDetailDialog = ({
           </div>
 
           <ScrollArea className="max-h-[60vh]">
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6" dir="rtl">
               {/* Batch Selector */}
               <section className="bg-muted/30 rounded-md p-4 space-y-3">
                 <div className="flex items-center gap-2 mb-1">

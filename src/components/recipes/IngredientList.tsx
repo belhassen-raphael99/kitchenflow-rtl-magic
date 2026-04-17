@@ -23,7 +23,7 @@ export const IngredientList = ({ ingredients, onEdit, onDelete }: IngredientList
   }
 
   return (
-    <div className="bg-muted/50 rounded-md p-4">
+    <div className="bg-muted/50 rounded-md p-4" dir="rtl">
       <div className="space-y-2">
         {ingredients.map((ing) => (
           <div
