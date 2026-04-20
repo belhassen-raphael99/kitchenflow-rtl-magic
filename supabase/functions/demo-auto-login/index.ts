@@ -124,8 +124,17 @@ Deno.serve(async (req) => {
 
     const demoPassword = generateRandomPassword();
 
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const demoUser = existingUsers?.users?.find((user) => user.email === DEMO_EMAIL);
+    // Search with pagination — listUsers() defaults to 50 users max
+    let demoUser = null;
+    let page = 1;
+    const PER_PAGE = 50;
+    while (!demoUser) {
+      const { data: pageData } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: PER_PAGE });
+      const users = pageData?.users ?? [];
+      demoUser = users.find((u) => u.email === DEMO_EMAIL) ?? null;
+      if (users.length < PER_PAGE) break;
+      page++;
+    }
 
     if (!demoUser) {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({

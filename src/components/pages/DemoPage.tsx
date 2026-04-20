@@ -163,13 +163,16 @@ const PublicDemoLanding = () => {
       const { data, error } = await supabase.functions.invoke('demo-auto-login');
 
       if (error || data?.error) {
-        const msg = data?.error || error?.message || 'שגיאה זמנית — נסה שוב';
+        const msg = data?.error || error?.message || '';
         const isRateLimit = msg.includes('tentatives') || msg.includes('rate') || msg.includes('429');
         toast({
           title: 'שגיאה',
-          description: isRateLimit ? 'יותר מדי ניסיונות — נסה שוב בעוד דקה' : 'שגיאה זמנית — נסה שוב',
+          description: isRateLimit
+            ? 'יותר מדי ניסיונות — נסה שוב בעוד מספר דקות'
+            : 'שגיאה זמנית — נסה שוב',
           variant: 'destructive',
         });
+        console.error('[demo-auto-login]', msg);
         setLoading(false);
         return;
       }
