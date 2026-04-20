@@ -1,6 +1,8 @@
 # 🍲 קסרולה — Casserole
 
-> **Plateforme ERP privée de gestion de catering** — Hebrew RTL · Invite-only · Single client
+> **Plateforme ERP privée de gestion de catering · מערכת ERP פרטית לניהול קייטרינג**
+>
+> Hebrew RTL · Invite-only · Single client
 
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
@@ -11,82 +13,87 @@
 
 ---
 
-## 📌 À propos
+## 📌 About · אודות
 
-**Casserole** est un système ERP complet conçu exclusivement pour la gestion opérationnelle d'une entreprise de catering. Il centralise la gestion des événements, des recettes, du stock, de la production et des livraisons dans une interface entièrement en hébreu (RTL).
+**EN** — Casserole is a full ERP system built exclusively for the operational management of a catering business. It centralizes event management, recipes, inventory, production and deliveries in a fully Hebrew (RTL) interface. Access is **invite-only** — no public sign-up.
 
-L'accès est **sur invitation uniquement** — aucune inscription publique. Chaque utilisateur reçoit un lien d'invitation sécurisé par email.
-
----
-
-## ✨ Fonctionnalités
-
-### 🔐 Authentification & Sécurité
-- Connexion email + mot de passe
-- Réinitialisation par lien sécurisé (anti-énumération)
-- Invitation admin via lien signé Supabase (aucun mot de passe en clair)
-- Rôles : `admin` · `employee` · `demo`
-- Impersonation utilisateur pour le support admin
-- Audit log complet de toutes les actions
-- Rate limiting serveur sur toutes les opérations sensibles
-
-### 📊 Dashboard
-- KPIs temps réel : événements, invités, revenus, stock
-- Alertes stock bas / critique
-- Prochains événements + livraisons du jour
-- Graphiques tendances revenus & taux de completion
-
-### 📅 Agenda & Événements
-- Vue calendrier + vue liste
-- Wizard de création (client, date, menu, invités)
-- Multi-département : Cuisine · Boulangerie · Pâtisserie
-- Statuts : `pending` → `confirmed` → `in-progress` → `ready` → `delivered`
-- Génération devis & factures PDF
-- Import d'événements depuis PDF prioritaire
-
-### 📖 Recettes
-- Bibliothèque complète avec catégories
-- Ingrédients liés à l'entrepôt (coût automatique)
-- Scaling de portions (×1, ×2, ×3)
-- Coût de revient + prix de vente par portion
-
-### 🏭 Entrepôt
-- Suivi des stocks avec seuils d'alerte
-- Gestion des fournisseurs et historique des prix
-- Mouvements de stock (achats, consommation)
-- Génération automatique de liste d'achats
-
-### 📦 Réserve
-- Stock de produits préparés avec DLC
-- Types : Congélateur · Réfrigérateur · Sec
-- Planning de production hebdomadaire
-- Détection automatique des articles expirant
-
-### 👨‍🍳 Production (Chef)
-- Dashboard tâches par département
-- Assignation & suivi : `pending` → `in-progress` → `completed`
-- Intégration événements ↔ réserve
-- Impression des fiches de production
-
-### 🚚 Livraisons
-- Timeline complète de chaque livraison
-- Preuve de livraison par photo
-- Génération PDF bon de livraison
-- Notifications adresse + contact
-
-### 🛍️ Catalogue
-- Fiches produits (noms interne / client)
-- Prix, taille, département, statut actif
-- Liaison directe avec les recettes
-
-### 🛡️ Admin
-- Gestion des utilisateurs (inviter, rôles, supprimer)
-- Tokens d'accès démo avec expiration
-- Logs d'audit complets
+**HE** — קסרולה היא מערכת ERP מלאה שנבנתה במיוחד לניהול תפעולי של עסק קייטרינג. המערכת מרכזת ניהול אירועים, מתכונים, מחסן, ייצור ומשלוחים בממשק עברי מלא (RTL). הגישה **בהזמנה בלבד** — אין הרשמה פומבית.
 
 ---
 
-## 🏗️ Architecture
+## ✨ Features · פונקציונליות
+
+### 🔐 Auth & Security · אימות ואבטחה
+
+| EN | HE |
+|---|---|
+| Email + password login | כניסה עם אימייל וסיסמה |
+| Secure reset link (anti-enumeration) | קישור איפוס מאובטח (אנטי-ספירה) |
+| Admin invitation via signed Supabase link | הזמנת משתמשים דרך קישור חתום |
+| Roles: `admin` · `employee` · `demo` | תפקידים: מנהל · עובד · דמו |
+| User impersonation for support | התחזות משתמש לתמיכה |
+| Full audit log | יומן ביקורת מלא |
+| Server-side rate limiting | הגבלת קצב בצד השרת |
+
+### 📊 Dashboard · לוח בקרה
+
+**EN** — Real-time KPIs (events, guests, revenue, stock), low/critical stock alerts, upcoming events, today's deliveries, revenue trend charts.
+
+**HE** — מדדי זמן אמת (אירועים, אורחים, הכנסות, מלאי), התראות מלאי נמוך, אירועים קרובים, משלוחי היום, גרפי מגמות הכנסות.
+
+### 📅 Agenda & Events · סדר יום ואירועים
+
+**EN** — Calendar + list views, creation wizard (client, date, menu, guests), multi-department planning (Kitchen · Bakery · Pastry), status pipeline, PDF quote & invoice generation, priority import from PDF.
+
+**HE** — תצוגת לוח שנה + רשימה, אשף יצירת אירוע (לקוח, תאריך, תפריט, אורחים), תכנון רב-מחלקתי (מטבח · מאפייה · קינוחים), מעקב סטטוסים, הפקת הצעות מחיר וחשבוניות PDF, ייבוא אירועים מ-PDF.
+
+**Status pipeline:** `pending` → `confirmed` → `in-progress` → `ready` → `delivered`
+
+### 📖 Recipes · מתכונים
+
+**EN** — Full recipe library, warehouse-linked ingredients (auto cost), portion scaling (×1/2/3), cost price + selling price per portion.
+
+**HE** — ספריית מתכונים מלאה, מצרכים מקושרים למחסן (עלות אוטומטית), שינוי מנות (×1/2/3), מחיר עלות + מחיר מכירה למנה.
+
+### 🏭 Warehouse · מחסן
+
+**EN** — Stock tracking with alert thresholds, supplier management, price history, stock movements, auto purchase list generation.
+
+**HE** — מעקב מלאי עם סף התראה, ניהול ספקים, היסטוריית מחירים, תנועות מלאי, יצירת רשימת קנייה אוטומטית.
+
+### 📦 Reserve · רזרבה
+
+**EN** — Prepared product stock with expiry dates, storage types (Freezer / Fridge / Dry), weekly production schedule, auto expiry detection.
+
+**HE** — מלאי מוצרים מוכנים עם תאריכי תפוגה, סוגי אחסון (מקפיא / מקרר / יבש), לוח ייצור שבועי, זיהוי אוטומטי של מוצרים פגי תוקף.
+
+### 👨‍🍳 Production · ייצור
+
+**EN** — Per-department task dashboard, assignment & tracking (`pending` → `in-progress` → `completed`), events ↔ reserve integration, printable production sheets.
+
+**HE** — לוח משימות פר מחלקה, הקצאה ומעקב (`ממתין` → `בתהליך` → `הושלם`), אינטגרציה אירועים ↔ רזרבה, הדפסת דפי ייצור.
+
+### 🚚 Deliveries · משלוחים
+
+**EN** — Full delivery timeline, photo proof of delivery, PDF delivery slip, address + contact management.
+
+**HE** — ציר זמן מלא של משלוח, הוכחת משלוח בתמונה, תעודת משלוח PDF, ניהול כתובות ואנשי קשר.
+
+### 🛍️ Catalog · קטלוג
+
+**EN** — Product listings (internal/client names), price, size, department, active status, recipe link.
+
+**HE** — רשימת מוצרים (שמות פנימי/לקוח), מחיר, גודל, מחלקה, סטטוס פעיל, קישור למתכון.
+
+### 🛡️ Admin Panel · פאנל מנהל
+
+**EN** — User management (invite, roles, delete), demo token generation, user impersonation, audit logs.
+
+**HE** — ניהול משתמשים (הזמנה, תפקידים, מחיקה), יצירת טוקני דמו, התחזות משתמש, יומני ביקורת.
+
+---
+
+## 🏗️ Architecture · ארכיטקטורה
 
 ```
 Frontend (React + Vite)
@@ -95,7 +102,7 @@ Frontend (React + Vite)
 Supabase Auth ──── JWT ────► Supabase PostgreSQL (RLS)
        │                           │
        ▼                           ▼
-Edge Functions (Deno)        20+ Tables métier
+Edge Functions (Deno)        20+ Business tables
 ├── invite-user              (events, recipes, warehouse,
 ├── demo-auto-login           reserve, production, delivery…)
 ├── impersonate-user
@@ -103,9 +110,7 @@ Edge Functions (Deno)        20+ Tables métier
 └── generate-delivery-slip
 ```
 
-**Stack complète**
-
-| Couche | Technologie |
+| Layer | Technology |
 |---|---|
 | UI | React 18 + TypeScript + Tailwind CSS + shadcn/ui |
 | Build | Vite 6 |
@@ -113,107 +118,100 @@ Edge Functions (Deno)        20+ Tables métier
 | Auth | Supabase Auth |
 | Edge Functions | Deno (TypeScript) |
 | Email | Resend |
-| Déploiement | Lovable |
+| Deployment | Lovable |
 
 ---
 
-## 🔒 Sécurité
+## 🔒 Security · אבטחה
 
-- **Zéro mot de passe en email** — invitations via lien signé JWT
-- **Fail-closed** — utilisateur sans rôle immédiatement déconnecté
-- **Nettoyage atomique** — si l'assignation de rôle échoue, l'utilisateur est supprimé
-- **Anti-énumération** — même réponse succès/échec sur forgot password
-- **Rate limiting** — côté serveur sur toutes les Edge Functions (Supabase RPC)
-- **Tokens sensibles** — jamais stockés en localStorage
+| EN | HE |
+|---|---|
+| Zero passwords in emails | אפס סיסמאות במיילים |
+| Fail-closed: no role = instant sign-out | סגור-כשל: אין תפקיד = ניתוק מיידי |
+| Atomic cleanup on invite failure | ניקוי אטומי בכשל הזמנה |
+| Anti-enumeration on password reset | אנטי-ספירה באיפוס סיסמה |
+| Server-side rate limiting on all Edge Functions | הגבלת קצב שרת על כל Edge Functions |
+| Sensitive tokens never in localStorage | טוקנים רגישים לא ב-localStorage |
 
 ---
 
-## 🚀 Installation locale
-
-### Prérequis
-- Node.js 18+
-- Compte Supabase (projet configuré)
-- Clé API Resend (optionnel, pour les emails)
-
-### Setup
+## 🚀 Local Setup · הגדרה מקומית
 
 ```bash
-# Cloner le repo
+# Clone the repo
 git clone https://github.com/belhassen-raphael99/kitchenflow-rtl-magic.git
 cd kitchenflow-rtl-magic
 
-# Installer les dépendances
+# Install dependencies
 npm install --legacy-peer-deps
 
-# Configurer les variables d'environnement
+# Configure environment
 cp .env.example .env
-# Remplir VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY
+# Fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
 
-# Lancer le serveur de développement
+# Start dev server
 npx vite
 ```
 
-### Variables d'environnement
-
+**.env**
 ```env
 VITE_SUPABASE_URL=https://xxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
-Variables Supabase Edge Functions (à configurer dans le dashboard Supabase) :
+**Supabase Edge Functions secrets:**
 ```
 SUPABASE_SERVICE_ROLE_KEY=...
 RESEND_API_KEY=re_...
 RESEND_FROM_EMAIL=Casserole <noreply@example.com>
-ALLOWED_ORIGIN=https://votre-domaine.com
+ALLOWED_ORIGIN=https://your-domain.com
 ```
 
 ---
 
-## 📁 Structure du projet
+## 📁 Project Structure · מבנה הפרויקט
 
 ```
 src/
 ├── components/
-│   ├── auth/        # Guards de routes (ProtectedRoute, AdminRoute)
+│   ├── auth/        # Route guards (ProtectedRoute, AdminRoute)
 │   ├── layout/      # AppLayout, Sidebar, DemoBanner
-│   ├── pages/       # Une page par fichier
-│   ├── settings/    # Tabs des paramètres
-│   └── ui/          # Composants shadcn/ui
+│   ├── pages/       # One file per page
+│   ├── settings/    # Settings tabs
+│   └── ui/          # shadcn/ui components
 ├── context/         # AuthContext, AppContext
 ├── hooks/           # useAuth, useImpersonation
 ├── integrations/
-│   └── supabase/    # Client + types générés
-└── App.tsx          # Routing React Router v6
+│   └── supabase/    # Client + generated types
+└── App.tsx          # React Router v6 routing
 
 supabase/
-├── functions/       # Edge Functions Deno
-└── migrations/      # Migrations SQL horodatées
+├── functions/       # Deno Edge Functions
+└── migrations/      # Timestamped SQL migrations
 ```
 
 ---
 
 ## 🗺️ Roadmap MVP 2
 
-Voir [CLAUDE.md](./CLAUDE.md) pour la liste complète des fonctionnalités prévues.
+See [CLAUDE.md](./CLAUDE.md) for the full feature roadmap · ראה [CLAUDE.md](./CLAUDE.md) לרשימת הפיצ'רים המתוכננים.
 
-Aperçu :
-- 💳 Facturation intégrée (PDF + statuts de paiement)
-- 👥 Gestion clients avancée (historique, allergies, CA)
-- 📱 PWA mobile pour les chefs en cuisine
-- 📢 Notifications temps réel (push + SMS)
-- 👷 Planning RH par événement/département
-- 📊 Rapports & exports Excel/PDF
-- 🛒 Module achats fournisseurs
-
----
-
-## 👨‍💻 Développeur
-
-**Raphaël Belhassen**
-- LinkedIn : [rafael-belassen](https://www.linkedin.com/in/rafael-belassen)
-- Email : [rafael.belassen@gmail.com](mailto:rafael.belassen@gmail.com)
+- 💳 Integrated invoicing · חשבונאות משולבת
+- 👥 Advanced client management · ניהול לקוחות מתקדם
+- 📱 Mobile PWA for kitchen staff · PWA מובייל לצוות המטבח
+- 📢 Real-time notifications (push + SMS) · התראות זמן אמת
+- 👷 HR scheduling per event · תכנון כוח אדם לפי אירוע
+- 📊 Reports & Excel/PDF exports · דוחות וייצוא
+- 🛒 Supplier purchase module · מודול רכש ספקים
 
 ---
 
-*Plateforme privée — accès sur invitation uniquement.*
+## 👨‍💻 Developer · מפתח
+
+**Raphael Belhassen**
+- LinkedIn : [raphael-belhassen](https://www.linkedin.com/in/raphael-belhassen-85a152283/)
+- Email : [contact.zyflows@gmail.com](mailto:contact.zyflows@gmail.com)
+
+---
+
+*Private platform — invite-only access. · פלטפורמה פרטית — גישה בהזמנה בלבד.*
