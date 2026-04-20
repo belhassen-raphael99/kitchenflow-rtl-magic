@@ -41,17 +41,12 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Users, Shield, User, Mail, Key, RefreshCw, Trash2, Copy, CheckCircle2, AlertTriangle, Eye, KeyRound, Link2 } from 'lucide-react';
+import { Loader2, UserPlus, Users, Shield, User, Mail, Trash2, Copy, Eye, KeyRound, Link2 } from 'lucide-react';
 import { z } from 'zod';
 
 const inviteSchema = z.object({
   email: z.string().email('כתובת אימייל לא תקינה'),
   fullName: z.string().min(2, 'שם מלא חייב להיות לפחות 2 תווים'),
-  password: z.string()
-    .min(12, 'הסיסמה חייבת להיות לפחות 12 תווים')
-    .regex(/[A-Z]/, 'חייבת לכלול לפחות אות גדולה אחת')
-    .regex(/[0-9]/, 'חייבת לכלול לפחות ספרה אחת')
-    .regex(/[^A-Za-z0-9]/, 'חייבת לכלול לפחות תו מיוחד אחד'),
   role: z.enum(['admin', 'employee']),
 });
 
@@ -61,13 +56,6 @@ interface UserWithRole {
   full_name: string | null;
   created_at: string;
   role: 'admin' | 'employee';
-}
-
-interface CreatedUserCredentials {
-  email: string;
-  password: string;
-  fullName: string;
-  emailSent: boolean;
 }
 
 interface DemoToken {
@@ -87,15 +75,10 @@ export const AdminUsersPage = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  
-  // Credentials modal state
-  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
-  const [createdUserCredentials, setCreatedUserCredentials] = useState<CreatedUserCredentials | null>(null);
-  
+
   // Invite form state
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
-  const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'employee'>('employee');
 
   // Demo tokens state
@@ -204,21 +187,14 @@ export const AdminUsersPage = () => {
     setInviting(true);
     try {
       const { data, error } = await supabase.functions.invoke('invite-user', {
-        body: { email, fullName, password, role },
+        body: { email, fullName, role },
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Close invite dialog and open credentials dialog
       setInviteDialogOpen(false);
-      setCreatedUserCredentials({
-        email,
-        password,
-        fullName,
-        emailSent: data.emailSent || false,
-      });
-      setCredentialsDialogOpen(true);
+      toast({ title: 'הזמנה נשלחה!', description: `קישור הזמנה נשלח לכתובת ${email}` });
       resetForm();
       fetchUsers();
     } catch (error: unknown) {
@@ -226,17 +202,6 @@ export const AdminUsersPage = () => {
     } finally {
       setInviting(false);
     }
-  };
-
-  const copyCredentials = async () => {
-    if (!createdUserCredentials) return;
-    
-    const text = `פרטי התחברות למערכת קסרולה:
-אימייל: ${createdUserCredentials.email}
-סיסמה: ${createdUserCredentials.password}`;
-    
-    await navigator.clipboard.writeText(text);
-    toast({ title: 'הועתק!', description: 'פרטי ההתחברות הועתקו ללוח' });
   };
 
   const handleRoleChange = async (userId: string, newRole: 'admin' | 'employee') => {
@@ -275,32 +240,7 @@ export const AdminUsersPage = () => {
   const resetForm = () => {
     setEmail('');
     setFullName('');
-    setPassword('');
     setRole('employee');
-  };
-
-  const generatePassword = () => {
-    const lowercase = 'abcdefghijkmnpqrstuvwxyz';
-    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const numbers = '23456789';
-    const special = '!@#$%&*';
-    
-    // Ensure at least one of each required type
-    let result = '';
-    result += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
-    result += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
-    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
-    result += special.charAt(Math.floor(Math.random() * special.length));
-    
-    // Fill the rest to reach 14 characters
-    const allChars = lowercase + uppercase + numbers + special;
-    for (let i = 0; i < 10; i++) {
-      result += allChars.charAt(Math.floor(Math.random() * allChars.length));
-    }
-    
-    // Shuffle the result
-    const shuffled = result.split('').sort(() => Math.random() - 0.5).join('');
-    setPassword(shuffled);
   };
 
   const handleDeleteUser = async (userId: string) => {
@@ -325,7 +265,7 @@ export const AdminUsersPage = () => {
   const handleResetPassword = async (userEmail: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/auth`,
       });
       if (error) throw error;
       toast({ title: 'הצלחה!', description: `אימייל איפוס סיסמה נשלח ל-${userEmail}` });
@@ -375,7 +315,7 @@ export const AdminUsersPage = () => {
             <DialogHeader>
               <DialogTitle>הזמן משתמש חדש</DialogTitle>
               <DialogDescription>
-                צור חשבון חדש ושלח פרטי התחברות למשתמש
+                המשתמש יקבל קישור הזמנה לאימייל ויגדיר סיסמה בעצמו
               </DialogDescription>
             </DialogHeader>
             
@@ -412,27 +352,6 @@ export const AdminUsersPage = () => {
               </div>
 
               <div>
-                <Label htmlFor="password">סיסמה זמנית</Label>
-                <div className="flex gap-2 mt-1">
-                  <div className="relative flex-1">
-                    <Key className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="text"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pr-10"
-                      placeholder="לפחות 6 תווים"
-                      required
-                    />
-                  </div>
-                  <Button type="button" variant="outline" onClick={generatePassword}>
-                    <RefreshCw className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div>
                 <Label htmlFor="role">תפקיד</Label>
                 <Select value={role} onValueChange={(v) => setRole(v as 'admin' | 'employee')}>
                   <SelectTrigger className="mt-1">
@@ -448,7 +367,7 @@ export const AdminUsersPage = () => {
               <div className="flex gap-2 pt-4">
                 <Button type="submit" className="flex-1" disabled={inviting}>
                   {inviting && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-                  צור והזמן
+                  שלח הזמנה
                 </Button>
                 <Button 
                   type="button" 
@@ -691,77 +610,6 @@ export const AdminUsersPage = () => {
         )}
       </div>
 
-      <Dialog open={credentialsDialogOpen} onOpenChange={setCredentialsDialogOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-              משתמש נוצר בהצלחה!
-            </DialogTitle>
-            <DialogDescription>
-              שמור את פרטי ההתחברות או העתק אותם כדי לשלוח למשתמש
-            </DialogDescription>
-          </DialogHeader>
-          
-          {createdUserCredentials && (
-            <div className="space-y-4 mt-4">
-              {/* User Info */}
-              <div className="text-center mb-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <User className="w-8 h-8 text-primary" />
-                </div>
-                <p className="font-semibold text-lg">{createdUserCredentials.fullName}</p>
-              </div>
-
-              {/* Credentials Box */}
-              <div className="bg-muted rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">אימייל:</span>
-                  <span className="font-mono font-medium">{createdUserCredentials.email}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Key className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">סיסמה:</span>
-                  <span className="font-mono font-medium">{createdUserCredentials.password}</span>
-                </div>
-              </div>
-
-              {/* Copy Button */}
-              <Button onClick={copyCredentials} variant="outline" className="w-full">
-                <Copy className="w-4 h-4 ml-2" />
-                העתק פרטי התחברות
-              </Button>
-
-              {/* Email Status */}
-              {createdUserCredentials.emailSent ? (
-                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  <span className="text-sm text-green-700 dark:text-green-400">
-                    אימייל עם פרטי ההתחברות נשלח בהצלחה
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-amber-700 dark:text-amber-400">
-                    <p className="font-medium">לא נשלח אימייל</p>
-                    <p>יש להעביר את פרטי ההתחברות למשתמש באופן ידני</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Close Button */}
-              <Button 
-                onClick={() => setCredentialsDialogOpen(false)} 
-                className="w-full"
-              >
-                סגור
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

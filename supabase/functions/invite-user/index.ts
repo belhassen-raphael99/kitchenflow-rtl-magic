@@ -28,14 +28,6 @@ const emailSchema = z.string()
   .max(255, 'Email trop long')
   .email('Format email invalide');
 
-const passwordSchema = z.string()
-  .min(12, 'Le mot de passe doit contenir au moins 12 caractères')
-  .max(128, 'Mot de passe trop long')
-  .regex(/[a-z]/, 'Doit contenir une minuscule')
-  .regex(/[A-Z]/, 'Doit contenir une majuscule')
-  .regex(/[0-9]/, 'Doit contenir un chiffre')
-  .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Doit contenir un caractère spécial');
-
 const fullNameSchema = z.string()
   .trim()
   .min(2, 'Nom trop court')
@@ -47,17 +39,12 @@ const roleSchema = z.enum(['admin', 'employee']);
 const inviteUserSchema = z.object({
   email: emailSchema,
   fullName: fullNameSchema,
-  password: passwordSchema,
   role: roleSchema,
 });
 
 // ============================================
 // SECURITY UTILITIES
 // ============================================
-
-/**
- * Escape HTML pour prévenir XSS
- */
 function escapeHtml(unsafe: string): string {
   return unsafe
     .replace(/&/g, '&amp;')
@@ -67,9 +54,6 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, '&#039;');
 }
 
-/**
- * Rate limiting avec base de données
- */
 async function checkRateLimit(
   client: any,
   identifier: string,
@@ -84,12 +68,12 @@ async function checkRateLimit(
       p_max_requests: maxRequests,
       p_window_seconds: windowSeconds,
     });
-    
+
     if (error) {
       console.error('Rate limit check error:', error);
-      return true; // Allow on error to not block legitimate users
+      return true;
     }
-    
+
     return data as boolean;
   } catch (err) {
     console.error('Rate limit error:', err);
@@ -97,9 +81,6 @@ async function checkRateLimit(
   }
 }
 
-/**
- * Crée une réponse d'erreur sécurisée (messages génériques)
- */
 function errorResponse(
   userMessage: string,
   status: number,
@@ -109,26 +90,19 @@ function errorResponse(
   if (technicalDetails) {
     console.error(`[ERROR] ${technicalDetails}`);
   }
-  
+
   return new Response(
     JSON.stringify({ error: userMessage }),
     { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
 
-/**
- * Log d'audit sécurisé
- */
 function auditLog(action: string, userId: string, details: Record<string, unknown>): void {
   console.log(JSON.stringify({
     timestamp: new Date().toISOString(),
     action,
     userId,
-    // Ne pas logger les données sensibles
-    details: {
-      ...details,
-      password: details.password ? '[REDACTED]' : undefined,
-    },
+    details,
   }));
 }
 
@@ -144,18 +118,16 @@ Deno.serve(async (req) => {
     'Referrer-Policy': 'strict-origin-when-cross-origin',
   };
 
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Only allow POST
   if (req.method !== 'POST') {
     return errorResponse('Méthode non autorisée', 405, corsHeaders);
   }
 
   try {
-    // 1. AUTHENTICATION - Vérifier le token JWT
+    // 1. AUTHENTICATION
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return errorResponse('Non authentifié', 401, corsHeaders, 'Missing authorization header');
@@ -174,9 +146,9 @@ Deno.serve(async (req) => {
       return errorResponse('Session invalide', 401, corsHeaders, `Auth error: ${userError?.message}`);
     }
 
-    // 2. AUTHORIZATION - Vérifier le rôle admin
+    // 2. AUTHORIZATION — admin only
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    
+
     const { data: roleData } = await adminClient
       .from('user_roles')
       .select('role')
@@ -189,14 +161,13 @@ Deno.serve(async (req) => {
       return errorResponse('Permissions insuffisantes', 403, corsHeaders, 'Non-admin attempted to invite user');
     }
 
-    // 3. RATE LIMITING - Limiter les invitations
-    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    // 3. RATE LIMITING — 10 invitations per hour
     const rateLimitPassed = await checkRateLimit(
       adminClient,
       `${callerUser.id}:invite`,
       'invite_user',
-      10, // Max 10 invitations
-      3600 // Par heure
+      10,
+      3600
     );
 
     if (!rateLimitPassed) {
@@ -204,7 +175,7 @@ Deno.serve(async (req) => {
       return errorResponse('Trop de tentatives. Veuillez patienter.', 429, corsHeaders);
     }
 
-    // 4. INPUT VALIDATION - Validation stricte avec Zod
+    // 4. INPUT VALIDATION
     let requestBody: unknown;
     try {
       requestBody = await req.json();
@@ -218,102 +189,48 @@ Deno.serve(async (req) => {
       return errorResponse('Données invalides', 400, corsHeaders, `Validation failed: ${errors}`);
     }
 
-    const { email, fullName, password, role } = validationResult.data;
+    const { email, fullName, role } = validationResult.data;
 
-    // 5. BUSINESS LOGIC - Créer l'utilisateur
     auditLog('INVITE_USER_START', callerUser.id, { targetEmail: email, role });
 
-    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+    // 5. INVITE USER — Supabase sends a secure one-time invitation link (no password in email)
+    const { data: invitedUser, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: fullName },
-    });
+      {
+        data: { full_name: fullName },
+        redirectTo: `${Deno.env.get('ALLOWED_ORIGIN') || 'https://kitchenflow-rtl-magic.lovable.app'}/auth`,
+      }
+    );
 
-    if (createError) {
-      // Messages génériques pour ne pas révéler si l'email existe
-      if (createError.message.includes('already exists') || createError.message.includes('duplicate')) {
+    if (inviteError) {
+      if (inviteError.message.includes('already been registered') || inviteError.message.includes('already exists')) {
         return errorResponse('Impossible de créer cet utilisateur', 400, corsHeaders, `User exists: ${email}`);
       }
-      return errorResponse('Erreur lors de la création du compte', 400, corsHeaders, createError.message);
+      return errorResponse('Erreur lors de la création du compte', 400, corsHeaders, inviteError.message);
     }
 
-    // 6. ROLE ASSIGNMENT
-    await adminClient.from('user_roles').delete().eq('user_id', newUser.user.id);
-    
+    // 6. ROLE ASSIGNMENT — cleanup user if this fails
     const { error: roleError } = await adminClient
       .from('user_roles')
-      .insert({ user_id: newUser.user.id, role });
+      .upsert({ user_id: invitedUser.user.id, role }, { onConflict: 'user_id' });
 
     if (roleError) {
-      console.error('Role assignment error:', roleError);
-      // Ne pas échouer complètement, l'utilisateur est créé
+      // Atomic cleanup: delete the user so they don't exist without a role
+      await adminClient.auth.admin.deleteUser(invitedUser.user.id);
+      auditLog('INVITE_USER_ROLE_FAILED', callerUser.id, { targetEmail: email, role });
+      return errorResponse('Erreur lors de l\'attribution du rôle', 500, corsHeaders, roleError.message);
     }
 
-    // 7. EMAIL NOTIFICATION (optionnel)
-    let emailSent = false;
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    const resendFromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'Casserole <onboarding@resend.dev>';
-    
-    if (resendApiKey) {
-      try {
-        console.log(`[EMAIL] Attempting to send email to ${email} from ${resendFromEmail}`);
-        
-        const emailResponse = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: resendFromEmail,
-            to: [email],
-            subject: 'ברוכים הבאים לקסרולה!',
-            html: `
-              <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h1 style="color: #333;">🍳 קסרולה</h1>
-                <h2>שלום ${escapeHtml(fullName)}!</h2>
-                <p>ברוכים הבאים למערכת קסרולה! חשבונך נוצר בהצלחה.</p>
-                <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <p><strong>פרטי התחברות:</strong></p>
-                  <p>📧 אימייל: <strong>${escapeHtml(email)}</strong></p>
-                  <p>🔑 סיסמה: <strong>נמסרה לך ע"י מנהל המערכת</strong></p>
-                </div>
-                <p style="color: #d32f2f;">⚠️ מומלץ לשנות את הסיסמה מיד לאחר ההתחברות הראשונה</p>
-              </div>
-            `,
-          }),
-        });
-
-        const emailResult = await emailResponse.json();
-        
-        if (emailResponse.ok && emailResult.id) {
-          emailSent = true;
-          console.log(`[EMAIL] Successfully sent email to ${email}, id: ${emailResult.id}`);
-        } else {
-          console.error(`[EMAIL] Failed to send email:`, emailResult);
-        }
-      } catch (emailError) {
-        console.error('[EMAIL] Error sending email:', emailError);
-        // Don't fail the operation
-      }
-    } else {
-      console.log('[EMAIL] RESEND_API_KEY not configured, skipping email');
-    }
-
-    // 8. AUDIT LOG - Succès
-    auditLog('INVITE_USER_SUCCESS', callerUser.id, { 
-      targetUserId: newUser.user.id, 
-      targetEmail: email, 
+    auditLog('INVITE_USER_SUCCESS', callerUser.id, {
+      targetUserId: invitedUser.user.id,
+      targetEmail: email,
       role,
-      emailSent 
     });
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        user: { id: newUser.user.id, email: newUser.user.email },
-        emailSent
+      JSON.stringify({
+        success: true,
+        user: { id: invitedUser.user.id, email: invitedUser.user.email },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
