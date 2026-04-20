@@ -4,7 +4,8 @@ function getAllowedOrigin(req: Request): string {
   const origin = req.headers.get('Origin') || '';
   const envOrigin = Deno.env.get('ALLOWED_ORIGIN');
   if (envOrigin && origin === envOrigin) return origin;
-  if (origin.endsWith('.lovable.app')) return origin;
+  const allowedHosts = ['.lovable.app', '.lovableproject.com', '.vercel.app'];
+  if (allowedHosts.some((h) => origin.endsWith(h))) return origin;
   return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
 }
 
