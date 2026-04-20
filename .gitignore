@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude context — internal use only, not for public repo
+CLAUDE.md

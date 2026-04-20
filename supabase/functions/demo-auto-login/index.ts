@@ -111,8 +111,8 @@ Deno.serve(async (req) => {
     const { data: rateLimitOk } = await supabaseAdmin.rpc("check_rate_limit", {
       p_identifier: clientIp,
       p_action: "demo_auto_login",
-      p_max_requests: 2,
-      p_window_seconds: 60,
+      p_max_requests: 5,
+      p_window_seconds: 300,
     });
 
     if (rateLimitOk === false) {
@@ -143,7 +143,8 @@ Deno.serve(async (req) => {
         });
       }
 
-      await supabaseAdmin.from('user_roles').upsert({ user_id: newUser.user.id, role: 'demo' }, { onConflict: 'user_id' });
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', newUser.user.id);
+      await supabaseAdmin.from('user_roles').insert({ user_id: newUser.user.id, role: 'demo' });
       await resetDemoState(supabaseAdmin);
     } else {
       await supabaseAdmin.auth.admin.updateUserById(demoUser.id, {
@@ -164,7 +165,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      await supabaseAdmin.from('user_roles').upsert({ user_id: demoUser.id, role: 'demo' }, { onConflict: 'user_id' });
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', demoUser.id);
+      await supabaseAdmin.from('user_roles').insert({ user_id: demoUser.id, role: 'demo' });
       await resetDemoState(supabaseAdmin);
     }
 
