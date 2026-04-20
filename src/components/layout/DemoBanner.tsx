@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertTriangle, Info, X } from 'lucide-react';
+import { AlertTriangle, Info, LogOut } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +11,12 @@ export const DemoBanner = () => {
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState<number>(DEMO_DURATION_MS);
   const [showInfo, setShowInfo] = useState(false);
+
+  const handleExitDemo = async () => {
+    localStorage.removeItem('demo_session_start');
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
 
   useEffect(() => {
     const sessionStart = localStorage.getItem('demo_session_start');
@@ -57,6 +63,13 @@ export const DemoBanner = () => {
         >
           <Info className="w-3 h-3" />
           פרטים נוספים
+        </button>
+        <button
+          onClick={handleExitDemo}
+          className="mr-2 flex items-center gap-1 bg-white/20 hover:bg-white/30 rounded px-2 py-0.5 text-xs transition-colors"
+        >
+          <LogOut className="w-3 h-3" />
+          יציאה
         </button>
       </div>
 

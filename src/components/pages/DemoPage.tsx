@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Loader2, Mail, KeyRound, ChefHat, Play, CheckCircle2 } from 'lucide-react';
+import { Loader2, Mail, KeyRound, ChefHat, Play, CheckCircle2, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 // === OTP Flow (with ref token) ===
@@ -163,7 +163,13 @@ const PublicDemoLanding = () => {
       const { data, error } = await supabase.functions.invoke('demo-auto-login');
 
       if (error || data?.error) {
-        toast({ title: 'שגיאה', description: 'שגיאה זמנית — נסה שוב', variant: 'destructive' });
+        const msg = data?.error || error?.message || 'שגיאה זמנית — נסה שוב';
+        const isRateLimit = msg.includes('tentatives') || msg.includes('rate') || msg.includes('429');
+        toast({
+          title: 'שגיאה',
+          description: isRateLimit ? 'יותר מדי ניסיונות — נסה שוב בעוד דקה' : 'שגיאה זמנית — נסה שוב',
+          variant: 'destructive',
+        });
         setLoading(false);
         return;
       }
@@ -236,6 +242,13 @@ const PublicDemoLanding = () => {
                 {feature}
               </div>
             ))}
+          </div>
+
+          <div className="border-t border-border pt-4 text-center">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={() => navigate('/auth')}>
+              <ArrowRight className="w-4 h-4" />
+              חזור לדף ההתחברות
+            </Button>
           </div>
         </CardContent>
       </Card>
