@@ -12,8 +12,10 @@ export const AuthRoute = ({ children }: AuthRouteProps) => {
   const [searchParams] = useSearchParams();
 
   // Don't redirect during password recovery flow
+  // sessionStorage flag survives hash clearing in handleHashToken
   const isRecovery = searchParams.get('type') === 'recovery' ||
-    window.location.hash.includes('type=recovery');
+    window.location.hash.includes('type=recovery') ||
+    sessionStorage.getItem('auth_recovery') === 'true';
 
   if (loading) {
     return (

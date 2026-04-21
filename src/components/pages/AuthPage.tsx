@@ -65,6 +65,7 @@ export const AuthPage = () => {
 
       if ((type === 'recovery' || type === 'invite') && accessToken) {
         try {
+          sessionStorage.setItem('auth_recovery', 'true');
           const { error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken ?? '',
@@ -166,6 +167,7 @@ export const AuthPage = () => {
       if (error) {
         toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
       } else {
+        sessionStorage.removeItem('auth_recovery');
         toast({ title: 'הצלחה!', description: 'הסיסמה עודכנה. אנא התחבר מחדש.' });
         await supabase.auth.signOut();
         setPassword('');
