@@ -177,7 +177,7 @@ export const AdminUsersPage = () => {
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validation = inviteSchema.safeParse({ email, fullName, password, role });
+    const validation = inviteSchema.safeParse({ email, fullName, role });
     if (!validation.success) {
       const error = validation.error.errors[0];
       toast({ title: 'שגיאה', description: error instanceof Error ? error.message : 'שגיאה לא ידועה', variant: 'destructive' });
