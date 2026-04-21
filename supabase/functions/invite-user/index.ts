@@ -10,8 +10,8 @@ function getAllowedOrigin(req: Request): string {
 
   if (envOrigin && origin === envOrigin) return origin;
 
-  const allowedPreviewHosts = ['.lovable.app', '.lovableproject.com'];
-  if (allowedPreviewHosts.some((suffix) => origin.endsWith(suffix))) {
+  const allowedHosts = ['.lovable.app', '.lovableproject.com', '.vercel.app'];
+  if (allowedHosts.some((suffix) => origin.endsWith(suffix))) {
     return origin;
   }
 
