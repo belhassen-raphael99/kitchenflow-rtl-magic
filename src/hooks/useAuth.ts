@@ -22,18 +22,19 @@ export function useAuth() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setAuthState(prev => ({
-          ...prev,
-          session,
-          user: session?.user ?? null,
-        }));
-
         if (session?.user) {
+          // Set loading=true so ProtectedRoute waits for role before deciding
+          setAuthState(prev => ({
+            ...prev,
+            session,
+            user: session.user,
+            loading: true,
+          }));
           setTimeout(() => {
             fetchUserRole(session.user.id);
           }, 0);
         } else {
-          setAuthState(prev => ({ ...prev, role: null, loading: false }));
+          setAuthState({ user: null, session: null, role: null, loading: false });
         }
       }
     );
