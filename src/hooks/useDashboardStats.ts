@@ -58,6 +58,7 @@ export interface DashboardStats {
   expiringItems: ExpiringItem[];
   urgentTasks: UrgentTask[];
   nextWeekEvents: NextEvent[];
+  nextMonthEvents: NextEvent[];
   loading: boolean;
 }
 
@@ -81,6 +82,7 @@ export function useDashboardStats(): DashboardStats {
     expiringItems: [],
     urgentTasks: [],
     nextWeekEvents: [],
+    nextMonthEvents: [],
     loading: true,
   });
 
@@ -105,6 +107,12 @@ export function useDashboardStats(): DashboardStats {
       const nextWeekEnd = new Date(nextWeekStart);
       nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
 
+      // Next month (next 30 days starting tomorrow)
+      const nextMonthStart = new Date(today);
+      nextMonthStart.setDate(today.getDate() + 1);
+      const nextMonthEnd = new Date(today);
+      nextMonthEnd.setDate(today.getDate() + 30);
+
       // Month boundaries
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
       const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
@@ -122,7 +130,7 @@ export function useDashboardStats(): DashboardStats {
       const [
         recipesRes, weekEventsRes, tasksRes, totalItemsRes, lowRes, criticalRes,
         invoiceRes, revenueRes, todayEventsRes, lowStockListRes, expiringRes,
-        urgentTasksRes, nextWeekRes
+        urgentTasksRes, nextWeekRes, nextMonthRes
       ] = await Promise.all([
         supabase.from('recipes').select('id', { count: 'exact', head: true }),
         supabase.from('events').select('name, client_name, date, time, guests, delivery_time, delivery_address, status')
@@ -144,6 +152,9 @@ export function useDashboardStats(): DashboardStats {
         supabase.from('events').select('name, client_name, date, time, guests, delivery_time, delivery_address, status')
           .gte('date', nextWeekStart.toISOString().split('T')[0])
           .lte('date', nextWeekEnd.toISOString().split('T')[0]).order('date'),
+        supabase.from('events').select('name, client_name, date, time, guests, delivery_time, delivery_address, status')
+          .gte('date', nextMonthStart.toISOString().split('T')[0])
+          .lte('date', nextMonthEnd.toISOString().split('T')[0]).order('date'),
       ]);
 
       const weekEventsData = weekEventsRes.data || [];
@@ -170,6 +181,7 @@ export function useDashboardStats(): DashboardStats {
       const weekEvents = weekEventsData.map(mapEvent);
       const todayDeliveryEvents = todayEventsData.map(mapEvent);
       const nextWeekEvents = (nextWeekRes.data || []).map(mapEvent);
+      const nextMonthEvents = (nextMonthRes.data || []).map(mapEvent);
 
       const lowStockList: LowStockItem[] = (lowStockListRes.data || []).map((i: any) => ({
         id: i.id, name: i.name, quantity: Number(i.quantity), min_stock: Number(i.min_stock), unit: i.unit,
@@ -211,6 +223,7 @@ export function useDashboardStats(): DashboardStats {
           expiringItems,
           urgentTasks,
           nextWeekEvents,
+          nextMonthEvents,
           loading: false,
         });
       }
