@@ -45,11 +45,18 @@ const dayNames = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמיש�
 export const DashboardPage = () => {
   const { clientInfo } = useApp();
   const stats = useDashboardStats();
-  const [showNextWeek, setShowNextWeek] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'none' | 'week' | 'month'>('none');
 
   const today = new Date();
   const isThursday = today.getDay() === 4;
   const todayFormatted = format(today, 'EEEE, dd MMMM yyyy', { locale: he });
+
+  // Auto-show next week on Thursdays unless user picked something else
+  const effectiveMode: 'none' | 'week' | 'month' =
+    previewMode === 'none' && isThursday ? 'week' : previewMode;
+  const previewEvents = effectiveMode === 'month' ? stats.nextMonthEvents : stats.nextWeekEvents;
+  const previewTitle =
+    effectiveMode === 'month' ? '📋 תצפית חודשית — 30 הימים הקרובים' : '📋 תצפית שבועית — שבוע הבא';
 
   // Placeholder chart data (would be from real monthly aggregation)
   const monthlyData = [
@@ -316,26 +323,44 @@ export const DashboardPage = () => {
         </Card>
       </div>
 
-      {/* Section G — Weekly preview */}
-      {(isThursday || showNextWeek) && (
+      {/* Section G — Weekly / Monthly preview */}
+      {effectiveMode !== 'none' && (
         <Card className="rounded-lg shadow-soft border-2 border-primary/20">
           <CardHeader className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Eye className="w-4 h-4 text-primary" />
-                📋 תצפית שבועית — שבוע הבא
+                {previewTitle}
               </CardTitle>
-              <Button variant="outline" size="sm" className="gap-1.5 no-print" onClick={() => window.print()}>
-                <Printer className="w-3.5 h-3.5" />
-                הדפס
-              </Button>
+              <div className="flex items-center gap-2 no-print">
+                <Button
+                  variant={effectiveMode === 'week' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPreviewMode('week')}
+                >
+                  שבוע הבא
+                </Button>
+                <Button
+                  variant={effectiveMode === 'month' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPreviewMode('month')}
+                >
+                  חודש הבא
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
+                  <Printer className="w-3.5 h-3.5" />
+                  הדפס
+                </Button>
+              </div>
             </div>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 space-y-2">
-            {stats.nextWeekEvents.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">אין אירועים בשבוע הבא</p>
+          <CardContent className="p-4 sm:p-6 pt-0 space-y-2 max-h-96 overflow-y-auto">
+            {previewEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                {effectiveMode === 'month' ? 'אין אירועים בחודש הקרוב' : 'אין אירועים בשבוע הבא'}
+              </p>
             ) : (
-              stats.nextWeekEvents.map((event, i) => (
+              previewEvents.map((event, i) => (
                 <div key={i} className="flex items-center justify-between p-3 bg-primary/5 rounded-md border border-primary/10">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{event.client_name || event.name}</p>
@@ -353,11 +378,15 @@ export const DashboardPage = () => {
         </Card>
       )}
 
-      {!isThursday && !showNextWeek && (
-        <div className="flex justify-center">
-          <Button variant="outline" size="sm" onClick={() => setShowNextWeek(true)} className="gap-2">
+      {effectiveMode === 'none' && (
+        <div className="flex justify-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPreviewMode('week')} className="gap-2">
             <Eye className="w-4 h-4" />
             צפה בשבוע הבא
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setPreviewMode('month')} className="gap-2">
+            <Calendar className="w-4 h-4" />
+            צפה בחודש הבא
           </Button>
         </div>
       )}
