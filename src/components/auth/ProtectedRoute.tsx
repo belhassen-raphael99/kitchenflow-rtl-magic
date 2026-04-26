@@ -18,6 +18,12 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
+  // If the user is mid password-recovery, force them to finish that flow
+  // before they can access protected routes.
+  if (sessionStorage.getItem('auth_recovery') === 'true') {
+    return <Navigate to="/reset-password" replace />;
+  }
+
   if (!user || !role) {
     return <Navigate to="/auth" replace />;
   }

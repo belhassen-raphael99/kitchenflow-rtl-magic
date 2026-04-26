@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthContext } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Mail, Lock, LogIn, KeyRound, CheckCircle } from 'lucide-react';
+import { Loader2, Mail, Lock, LogIn, KeyRound } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -18,87 +18,15 @@ const emailSchema = z.object({
   email: z.string().email('כתובת אימייל לא תקינה'),
 });
 
-const passwordSchema = z.object({
-  password: z.string()
-    .min(12, 'הסיסמה חייבת להיות לפחות 12 תווים')
-    .max(128, 'הסיסמה לא יכולה לעבור 128 תווים')
-    .regex(/[a-z]/, 'חייבת להכיל אות קטנה')
-    .regex(/[A-Z]/, 'חייבת להכיל אות גדולה')
-    .regex(/[0-9]/, 'חייבת להכיל ספרה')
-    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'חייבת להכיל תו מיוחד'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'הסיסמאות לא תואמות',
-  path: ['confirmPassword'],
-});
-
-type ViewMode = 'login' | 'forgot-password' | 'reset-password';
+type ViewMode = 'login' | 'forgot-password';
 
 export const AuthPage = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('login');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetSuccess, setResetSuccess] = useState(false);
   const { signIn } = useAuthContext();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if ((event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') && isMounted) {
-        setViewMode('reset-password');
-      }
-    });
-
-    // Handle recovery/invite tokens from URL hash — Supabase puts tokens in hash, not query params
-    const handleHashToken = async () => {
-      const hash = window.location.hash;
-      if (!hash) return;
-
-      const hashParams = new URLSearchParams(hash.substring(1));
-      const type = hashParams.get('type');
-      const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
-
-      if ((type === 'recovery' || type === 'invite') && accessToken) {
-        try {
-          sessionStorage.setItem('auth_recovery', 'true');
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken ?? '',
-          });
-          if (!error && isMounted) {
-            setViewMode('reset-password');
-            window.history.replaceState(null, '', window.location.pathname);
-          } else if (error && isMounted) {
-            toast({
-              title: 'שגיאה',
-              description: 'הקישור פג תוקף. בקש קישור חדש.',
-              variant: 'destructive',
-            });
-          }
-        } catch {
-          if (isMounted) {
-            toast({
-              title: 'שגיאה',
-              description: 'שגיאה בעיבוד הקישור. נסה שוב.',
-              variant: 'destructive',
-            });
-          }
-        }
-      }
-    };
-
-    handleHashToken();
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +42,11 @@ export const AuthPage = () => {
       const { error } = await signIn(email.trim().toLowerCase(), password);
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          toast({ title: 'שגיאה', description: 'אימייל או סיסמה שגויים', variant: 'destructive' });
+          toast({
+            title: 'שגיאה',
+            description: 'אימייל או סיסמה שגויים. אם קיבלת הזמנה ולא הגדרת סיסמה — לחץ "שכחת סיסמה" כדי להגדיר אחת.',
+            variant: 'destructive',
+          });
         } else if (error.message.includes('Email not confirmed')) {
           toast({ title: 'שגיאה', description: 'יש לאשר את האימייל לפני ההתחברות', variant: 'destructive' });
         } else if (error.message.includes('Too many requests')) {
@@ -142,40 +74,11 @@ export const AuthPage = () => {
     setLoading(true);
     try {
       await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       // Always show success to prevent email enumeration attacks
       toast({ title: 'נשלח!', description: 'אם כתובת האימייל קיימת במערכת, ישלח אליה קישור לאיפוס הסיסמה' });
       setViewMode('login');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const validation = passwordSchema.safeParse({ password, confirmPassword });
-    if (!validation.success) {
-      toast({ title: 'שגיאה', description: validation.error.errors[0].message, variant: 'destructive' });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) {
-        toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
-      } else {
-        sessionStorage.removeItem('auth_recovery');
-        toast({ title: 'הצלחה!', description: 'הסיסמה עודכנה. אנא התחבר מחדש.' });
-        await supabase.auth.signOut();
-        setPassword('');
-        setConfirmPassword('');
-        setResetSuccess(true);
-        setViewMode('login');
-        setTimeout(() => setResetSuccess(false), 3000);
-      }
     } finally {
       setLoading(false);
     }
@@ -289,67 +192,9 @@ export const AuthPage = () => {
     </>
   );
 
-  const renderResetPassword = () => (
-    <>
-      <div className="text-center mb-6">
-        {resetSuccess ? (
-          <CheckCircle className="w-12 h-12 text-primary mx-auto mb-3" />
-        ) : (
-          <KeyRound className="w-12 h-12 text-primary mx-auto mb-3" />
-        )}
-        <h2 className="text-lg font-semibold text-foreground">
-          {resetSuccess ? 'הסיסמה עודכנה!' : 'הגדר סיסמה חדשה'}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {resetSuccess ? 'מעביר אותך לדף ההתחברות...' : 'הכנס את הסיסמה החדשה שלך'}
-        </p>
-      </div>
-
-      {!resetSuccess && (
-        <form onSubmit={handleResetPassword} className="space-y-4">
-          <div>
-            <Label htmlFor="new-password">סיסמה חדשה</Label>
-            <div className="relative">
-              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="new-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pr-10 text-right"
-                placeholder="לפחות 12 תווים"
-                required
-              />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="confirm-password">אשר סיסמה</Label>
-            <div className="relative">
-              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="pr-10 text-right"
-                placeholder="הכנס שוב את הסיסמה"
-                required
-              />
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-            עדכן סיסמה
-          </Button>
-        </form>
-      )}
-    </>
-  );
-
   const renderContent = () => {
     switch (viewMode) {
       case 'forgot-password': return renderForgotPassword();
-      case 'reset-password': return renderResetPassword();
       default: return renderLogin();
     }
   };
