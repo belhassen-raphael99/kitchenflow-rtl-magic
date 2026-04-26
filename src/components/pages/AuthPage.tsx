@@ -192,67 +192,9 @@ export const AuthPage = () => {
     </>
   );
 
-  const renderResetPassword = () => (
-    <>
-      <div className="text-center mb-6">
-        {resetSuccess ? (
-          <CheckCircle className="w-12 h-12 text-primary mx-auto mb-3" />
-        ) : (
-          <KeyRound className="w-12 h-12 text-primary mx-auto mb-3" />
-        )}
-        <h2 className="text-lg font-semibold text-foreground">
-          {resetSuccess ? 'הסיסמה עודכנה!' : 'הגדר סיסמה חדשה'}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {resetSuccess ? 'מעביר אותך לדף ההתחברות...' : 'הכנס את הסיסמה החדשה שלך'}
-        </p>
-      </div>
-
-      {!resetSuccess && (
-        <form onSubmit={handleResetPassword} className="space-y-4">
-          <div>
-            <Label htmlFor="new-password">סיסמה חדשה</Label>
-            <div className="relative">
-              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="new-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pr-10 text-right"
-                placeholder="לפחות 12 תווים"
-                required
-              />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="confirm-password">אשר סיסמה</Label>
-            <div className="relative">
-              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="pr-10 text-right"
-                placeholder="הכנס שוב את הסיסמה"
-                required
-              />
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-            עדכן סיסמה
-          </Button>
-        </form>
-      )}
-    </>
-  );
-
   const renderContent = () => {
     switch (viewMode) {
       case 'forgot-password': return renderForgotPassword();
-      case 'reset-password': return renderResetPassword();
       default: return renderLogin();
     }
   };
