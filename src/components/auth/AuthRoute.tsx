@@ -1,5 +1,5 @@
 // @refresh reset
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuthContext } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
@@ -7,15 +7,13 @@ interface AuthRouteProps {
   children: React.ReactNode;
 }
 
+/**
+ * Wraps the public /auth (login) page.
+ * Recovery / first-password flows now live on the dedicated /reset-password
+ * route, so this guard only needs to redirect already-logged-in users away.
+ */
 export const AuthRoute = ({ children }: AuthRouteProps) => {
   const { user, loading } = useAuthContext();
-  const [searchParams] = useSearchParams();
-
-  // Don't redirect during password recovery flow
-  // sessionStorage flag survives hash clearing in handleHashToken
-  const isRecovery = searchParams.get('type') === 'recovery' ||
-    window.location.hash.includes('type=recovery') ||
-    sessionStorage.getItem('auth_recovery') === 'true';
 
   if (loading) {
     return (
@@ -25,7 +23,12 @@ export const AuthRoute = ({ children }: AuthRouteProps) => {
     );
   }
 
-  if (user && !isRecovery) {
+  // If a recovery flow is mid-flight, never silently redirect into the app.
+  if (sessionStorage.getItem('auth_recovery') === 'true') {
+    return <Navigate to="/reset-password" replace />;
+  }
+
+  if (user) {
     return <Navigate to="/" replace />;
   }
 

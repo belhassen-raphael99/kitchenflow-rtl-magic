@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { AuthPage } from './components/pages/AuthPage';
+import { ResetPasswordPage } from './components/pages/ResetPasswordPage';
 import { DashboardPage } from './components/pages/DashboardPage';
 import { AgendaPage } from './components/pages/AgendaPage';
 import { RecipesPage } from './components/pages/RecipesPage';
@@ -39,6 +40,7 @@ const AppRoutes = () => {
       />
       <Route path="/demo" element={<DemoPage />} />
       <Route path="/demo-expired" element={<DemoExpiredPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         path="/"
         element={
