@@ -18,6 +18,20 @@ function getAllowedOrigin(req: Request): string {
   return envOrigin || 'https://kitchenflow-rtl-magic.lovable.app';
 }
 
+/**
+ * Build the redirect URL for the invitation email.
+ * Prefer the request's real Origin (so an admin inviting from Vercel gets a
+ * Vercel link, not a Lovable link), but only if it's an allowed host.
+ */
+function getInviteRedirectBase(req: Request): string {
+  const origin = req.headers.get('Origin') || '';
+  const allowedHosts = ['.lovable.app', '.lovableproject.com', '.vercel.app'];
+  if (origin && allowedHosts.some((suffix) => origin.endsWith(suffix))) {
+    return origin;
+  }
+  return Deno.env.get('ALLOWED_ORIGIN') || 'https://kitchenflow-rtl-magic.lovable.app';
+}
+
 // ============================================
 // VALIDATION SCHEMAS (Zod)
 // ============================================
