@@ -1,82 +1,181 @@
+## Diagnostic senior — cause réelle
 
-## Diagnostic
+Do I know what the issue is? Oui.
 
-### Problème 1 — "Invalid login credentials" alors que le mot de passe semble correct
+Ce n’est pas un problème de CSS, de CORS, de rôles, ni de RLS.
 
-Le code de connexion (`AuthPage.handleLogin` → `signIn` → `supabase.auth.signInWithPassword`) est **correct**. Les logs auth Supabase confirment l'erreur `400 invalid_credentials` côté serveur — ça veut dire que **Supabase ne trouve pas la combinaison email/password en base**.
+Les logs backend montrent que les tentatives email/mot de passe échouent au niveau du service d’authentification avec :
 
-Causes possibles (à vérifier par l'utilisateur) :
-- **a.** Le compte a été créé via **invitation** (`invite-user` edge function) mais le lien d'invitation n'a jamais été ouvert / le password n'a jamais été défini → en base Supabase, le user existe mais sans `encrypted_password`.
-- **b.** Un précédent reset de mot de passe a "réussi" côté UI mais en réalité le password n'a jamais été mis à jour à cause du Problème 2 ci-dessous (le user a été connecté via le lien recovery, n'a pas vu le formulaire de reset, et a fermé l'onglet).
-- **c.** Email pas encore confirmé.
-- **d.** Caps Lock / clavier hébreu actif → le mot de passe tapé n'est pas exactement celui en base.
-- **e.** Espaces invisibles dans l'email (mais on fait déjà `trim().toLowerCase()`).
+```text
+POST /auth/v1/token?grant_type=password -> 400 invalid_credentials
+```
 
-### Problème 2 — Le lien "mot de passe oublié" connecte sans demander un nouveau mot de passe
+Pour ton compte `b.raphael1998@gmail.com`, j’ai vérifié côté backend :
 
-Le code *essaye* de gérer le cas (`AuthPage.handleHashToken` + `AuthRoute` qui regarde `sessionStorage.auth_recovery`), mais la mécanique est **fragile** et casse dans plusieurs scénarios :
+- le compte existe ;
+- l’email est confirmé ;
+- le compte a bien un mot de passe enregistré ;
+- le rôle `admin` existe ;
+- le profil indique `password: true` ;
+- le compte est aussi lié à Google ;
+- une ancienne session active existe encore via refresh token.
 
-1. **Ordre incorrect dans `handleHashToken`** (`AuthPage.tsx:68-72`) : `sessionStorage.setItem('auth_recovery', 'true')` est fait *avant* `await setSession(...)`. Si setSession échoue, le flag reste à `true` et bloque les futures tentatives de login dans cet onglet.
-2. **Race condition réelle** : entre le moment où `setSession` déclenche `SIGNED_IN` (qui re-render `AuthRoute` avec `user != null`) et le moment où `setViewMode('reset-password')` s'applique, **`AuthRoute` peut redéclencher** `<Navigate to="/" />` si le flag n'est pas encore lu correctement.
-3. **Le flag `auth_recovery` n'est jamais nettoyé en cas d'abandon** : nettoyé seulement dans `handleResetPassword` (succès). Si le user ferme l'onglet, le flag pollue sessionStorage.
-4. **Quand le user clique le lien email, il arrive sur `/auth#access_token=...&type=recovery`** mais `AuthRoute` lit `searchParams` (query string) et `window.location.hash` séparément. Sur certains navigateurs / SPA refresh, le hash peut être consommé par Supabase (auto `detectSessionInUrl`) **avant** que `AuthRoute` ne l'inspecte → connexion silencieuse, redirect vers `/`, jamais de formulaire.
-5. **`detectSessionInUrl` n'est pas désactivé** dans `supabase/client.ts` → Supabase auto-détecte et consomme les tokens du hash, créant la session **avant** que notre logique applicative ne réagisse.
+Donc le bug exact est celui-ci :
 
-C'est ce dernier point qui est probablement la cause racine.
+```text
+Le mot de passe que tu tapes n’est pas celui qui est actuellement enregistré côté auth,
+MAIS l’app garde encore une ancienne session active, ce qui donne l’impression que le compte est “bon”
+alors que le login email/password échoue réellement.
+```
+
+Et le flux “mot de passe oublié” n’est pas assez strict aujourd’hui :
+
+1. `ResetPasswordPage` met `sessionStorage.auth_recovery = true` dès l’ouverture de la page, avant même de valider que le lien email est un vrai lien de récupération.
+2. Si une ancienne session existe déjà, la page peut accepter cette session comme contexte de reset.
+3. Après changement de mot de passe, le code fait un `signOut()` simple, pas une déconnexion globale. Les anciennes sessions/refresh tokens peuvent rester vivants.
+4. Le reset ne gère pas proprement tous les formats de lien auth possibles : hash `#access_token=...&type=recovery` et query `?code=...`.
+5. L’edge function d’invitation utilise encore prioritairement `ALLOWED_ORIGIN` pour construire le lien `/reset-password`, ce qui peut envoyer vers le mauvais domaine quand l’app est utilisée depuis Vercel.
+
+Résultat : tu peux te retrouver avec un compte confirmé + ancien token actif + mot de passe backend différent de celui que tu crois avoir défini.
 
 ## Plan de correction
 
-### Étape 1 — Créer une route dédiée `/reset-password` (pattern recommandé)
+### 1. Rendre `/reset-password` strict et déterministe
 
-Plutôt que de mélanger login + reset sur `/auth` avec une logique de hash fragile, créer une **page séparée** `/reset-password` :
+Modifier `src/components/pages/ResetPasswordPage.tsx` pour que la page n’autorise le changement de mot de passe que si elle reçoit un vrai contexte de récupération :
 
-- Nouvelle page `src/components/pages/ResetPasswordPage.tsx` qui :
-  - Lit le hash recovery au mount, appelle `setSession` explicitement.
-  - Affiche **uniquement** le formulaire "nouveau mot de passe" + confirmation.
-  - Au succès : `updateUser({ password })` → `signOut()` → toast "Connecte-toi avec ton nouveau mot de passe" → redirige vers `/auth`.
-  - Si pas de token recovery valide dans le hash → affiche "lien invalide ou expiré" + bouton retour.
-- Route ajoutée dans `App.tsx` : `<Route path="/reset-password" element={<ResetPasswordPage />} />` **en dehors** de `ProtectedRoute` et de `AuthRoute` (route publique pure, sans aucune logique de redirection conditionnelle).
+- accepter les liens avec hash :
+  - `#access_token=...&refresh_token=...&type=recovery`
+  - `#access_token=...&refresh_token=...&type=invite`
+- accepter les liens avec query string :
+  - `?code=...`
+  - `?type=recovery`
+  - `?type=invite`
+- ne plus poser `sessionStorage.auth_recovery = true` automatiquement dès l’arrivée sur la page ;
+- poser le flag seulement après détection d’un lien recovery/invite valide ;
+- si un `code` est présent, tenter explicitement l’échange de code contre session ;
+- si le client auth a déjà consommé le lien automatiquement, accepter la session uniquement si l’URL prouve qu’on vient bien d’un lien recovery/invite ;
+- si aucun token/code recovery n’est présent, afficher “lien invalide ou expiré”.
 
-### Étape 2 — Mettre à jour `redirectTo` partout
+### 2. Après reset, invalider toutes les anciennes sessions
 
-Changer les 3 occurrences :
-- `src/components/pages/AuthPage.tsx:145` (forgot password)
-- `src/components/pages/AdminUsersPage.tsx:268` (resend invite)
-- `supabase/functions/invite-user/index.ts:201` (invitation)
+Dans `ResetPasswordPage.tsx`, remplacer la sortie simple par une sortie globale :
 
-De `${origin}/auth` → `${origin}/reset-password`.
+```ts
+await supabase.auth.signOut({ scope: 'global' })
+```
 
-### Étape 3 — Désactiver `detectSessionInUrl` automatique
+Objectif :
 
-Dans `src/integrations/supabase/client.ts`, ajouter `detectSessionInUrl: false` dans les options auth, pour que **nous** contrôlions explicitement quand un hash recovery est consommé. Sinon Supabase consomme le token et redirige avant que notre code ne réagisse.
+```text
+Nouveau mot de passe défini -> tous les anciens refresh tokens invalidés -> retour forcé à /auth -> login obligatoire avec le nouveau mot de passe.
+```
 
-### Étape 4 — Nettoyer `AuthPage.tsx` et `AuthRoute.tsx`
+C’est indispensable pour supprimer la confusion actuelle : ancienne session active mais login email/password refusé.
 
-Une fois `/reset-password` séparé :
-- Retirer toute la logique `handleHashToken`, `viewMode === 'reset-password'`, `renderResetPassword`, le flag `sessionStorage.auth_recovery` de `AuthPage.tsx`.
-- Simplifier `AuthRoute.tsx` : retirer la détection recovery (plus nécessaire car la route reset est ailleurs). Garder juste : `if (user && !loading) → Navigate("/")`.
-- `AuthPage.tsx` ne gère plus que `login` et `forgot-password`.
+### 3. Nettoyer les guards auth pour éviter les boucles invisibles
 
-### Étape 5 — Améliorer le message d'erreur de login
+Modifier :
 
-Dans `handleLogin`, quand on reçoit `Invalid login credentials`, afficher un message plus actionnable :
-> "אימייל או סיסמה שגויים. אם קיבלת הזמנה ולא הגדרת סיסמה, השתמש בקישור 'שכחת סיסמה' כדי להגדיר סיסמה ראשונה."
-> ("Email ou mot de passe incorrects. Si tu as reçu une invitation et que tu n'as pas défini de mot de passe, utilise 'mot de passe oublié' pour en définir un.")
+- `src/components/auth/AuthRoute.tsx`
+- `src/components/auth/ProtectedRoute.tsx`
 
-### Étape 6 — Vérification utilisateur (côté toi, après mes changements)
+But :
 
-Une fois le code en place, il faudra vérifier dans le dashboard Lovable Cloud (Auth) :
-- Pour `b.raphael1998@gmail.com` : est-ce que la colonne `encrypted_password` est NULL ? Si oui → demander un reset password (le nouveau flow `/reset-password` permettra de définir le password pour la première fois).
-- Vérifier que la **Site URL** dans la config Auth Supabase = l'URL de production (`https://kitchenflow-rtl-magic.lovable.app` ou le domaine Vercel), et que `/reset-password` est dans la liste des **Redirect URLs** autorisées.
+- garder le blocage d’accès à l’app pendant un reset réel ;
+- ne jamais bloquer l’utilisateur à cause d’un vieux `sessionStorage.auth_recovery` oublié ;
+- nettoyer ce flag quand on arrive sur `/auth` sans lien recovery actif.
 
-## Hors périmètre
+### 4. Corriger les liens d’invitation/reset depuis les domaines réels
 
-- Pas de changement aux edge functions à part `invite-user` (juste le `redirectTo`).
-- Pas de modification des RLS ou des tables.
-- Pas de changement au flow d'invitation (juste la cible du lien).
+Modifier `supabase/functions/invite-user/index.ts` :
+
+- ne plus construire `redirectTo` uniquement depuis `ALLOWED_ORIGIN` ;
+- utiliser l’origine réelle autorisée de la requête (`lovable.app`, `lovableproject.com`, `vercel.app`) ;
+- générer :
+
+```text
+{origin_reel}/reset-password
+```
+
+Exemple attendu depuis Vercel :
+
+```text
+https://kitchenflow-rtl-magic.vercel.app/reset-password
+```
+
+Puis redéployer `invite-user`.
+
+### 5. Mettre la page login au niveau professionnel
+
+Modifier `src/components/pages/AuthPage.tsx` :
+
+- mettre les champs email/password en LTR pour éviter les problèmes RTL avec email, chiffres et caractères spéciaux ;
+- ajouter un bouton afficher/masquer le mot de passe ;
+- ajouter un warning Caps Lock si détecté ;
+- sur `Invalid login credentials`, proposer directement l’action “envoyer un lien de reset” au lieu d’un toast vague ;
+- ajouter un bouton “Connexion Google” puisque ton compte est lié à Google, sans remplacer email/password.
+
+Important : le mot de passe Google et le mot de passe de l’app ne sont pas forcément le même. Le bouton Google élimine cette ambiguïté.
+
+### 6. Vérifier/configurer les URLs autorisées auth
+
+Côté configuration Lovable Cloud Auth, vérifier/ajouter les URLs de redirection autorisées :
+
+```text
+https://kitchenflow-rtl-magic.lovable.app/reset-password
+https://kitchenflow-rtl-magic.vercel.app/reset-password
+https://*.lovableproject.com/reset-password
+```
+
+Objectif : éviter qu’un email de reset soit accepté par le backend mais redirige ailleurs que `/reset-password`.
+
+### 7. Validation après patch
+
+Je vérifierai ensuite :
+
+1. `mot de passe oublié` envoie bien vers `/reset-password` ;
+2. ouvrir le lien email n’entre pas dans l’app ;
+3. la page force bien la saisie d’un nouveau mot de passe ;
+4. après validation, toutes les sessions sont révoquées ;
+5. l’utilisateur revient sur `/auth` ;
+6. le login email/password fonctionne uniquement avec le nouveau mot de passe ;
+7. l’ancien mot de passe/session ne fonctionne plus ;
+8. le lien d’invitation depuis Vercel pointe bien vers Vercel `/reset-password`.
+
+## Fichiers concernés
+
+- `src/components/pages/ResetPasswordPage.tsx`
+- `src/components/pages/AuthPage.tsx`
+- `src/components/auth/AuthRoute.tsx`
+- `src/components/auth/ProtectedRoute.tsx`
+- `supabase/functions/invite-user/index.ts`
+
+## Ce que je ne vais pas faire
+
+- Pas de modification manuelle du client auth généré.
+- Pas de stockage de rôle côté client.
+- Pas de contournement de sécurité.
+- Pas de magic login silencieux après reset.
+- Pas de reset password qui entre directement dans l’application.
 
 ## Résultat attendu
 
-- Le lien "mot de passe oublié" arrive sur une page dédiée qui **force** la saisie d'un nouveau mot de passe + confirmation, signe la session out, et renvoie vers `/auth` pour reconnexion explicite.
-- Les utilisateurs invités peuvent définir leur premier mot de passe via le même flow recovery (cohérent).
-- Le message d'erreur de login guide vers la bonne action quand le compte n'a pas de password défini.
+Après correction, le flux sera strict :
+
+```text
+Mot de passe oublié
+-> email reçu
+-> /reset-password
+-> nouveau mot de passe obligatoire
+-> déconnexion globale
+-> retour /auth
+-> connexion obligatoire avec le nouveau mot de passe
+```
+
+Et si le problème est simplement que tu utilises le mot de passe Google au lieu du mot de passe app, le bouton Google sera disponible clairement sur la page login.
+
+<lov-actions>
+  <lov-open-history>View History</lov-open-history>
+  <lov-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</lov-link>
+</lov-actions>
