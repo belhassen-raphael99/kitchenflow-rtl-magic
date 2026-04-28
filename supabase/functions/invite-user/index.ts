@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
       email,
       {
         data: { full_name: fullName },
-        redirectTo: `${Deno.env.get('ALLOWED_ORIGIN') || 'https://kitchenflow-rtl-magic.lovable.app'}/reset-password`,
+        redirectTo: `${getInviteRedirectBase(req)}/reset-password`,
       }
     );
 
