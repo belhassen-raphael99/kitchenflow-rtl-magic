@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Lock, Mail, LogOut, AlertTriangle } from 'lucide-react';
+import { Loader2, Lock, Mail, LogOut, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -48,6 +48,8 @@ export const SecurityTab = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Email change state
   const [newEmail, setNewEmail] = useState('');
@@ -122,14 +124,27 @@ export const SecurityTab = () => {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="newPassword">סיסמה חדשה</Label>
-            <Input
-              id="newPassword"
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="לפחות 12 תווים"
-              disabled={isDemo}
-            />
+            <div className="relative">
+              <Input
+                id="newPassword"
+                type={showNewPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="לפחות 12 תווים"
+                disabled={isDemo}
+                dir="ltr"
+                className="pl-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((v) => !v)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={showNewPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                tabIndex={-1}
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
             {newPassword && (
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -147,14 +162,27 @@ export const SecurityTab = () => {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">אימות סיסמה</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="הכנס שוב את הסיסמה"
-              disabled={isDemo}
-            />
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="הכנס שוב את הסיסמה"
+                disabled={isDemo}
+                dir="ltr"
+                className="pl-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label={showConfirmPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <Button onClick={handleChangePassword} disabled={passwordLoading || isDemo} className="gap-2">
