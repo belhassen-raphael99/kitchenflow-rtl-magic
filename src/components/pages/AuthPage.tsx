@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthContext } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Mail, Lock, LogIn, KeyRound } from 'lucide-react';
+import { Loader2, Mail, Lock, LogIn, KeyRound, Eye, EyeOff, AlertTriangle, Chrome } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -23,8 +23,12 @@ type ViewMode = 'login' | 'forgot-password';
 export const AuthPage = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('login');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [capsLockOn, setCapsLockOn] = useState(false);
+  const [credentialError, setCredentialError] = useState(false);
   const { signIn } = useAuthContext();
   const navigate = useNavigate();
 
@@ -38,10 +42,12 @@ export const AuthPage = () => {
     }
 
     setLoading(true);
+    setCredentialError(false);
     try {
       const { error } = await signIn(email.trim().toLowerCase(), password);
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
+          setCredentialError(true);
           toast({
             title: 'שגיאה',
             description: 'אימייל או סיסמה שגויים. אם קיבלת הזמנה ולא הגדרת סיסמה — לחץ "שכחת סיסמה" כדי להגדיר אחת.',
@@ -84,6 +90,48 @@ export const AuthPage = () => {
     }
   };
 
+  const handleSendResetFromError = async () => {
+    if (!email) {
+      toast({ title: 'שגיאה', description: 'הכנס תחילה את האימייל שלך', variant: 'destructive' });
+      return;
+    }
+    const validation = emailSchema.safeParse({ email });
+    if (!validation.success) {
+      toast({ title: 'שגיאה', description: validation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    try {
+      await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      toast({ title: 'נשלח!', description: 'בדוק את תיבת הדואר שלך לקבלת קישור לאיפוס הסיסמה' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/` },
+      });
+      if (error) {
+        toast({ title: 'שגיאה', description: error.message, variant: 'destructive' });
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handlePasswordKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (typeof e.getModifierState === 'function') {
+      setCapsLockOn(e.getModifierState('CapsLock'));
+    }
+  };
+
   const renderLogin = () => (
     <>
       <div className="text-center mb-6">
@@ -102,7 +150,12 @@ export const AuthPage = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pr-10 text-right"
+              className="pr-10"
+              dir="ltr"
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder="example@email.com"
               required
             />
@@ -115,14 +168,36 @@ export const AuthPage = () => {
             <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               id="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pr-10 text-right"
+              onKeyUp={handlePasswordKey}
+              onKeyDown={handlePasswordKey}
+              className="pr-10 pl-10"
+              dir="ltr"
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder="הכנס סיסמה"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
           </div>
+          {capsLockOn && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+              <AlertTriangle className="w-3 h-3" />
+              Caps Lock פעיל
+            </p>
+          )}
         </div>
 
         <button
@@ -133,9 +208,48 @@ export const AuthPage = () => {
           שכחת סיסמה?
         </button>
 
+        {credentialError && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+            <p className="text-foreground mb-2">
+              לא הצלחנו להתחבר. אם שכחת את הסיסמה — נשלח לך מיד קישור לאיפוס.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full gap-2"
+              onClick={handleSendResetFromError}
+              disabled={loading}
+            >
+              <Mail className="w-4 h-4" />
+              שלח לי קישור לאיפוס סיסמה
+            </Button>
+          </div>
+        )}
+
         <Button type="submit" className="w-full" disabled={loading}>
           {loading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
           התחבר
+        </Button>
+
+        <div className="relative my-2">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-card px-2 text-muted-foreground">או</span>
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full gap-2"
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading}
+        >
+          {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Chrome className="w-4 h-4" />}
+          המשך עם Google
         </Button>
       </form>
 
@@ -173,7 +287,12 @@ export const AuthPage = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pr-10 text-right"
+              className="pr-10"
+              dir="ltr"
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder="example@email.com"
               required
             />

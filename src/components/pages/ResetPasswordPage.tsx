@@ -28,6 +28,14 @@ type Status = 'checking' | 'ready' | 'invalid' | 'success';
  * Dedicated page for password recovery and first-time password setup (after invite).
  * Public route — never wrapped in AuthRoute or ProtectedRoute.
  * Forces the user to type a new password before they can access the app.
+ *
+ * Strict contract:
+ * - The page only enters "ready" state if it can prove the user arrived from a
+ *   real recovery / invite link (hash tokens, ?code=, or ?type=recovery|invite).
+ * - The auth_recovery flag is only set AFTER that proof, so a stale flag from a
+ *   previous tab can never trap the user.
+ * - On success we sign out globally to invalidate every refresh token and force
+ *   a clean re-login with the new password.
  */
 export const ResetPasswordPage = () => {
   const navigate = useNavigate();
@@ -39,51 +47,89 @@ export const ResetPasswordPage = () => {
   useEffect(() => {
     let isMounted = true;
 
-    // Mark this tab as in recovery flow so other guards know not to
-    // redirect the user into the app before they reset their password.
-    sessionStorage.setItem('auth_recovery', 'true');
-
     // Listen for PASSWORD_RECOVERY (fired by Supabase when it auto-detects
     // the recovery hash from the email link).
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
       if (event === 'PASSWORD_RECOVERY' && session) {
+        sessionStorage.setItem('auth_recovery', 'true');
         setStatus('ready');
       }
     });
 
-    // Also handle the case where Supabase has already processed the hash
-    // before this component mounted: check for an active session + a
-    // recovery-style URL hash.
     const init = async () => {
+      const url = new URL(window.location.href);
       const hash = window.location.hash || '';
-      const looksLikeRecovery =
-        hash.includes('type=recovery') || hash.includes('type=invite');
+      const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+
+      const hashType = hashParams.get('type');
+      const queryType = url.searchParams.get('type');
+      const code = url.searchParams.get('code');
+      const errorDescription =
+        url.searchParams.get('error_description') || hashParams.get('error_description');
+
+      const isRecoveryLink =
+        hashType === 'recovery' ||
+        hashType === 'invite' ||
+        queryType === 'recovery' ||
+        queryType === 'invite' ||
+        Boolean(code);
+
+      // Email link error (expired / already used) — surface immediately.
+      if (errorDescription) {
+        if (!isMounted) return;
+        setStatus('invalid');
+        return;
+      }
+
+      // PKCE flow: explicitly exchange the code for a session.
+      if (code) {
+        try {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!isMounted) return;
+          if (error) {
+            setStatus('invalid');
+            return;
+          }
+          sessionStorage.setItem('auth_recovery', 'true');
+          window.history.replaceState(null, '', window.location.pathname);
+          setStatus('ready');
+          return;
+        } catch {
+          if (!isMounted) return;
+          setStatus('invalid');
+          return;
+        }
+      }
 
       const { data: { session } } = await supabase.auth.getSession();
-
       if (!isMounted) return;
 
-      if (session && (looksLikeRecovery || sessionStorage.getItem('auth_recovery') === 'true')) {
-        setStatus('ready');
-        // Clean the hash so refresh keeps the page usable.
+      if (session && isRecoveryLink) {
+        sessionStorage.setItem('auth_recovery', 'true');
         if (hash) {
           window.history.replaceState(null, '', window.location.pathname);
         }
-      } else if (!session && !looksLikeRecovery) {
-        // No recovery context at all → invalid landing.
-        setStatus('invalid');
+        setStatus('ready');
+        return;
       }
-      // Otherwise stay in 'checking' until onAuthStateChange fires.
+
+      if (!isRecoveryLink) {
+        // No proof at all that the user arrived from a recovery email.
+        // Make sure no stale flag from a previous tab traps anyone.
+        sessionStorage.removeItem('auth_recovery');
+        setStatus('invalid');
+        return;
+      }
+      // Otherwise stay in 'checking' until PASSWORD_RECOVERY fires.
     };
 
     init();
 
     // Safety timeout: if nothing resolves after 5s, mark invalid.
     const timer = window.setTimeout(() => {
-      if (isMounted && status === 'checking') {
-        setStatus((s) => (s === 'checking' ? 'invalid' : s));
-      }
+      if (!isMounted) return;
+      setStatus((s) => (s === 'checking' ? 'invalid' : s));
     }, 5000);
 
     return () => {
@@ -111,8 +157,13 @@ export const ResetPasswordPage = () => {
       }
 
       // Force the user to log back in with the new password.
+      // Global sign out invalidates every refresh token everywhere.
       sessionStorage.removeItem('auth_recovery');
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch {
+        await supabase.auth.signOut();
+      }
 
       setStatus('success');
       toast({
