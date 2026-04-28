@@ -287,7 +287,12 @@ export const AuthPage = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pr-10 text-right"
+              className="pr-10"
+              dir="ltr"
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               placeholder="example@email.com"
               required
             />
