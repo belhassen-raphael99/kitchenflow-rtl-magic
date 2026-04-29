@@ -25,6 +25,7 @@ import { WeeklyMiniStatsCard } from '@/components/kitchen/WeeklyMiniStatsCard';
 import { StockPlanItemDialog, type StockPlanItem } from '@/components/kitchen/StockPlanItemDialog';
 import { EventTasksSection } from '@/components/kitchen/EventTasksSection';
 import type { EventTaskCardData } from '@/components/kitchen/EventTaskCard';
+import { StockTaskTile } from '@/components/kitchen/StockTaskTile';
 
 interface ChefTask {
   id: string;
