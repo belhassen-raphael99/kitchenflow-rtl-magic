@@ -378,7 +378,18 @@ export const ChefDashboardPage = () => {
     );
 
     const eventsById = new Map(deliveries.map(d => [d.id, d]));
-    const inserts: Array<Record<string, unknown>> = [];
+    const inserts: Array<{
+      date: string;
+      department: string;
+      task_type: string;
+      event_id: string;
+      recipe_id: string | null;
+      name: string;
+      target_quantity: number;
+      unit: string;
+      priority: number;
+      notes: string | null;
+    }> = [];
 
     for (const it of eventItems) {
       const key = `${it.event_id}|${it.name}`;
