@@ -23,9 +23,6 @@ import { ExpiringItemsPanel } from '@/components/kitchen/ExpiringItemsPanel';
 import { UpcomingEventsColumn } from '@/components/kitchen/UpcomingEventsColumn';
 import { WeeklyMiniStatsCard } from '@/components/kitchen/WeeklyMiniStatsCard';
 import { StockPlanItemDialog, type StockPlanItem } from '@/components/kitchen/StockPlanItemDialog';
-import { CriticalStockBanner } from '@/components/kitchen/CriticalStockBanner';
-import { CriticalStockAlertDialog } from '@/components/kitchen/CriticalStockAlertDialog';
-import { useCriticalStockAlerts } from '@/hooks/useCriticalStockAlerts';
 
 interface ChefTask {
   id: string;
@@ -99,49 +96,7 @@ export const ChefDashboardPage = () => {
   const [eventDialog, setEventDialog] = useState<TodayDelivery | null>(null);
   const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
   const [planItemDialog, setPlanItemDialog] = useState<StockPlanItem | null>(null);
-  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
   const { toast } = useToast();
-  const criticalAlerts = useCriticalStockAlerts();
-
-  // Auto-open critical alert dialog once per session if new missing detected
-  useEffect(() => {
-    if (criticalAlerts.loading) return;
-    if (criticalAlerts.totalMissing === 0) return;
-    const sig = criticalAlerts.alerts
-      .map(a => `${a.eventId}:${a.missingIngredients.length}`)
-      .sort()
-      .join('|');
-    const lastSig = typeof window !== 'undefined' ? localStorage.getItem('chef_critical_alert_sig') : '';
-    if (sig && sig !== lastSig) {
-      setAlertDialogOpen(true);
-      try { localStorage.setItem('chef_critical_alert_sig', sig); } catch { /* ignore */ }
-      // Fire admin notifications (broadcast — user_id = null) once per signature
-      (async () => {
-        const rows = criticalAlerts.alerts.map(a => ({
-          type: 'critical_stock_for_event',
-          title: '🚨 חוסרים קריטיים לאירוע',
-          message: `${a.clientName || a.eventName} (${a.date} ${a.time?.slice(0, 5)}) — חסרים ${a.missingIngredients.length} רכיבים`,
-          severity: 'critical',
-          related_table: 'events',
-          related_id: a.eventId,
-          user_id: null,
-        }));
-        if (rows.length > 0) {
-          // Best-effort: only admins/demo can insert; silently ignore RLS failures for employees
-          await supabase.from('notifications').insert(rows);
-        }
-      })();
-    }
-  }, [criticalAlerts.loading, criticalAlerts.totalMissing, criticalAlerts.alerts]);
-
-  const openEventDialogById = useCallback(async (eventId: string) => {
-    const { data } = await supabase
-      .from('events')
-      .select('id, name, client_name, delivery_time, time, guests, status, delivery_address')
-      .eq('id', eventId)
-      .maybeSingle();
-    if (data) setEventDialog(data as TodayDelivery);
-  }, []);
 
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
@@ -529,15 +484,6 @@ export const ChefDashboardPage = () => {
         </div>
       </div>
 
-      {/* Critical stock banner */}
-      {!criticalAlerts.loading && criticalAlerts.totalMissing > 0 && (
-        <CriticalStockBanner
-          totalMissing={criticalAlerts.totalMissing}
-          affectedEvents={criticalAlerts.alerts.length}
-          onClick={() => setAlertDialogOpen(true)}
-        />
-      )}
-
       {/* KPI strip — always visible */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="rounded-md">
@@ -789,12 +735,6 @@ export const ChefDashboardPage = () => {
         onOpenChange={(o) => !o && setPlanItemDialog(null)}
         item={planItemDialog}
         onCreateTask={handleCreateTaskFromPlan}
-      />
-      <CriticalStockAlertDialog
-        open={alertDialogOpen}
-        onOpenChange={setAlertDialogOpen}
-        alerts={criticalAlerts.alerts}
-        onViewEvent={(id) => { void openEventDialogById(id); }}
       />
     </div>
   );
