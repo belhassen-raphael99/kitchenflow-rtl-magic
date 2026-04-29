@@ -130,10 +130,6 @@ export const AuthPage = () => {
   const handleDemoLogin = async () => {
     setDemoLoading(true);
     try {
-      await supabase.auth.signOut();
-      localStorage.clear();
-      sessionStorage.clear();
-
       const { data, error } = await supabase.functions.invoke('demo-auto-login');
 
       if (error || data?.error) {
@@ -151,10 +147,16 @@ export const AuthPage = () => {
       }
 
       const { access_token, refresh_token } = data;
-      await supabase.auth.setSession({ access_token, refresh_token });
       localStorage.setItem('demo_session_start', Date.now().toString());
       localStorage.setItem('show_demo_onboarding', 'true');
-      navigate('/', { replace: true });
+      const { error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (sessionError) {
+        toast({ title: 'שגיאה', description: 'שגיאה בהתחברות לדמו', variant: 'destructive' });
+        setDemoLoading(false);
+        return;
+      }
+      // Hard redirect so AuthContext re-initializes cleanly with the new session
+      window.location.href = '/';
     } catch {
       toast({ title: 'שגיאה', description: 'שגיאה זמנית — נסה שוב', variant: 'destructive' });
       setDemoLoading(false);
