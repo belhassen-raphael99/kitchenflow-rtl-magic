@@ -23,6 +23,9 @@ import { ExpiringItemsPanel } from '@/components/kitchen/ExpiringItemsPanel';
 import { UpcomingEventsColumn } from '@/components/kitchen/UpcomingEventsColumn';
 import { WeeklyMiniStatsCard } from '@/components/kitchen/WeeklyMiniStatsCard';
 import { StockPlanItemDialog, type StockPlanItem } from '@/components/kitchen/StockPlanItemDialog';
+import { CriticalStockBanner } from '@/components/kitchen/CriticalStockBanner';
+import { CriticalStockAlertDialog } from '@/components/kitchen/CriticalStockAlertDialog';
+import { useCriticalStockAlerts } from '@/hooks/useCriticalStockAlerts';
 
 interface ChefTask {
   id: string;
@@ -96,7 +99,34 @@ export const ChefDashboardPage = () => {
   const [eventDialog, setEventDialog] = useState<TodayDelivery | null>(null);
   const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
   const [planItemDialog, setPlanItemDialog] = useState<StockPlanItem | null>(null);
+  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
+  const [alertEventId, setAlertEventId] = useState<string | null>(null);
   const { toast } = useToast();
+  const criticalAlerts = useCriticalStockAlerts();
+
+  // Auto-open critical alert dialog once per session if new missing detected
+  useEffect(() => {
+    if (criticalAlerts.loading) return;
+    if (criticalAlerts.totalMissing === 0) return;
+    const sig = criticalAlerts.alerts
+      .map(a => `${a.eventId}:${a.missingIngredients.length}`)
+      .sort()
+      .join('|');
+    const lastSig = typeof window !== 'undefined' ? localStorage.getItem('chef_critical_alert_sig') : '';
+    if (sig && sig !== lastSig) {
+      setAlertDialogOpen(true);
+      try { localStorage.setItem('chef_critical_alert_sig', sig); } catch { /* ignore */ }
+    }
+  }, [criticalAlerts.loading, criticalAlerts.totalMissing, criticalAlerts.alerts]);
+
+  const openEventDialogById = useCallback(async (eventId: string) => {
+    const { data } = await supabase
+      .from('events')
+      .select('id, name, client_name, delivery_time, time, guests, status, delivery_address')
+      .eq('id', eventId)
+      .maybeSingle();
+    if (data) setEventDialog(data as TodayDelivery);
+  }, []);
 
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
