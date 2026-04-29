@@ -443,6 +443,25 @@ export const ChefDashboardPage = () => {
               {task.status === 'completed' && (
                 <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">✅ הושלם</Badge>
               )}
+              {task.task_type === 'stock' && task.status !== 'completed' && task.status !== 'cancelled' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                      <MoreVertical className="w-3.5 h-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" dir="rtl">
+                    <DropdownMenuItem onClick={() => setRescheduleTask(task)} className="gap-2">
+                      <CalendarClock className="w-4 h-4" />
+                      דחה לתאריך אחר
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleCancelTask(task)} className="gap-2 text-destructive focus:text-destructive">
+                      <XCircle className="w-4 h-4" />
+                      בטל היום
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
         </CardContent>
