@@ -1,108 +1,73 @@
 ## Objectif
 
-Refondre `ChefDashboardPage` en **un seul dashboard unifié** (zéro onglet top-level qui fait "changer d'écran"). Tout est visible en même temps, organisé en sections, et chaque interaction ouvre un **Dialog pop-up** par-dessus.
+Sur le Dashboard Chef → colonne **מלאי (Itour)**, permettre au chef de **reporter facilement une tâche** à un autre jour, et garantir qu'**il sera rappelé** ce jour-là (dans le dashboard ET dans les notifications/alertes), en plus des tâches normales du jour.
 
-## Layout cible (une seule page scrollable)
+## Constat actuel
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  Header : יום שני · 29/04/2026                  [🖨 הדפס]       │
-├─────────────────────────────────────────────────────────────────┤
-│  KPI strip (4 cartes compactes)                                 │
-│  [סה״כ משימות] [בביצוע] [הושלמו] [% התקדמות + bar]              │
-├──────────────────────────┬──────────────────────────────────────┤
-│  🏪 מלאי (Stock)          │  🎉 אירועים הקרובים                  │
-│  ───────────────────     │  ───────────────────                 │
-│  Filtre dept :           │  Filtre : [היום][מחר][השבוע]         │
-│  [🍳][🍞][🍰][🥐]         │                                      │
-│                          │  ┌─ Card event 1 ─────────────┐      │
-│  📋 תכנית היום           │  │ 👤 כהן · מחר 19:00 · 50    │      │
-│  · pain — 10/15          │  │ 🍳 5 plats  🍞 3  🍰 2     │      │
-│  · gateau — 0/8          │  │ [פתח פרטים]                │      │
-│                          │  └─────────────────────────────┘      │
-│  ⚡ משימות לביצוע         │  ┌─ Card event 2 ─────────────┐      │
-│  · [▶️ התחל] pain x10    │  │ 👤 לוי · ה׳ 12:00 · 80      │      │
-│  · [✅ סיים] gateau x8   │  │ ...                         │      │
-│                          │  └─────────────────────────────┘      │
-│  [🔄 ייצור אוטומטי]      │                                      │
-├──────────────────────────┴──────────────────────────────────────┤
-│  📅 השבוע במספרים        │  ⚠️ פג תוקף קרוב                    │
-│  אירועים : 4 · חודש : 12 │  · חלה — פג בעוד 2 ימים              │
-│  Mini-calendar 7 jours   │  · קרם — פג מחר                      │
-└─────────────────────────────────────────────────────────────────┘
-```
+- La fonction "דחה לתאריך אחר" existe déjà mais elle est cachée dans un menu `⋮` peu visible.
+- Aucune trace n'est conservée qu'une tâche a été **reportée** (juste une note texte).
+- Aucune notification n'est générée le jour J du report.
+- Le dashboard ne distingue pas visuellement les tâches reportées des tâches normales du jour.
 
-**Tout est sur la même page**. Pas d'onglets `Tabs` top-level qui cachent du contenu. Sur mobile, les colonnes deviennent empilées.
+## Plan en 3 parties
 
-## Comportement des clics → Dialog pop-up
+### 1. Bouton "Déplacer" visible sur chaque tâche Itour
 
-Aucun clic ne navigue. Chaque clic ouvre un **Dialog modal** par-dessus le dashboard :
+Dans `ChefDashboardPage.tsx` → `renderTaskCard` (uniquement pour les tâches `task_type === 'stock'`) :
+- Sortir l'action **"דחה"** (Reporter) du menu `⋮` et la mettre comme bouton secondaire visible à côté de "התחל" / "סיימתי".
+- Icône `CalendarClock` + libellé court "דחה" (variant outline).
+- Le menu `⋮` ne garde plus que "בטל היום".
+- Le `RescheduleTaskDialog` existant (déjà branché) reste utilisé tel quel.
 
-| Élément cliqué | Dialog ouvert |
-|---|---|
-| Carte d'événement à venir | `EventChefDetailDialog` (existant) — détails + items par dept |
-| Item "תכנית היום" (planning stock) | Mini dialog "פרטי מוצר" : recette, durée vie, notes, qté en stock, bouton "צור משימה" |
-| Tâche stock (carte משימה) | Reste inline (start/complete déjà sur la carte) ; menu `⋯` ouvre `RescheduleTaskDialog` (existant) |
-| Item "פג תוקף" | Confirm dialog "סמן כמושמד ?" |
-| KPI "השבוע במספרים" | `EventChefDetailDialog`-like : liste cliquable des événements de la semaine, chacun ouvre son propre dialog |
+### 2. Marquer une tâche comme "reportée" (base de données)
 
-→ L'utilisateur reste **toujours sur le dashboard**. Les pop-ups se ferment et il retrouve sa vue.
+Migration SQL légère sur `production_tasks` :
+- Ajouter `rescheduled_from date NULL` (date d'origine du report).
+- Ajouter `original_date date NULL` (première date prévue, conservée même après plusieurs reports).
+- Ajouter un index sur `(date, status)` pour les requêtes du dashboard.
 
-## Sections détaillées
+`handleRescheduleTask` mis à jour pour remplir ces deux colonnes — sans toucher à la logique de `notes` actuelle.
 
-### 1. Header compact
-Titre date + jour hébreu + bouton imprimer. Pas de description superflue.
+### 3. Rappel le jour du report
 
-### 2. KPI strip (4 cartes)
-Identique à l'existant mais **toujours visible** (pas dans un onglet).
+**a. Sur le dashboard (colonne Itour) :**
+- Quand on charge les tâches du jour, si une tâche a `rescheduled_from IS NOT NULL`, elle s'affiche avec :
+  - Un badge orange "↩️ נדחה מ־{date}" en haut de la carte.
+  - Une bordure gauche orange pour la distinguer.
+  - Triée en premier dans la liste "משימות לביצוע".
+- Petit bandeau récapitulatif au-dessus de la liste si ≥1 tâche reportée :
+  > "⏰ {N} משימות שנדחו מגיעות היום — אל תשכח!"
 
-### 3. Colonne gauche — 🏪 מלאי
-- Filtre département en haut (icônes + badge compteur, comme actuel).
-- **תכנית היום** : items `storage_type='מלאי'` du dept actif. Cliquables → mini-dialog produit.
-- **משימות לביצוע** : tâches `task_type='stock'` du dept actif. Cartes avec progress + boutons inline (`▶️ התחל`, `✅ סיים`). Menu `⋯` → reschedule/cancel.
-- Bouton **🔄 ייצור אוטומטי** en bas de colonne.
-
-### 4. Colonne droite — 🎉 אירועים הקרובים
-- Filtre temporel : `[היום] [מחר] [השבוע]` (défaut : השבוע, semaine israélienne dim→sam).
-- Liste de **cartes événements** triées par date+heure :
-  - Header carte : nom client, date relative ("מחר", "ה׳ 02/05"), heure de livraison, badge nb invités.
-  - Body : compteur compact par département (🍳 5 · 🍞 3 · 🍰 2) + barre de progression globale (tâches event complétées / total).
-  - Footer : bouton **"פתח פרטים"** → `EventChefDetailDialog`.
-- Carte cliquable en entier ouvre le même dialog.
-- État vide stylé : "אין אירועים בתקופה זו".
-
-### 5. Bandeau bas — Stats hebdo + Pag Tokef
-Deux cartes côte à côte (sur mobile : empilées) :
-- **📅 השבוע במספרים** : 2 KPI (semaine / mois) + mini-liste cliquable des prochains événements (3 max, "הצג הכל" ouvre dialog liste).
-- **⚠️ פג תוקף קרוב** : `ExpiringItemsPanel` existant intégré directement (pas dans un onglet).
+**b. Dans les notifications (cloche en haut) :**
+- Au moment du report, créer immédiatement une `notifications` row :
+  - `type: 'system'`, `severity: 'warning'`
+  - `title: "📅 משימה נדחתה"`, `message: "{task.name} — תזכורת תופיע ב־{newDate}"`.
+- Étendre `supabase/functions/check-alerts/index.ts` pour ajouter une nouvelle vérification :
+  - Récupérer `production_tasks` où `date = today` AND `status = 'pending'` AND `rescheduled_from IS NOT NULL`.
+  - Pour chacune, créer une notification `type: 'system'`, `severity: 'warning'` :
+    - `title: "🔔 משימה שנדחתה — להיום"`
+    - `message: "{task.name} ({qty} {unit}) הייתה אמורה ב־{rescheduled_from}"`
+  - Anti-doublon : ne pas recréer si une notif identique existe déjà avec `related_id = task.id` créée dans les dernières 20h.
+- Le cron `check-alerts` tourne déjà → rappel généré automatiquement chaque matin.
 
 ## Détails techniques
 
-### Fichiers modifiés
-- `src/components/pages/ChefDashboardPage.tsx` — suppression des `Tabs` top-level (`topTab`), passage à un layout `grid grid-cols-1 lg:grid-cols-2 gap-6`. Toutes les sections rendues simultanément. Conservation de la logique département (`activeDept`) à l'intérieur de la colonne stock uniquement.
+- **Fichiers modifiés :**
+  - `src/components/pages/ChefDashboardPage.tsx` (bouton Déplacer visible, badge "reportée", tri, bandeau, insertion notif au moment du report).
+  - `supabase/functions/check-alerts/index.ts` (nouveau bloc de vérification).
+- **Migration SQL :**
+  ```sql
+  ALTER TABLE public.production_tasks
+    ADD COLUMN IF NOT EXISTS rescheduled_from date,
+    ADD COLUMN IF NOT EXISTS original_date date;
+  CREATE INDEX IF NOT EXISTS idx_production_tasks_date_status
+    ON public.production_tasks(date, status);
+  ```
+- **Aucun nouveau composant** — tout passe par les composants existants (`RescheduleTaskDialog`, `Badge`, `NotificationBell`).
+- **Pas de changement RLS** — les colonnes héritent des policies existantes.
 
-### Fichiers nouveaux
-- `src/components/kitchen/UpcomingEventsCard.tsx` — composant carte d'événement à venir (header client/date, compteurs dept, progress, bouton détails).
-- `src/components/kitchen/UpcomingEventsColumn.tsx` — wrapper colonne droite : filtre temporel + map des `UpcomingEventsCard` + ouverture dialog.
-- `src/components/kitchen/StockPlanItemDialog.tsx` — mini-dialog "פרטי מוצר" pour les items du planning stock (notes, durée vie, stock actuel, bouton "צור משימה").
-- `src/components/kitchen/WeeklyMiniStatsCard.tsx` — version compacte de `WeeklyEventsPanel` (sans onglet, juste 2 KPI + liste courte).
+## Hors périmètre
 
-### Fichiers conservés tels quels
-- `EventChefDetailDialog.tsx`, `RescheduleTaskDialog.tsx`, `ExpiringItemsPanel.tsx` — réutilisés directement.
-- `WeeklyEventsPanel.tsx` — peut rester pour usage futur ou être supprimé (zero-dead-code → suppression si plus appelé nulle part).
-
-### Données
-- Charger en parallèle (`Promise.all`) : `production_tasks` (today), `events` (today → +30j), `event_items` (events à venir, joint avec `recipe`), `production_schedule`, `reserve_items`, `reserve_items` proches expiration. Une seule requête initiale, tout le dashboard se peuple d'un coup.
-- Pour chaque événement à venir : compter `event_items` par département + chercher les `production_tasks` associées pour calculer la progression.
-
-### UI/UX
-- Aucune navigation interne (pas de `Tabs` top-level, pas de `Link`).
-- Tous les `Dialog` utilisent shadcn `Dialog` (overlay sombre, fermeture ESC/clic-outside).
-- Coins 12px (cards) / 8px (mini-éléments) — règle projet.
-- RTL conservé partout, heures en LTR avec `tabular-nums`, dates parsées avec `T00:00:00`.
-- Responsive : `lg:grid-cols-2` pour les 2 colonnes principales, empilé sous lg.
-
-### Hors-scope
-- Pas de migration SQL.
-- Pas de modification de `EventWizard` ni création d'événements depuis le dashboard chef.
-- Pas de nouvelles notifications.
+- Pas de récurrence/répétition de tâche.
+- Pas de notification push/email — uniquement la cloche in-app (déjà branchée en realtime).
+- Pas de modification du flux des tâches d'événement (`task_type === 'event'`) — uniquement Itour/stock.
