@@ -1,106 +1,108 @@
+## Objectif
 
-# Plan — 4 évolutions Chef / Marzan / Hit Sour
+Refondre `ChefDashboardPage` en **un seul dashboard unifié** (zéro onglet top-level qui fait "changer d'écran"). Tout est visible en même temps, organisé en sections, et chaque interaction ouvre un **Dialog pop-up** par-dessus.
 
-## 1. Renommage : "Reserve / Mela'hit Sour" → "ייצור" (Hit Sour)
+## Layout cible (une seule page scrollable)
 
-Objectif : simplifier la terminologie partout.
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  Header : יום שני · 29/04/2026                  [🖨 הדפס]       │
+├─────────────────────────────────────────────────────────────────┤
+│  KPI strip (4 cartes compactes)                                 │
+│  [סה״כ משימות] [בביצוע] [הושלמו] [% התקדמות + bar]              │
+├──────────────────────────┬──────────────────────────────────────┤
+│  🏪 מלאי (Stock)          │  🎉 אירועים הקרובים                  │
+│  ───────────────────     │  ───────────────────                 │
+│  Filtre dept :           │  Filtre : [היום][מחר][השבוע]         │
+│  [🍳][🍞][🍰][🥐]         │                                      │
+│                          │  ┌─ Card event 1 ─────────────┐      │
+│  📋 תכנית היום           │  │ 👤 כהן · מחר 19:00 · 50    │      │
+│  · pain — 10/15          │  │ 🍳 5 plats  🍞 3  🍰 2     │      │
+│  · gateau — 0/8          │  │ [פתח פרטים]                │      │
+│                          │  └─────────────────────────────┘      │
+│  ⚡ משימות לביצוע         │  ┌─ Card event 2 ─────────────┐      │
+│  · [▶️ התחל] pain x10    │  │ 👤 לוי · ה׳ 12:00 · 80      │      │
+│  · [✅ סיים] gateau x8   │  │ ...                         │      │
+│                          │  └─────────────────────────────┘      │
+│  [🔄 ייצור אוטומטי]      │                                      │
+├──────────────────────────┴──────────────────────────────────────┤
+│  📅 השבוע במספרים        │  ⚠️ פג תוקף קרוב                    │
+│  אירועים : 4 · חודש : 12 │  · חלה — פג בעוד 2 ימים              │
+│  Mini-calendar 7 jours   │  · קרם — פג מחר                      │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-- `ReservePage.tsx` : titre `"רזרבה (מלאי הייצור)"` → `"ייצור"`, description courte `"מוצרים מוכנים שיוצרו על ידי המטבח"`.
-- `Sidebar.tsx` / `BottomNav.tsx` : libellé du lien → `"ייצור"`.
-- Sous-onglets internes : conserver `"מלאי"` (stock prêt) et `"תכנית ייצור"` (plan hebdo) — déjà clairs.
-- Aucune migration SQL : on ne touche pas aux noms de tables (`reserve_items` reste interne).
+**Tout est sur la même page**. Pas d'onglets `Tabs` top-level qui cachent du contenu. Sur mobile, les colonnes deviennent empilées.
 
-## 2. Marzan (Warehouse) — Import bon de commande fournisseur (PDF / photo)
+## Comportement des clics → Dialog pop-up
 
-Objectif : photographier un bon de livraison fournisseur → l'IA lit les lignes → propose une mise à jour automatique du stock.
+Aucun clic ne navigue. Chaque clic ouvre un **Dialog modal** par-dessus le dashboard :
 
-### UI
-- Nouveau bouton sur `WarehousePage.tsx` (à côté de "קליטת סחורה") : **"📸 ייבוא מהזמנת ספק"**.
-- Ouvre un dialog `SupplierImportDialog.tsx` avec :
-  1. Sélection optionnelle du fournisseur (`suppliers`).
-  2. Upload PDF/JPG/PNG (≤ 8 Mo, drag & drop).
-  3. Vue de prévisualisation (pages PDF / image).
-  4. Bouton "נתח ועדכן מלאי".
-  5. Tableau résultat : `[Produit détecté] → [Match warehouse_items proposé] [Quantité] [+ Ajouter / Ignorer]`.
-  6. Confirmation finale → applique les mouvements (`stock_movements` + `warehouse_items.quantity += qty`).
+| Élément cliqué | Dialog ouvert |
+|---|---|
+| Carte d'événement à venir | `EventChefDetailDialog` (existant) — détails + items par dept |
+| Item "תכנית היום" (planning stock) | Mini dialog "פרטי מוצר" : recette, durée vie, notes, qté en stock, bouton "צור משימה" |
+| Tâche stock (carte משימה) | Reste inline (start/complete déjà sur la carte) ; menu `⋯` ouvre `RescheduleTaskDialog` (existant) |
+| Item "פג תוקף" | Confirm dialog "סמן כמושמד ?" |
+| KPI "השבוע במספרים" | `EventChefDetailDialog`-like : liste cliquable des événements de la semaine, chacun ouvre son propre dialog |
 
-### Backend (edge function `parse-supplier-receipt`)
-- Reprend la structure de `parse-priority-pdf` (auth, CORS, Lovable AI Gateway).
-- Modèle : `google/gemini-2.5-flash` (multimodal).
-- Prompt : extraire `{ supplier_name?, items: [{ name, quantity, unit, price? }] }` à partir d'une image/PDF de bon de livraison.
-- Côté client : pour chaque ligne, fuzzy-match avec la liste `warehouse_items` (par nom + supplier_id si fourni). Si aucun match : proposer "créer nouveau produit".
-- Application du stock : insertion en `stock_movements` (`movement_type='supplier_receipt'`, `reason='Import bon ספק'`) + update `warehouse_items`.
+→ L'utilisateur reste **toujours sur le dashboard**. Les pop-ups se ferment et il retrouve sa vue.
 
-### Sécurité
-- Edge function `verify_jwt = false` (par défaut Lovable) + validation explicite du JWT in-code.
-- RLS existante sur `warehouse_items` (admin only) → conserve la protection.
+## Sections détaillées
 
-## 3. Poste Chef — événements cliquables + reschedule des tâches stock
+### 1. Header compact
+Titre date + jour hébreu + bouton imprimer. Pas de description superflue.
 
-### 3a. Événements cliquables dans "תכנית היום"
-Dans `ChefDashboardPage.tsx`, section "משלוחים היום" :
-- Chaque ligne devient `<button>` qui ouvre un nouveau dialog `EventChefDetailDialog.tsx`.
-- Le dialog charge `event_items` (jointure `recipes`) groupés par `department` :
-  - 🍳 מטבח / 🍞 מאפייה / 🍰 קונדיטוריה
-  - Pour chaque ligne : nom plat, quantité, portions, notes, `recipe.servings` de référence.
-- Boutons : "צור משימת ייצור" (insère dans `production_tasks` pour aujourd'hui), "סגור".
+### 2. KPI strip (4 cartes)
+Identique à l'existant mais **toujours visible** (pas dans un onglet).
 
-### 3b. Réorganisation Section B "משימות"
-Déjà séparé en deux colonnes (📦 ייצור למלאי / 📋 לאירועים). On clarifie :
-- Section "📋 לאירועים" : grouper les tâches par événement (en-tête = nom client + heure). Cliquable → réouvre `EventChefDetailDialog`.
-- Section "📦 ייצור למלאי" : ajouter sur chaque carte un menu `⋯` avec :
-  - **"📅 דחה לתאריך אחר"** → mini date-picker → met à jour `production_tasks.date` à la date choisie + toast `"נדחה ל־{date}"`.
-  - **"❌ בטל היום"** → status `cancelled`.
+### 3. Colonne gauche — 🏪 מלאי
+- Filtre département en haut (icônes + badge compteur, comme actuel).
+- **תכנית היום** : items `storage_type='מלאי'` du dept actif. Cliquables → mini-dialog produit.
+- **משימות לביצוע** : tâches `task_type='stock'` du dept actif. Cartes avec progress + boutons inline (`▶️ התחל`, `✅ סיים`). Menu `⋯` → reschedule/cancel.
+- Bouton **🔄 ייצור אוטומטי** en bas de colonne.
 
-### 3c. Hook
-- Ajouter `rescheduleTask(id, newDate)` dans `useKitchenOps.ts` : `update({ date: newDate, status: 'pending', notes: notes + ' [נדחה מ־' + oldDate + ']' })`.
+### 4. Colonne droite — 🎉 אירועים הקרובים
+- Filtre temporel : `[היום] [מחר] [השבוע]` (défaut : השבוע, semaine israélienne dim→sam).
+- Liste de **cartes événements** triées par date+heure :
+  - Header carte : nom client, date relative ("מחר", "ה׳ 02/05"), heure de livraison, badge nb invités.
+  - Body : compteur compact par département (🍳 5 · 🍞 3 · 🍰 2) + barre de progression globale (tâches event complétées / total).
+  - Footer : bouton **"פתח פרטים"** → `EventChefDetailDialog`.
+- Carte cliquable en entier ouvre le même dialog.
+- État vide stylé : "אין אירועים בתקופה זו".
 
-## 4. Poste Chef — Journal des événements & Pag Tokef
-
-### 4a. Nouvel onglet "📅 יומן אירועים"
-Dans `ChefDashboardPage.tsx`, ajouter un onglet de niveau supérieur (avant les départements) :
-- KPI en haut :
-  - "אירועים השבוע : N" (date entre lundi et dimanche, calcul Israéli — semaine commence dimanche)
-  - "אירועים החודש : N"
-- Liste des événements de la semaine (par jour) : nom, heure, client, nb invités → cliquable (ouvre `EventChefDetailDialog`).
-- Filtre rapide : `[היום] [השבוע] [החודש]`.
-
-### 4b. Panneau Pag Tokef (péremptions)
-Nouvelle carte dans `ChefDashboardPage.tsx` (visible sur l'onglet יומן et en bas du dashboard) :
-- Source : `reserve_items` où `expiry_date <= today + 7d` ET `quantity > 0`.
-- Tri par date d'expiration croissante.
-- Couleurs :
-  - Rouge : déjà périmé (badge "פג")
-  - Orange : ≤ 3 j
-  - Jaune : ≤ 7 j
-- Action : bouton "סמן כמושמד" (`adjustQuantity(item, 0, 'expired', 'פג תוקף')`).
+### 5. Bandeau bas — Stats hebdo + Pag Tokef
+Deux cartes côte à côte (sur mobile : empilées) :
+- **📅 השבוע במספרים** : 2 KPI (semaine / mois) + mini-liste cliquable des prochains événements (3 max, "הצג הכל" ouvre dialog liste).
+- **⚠️ פג תוקף קרוב** : `ExpiringItemsPanel` existant intégré directement (pas dans un onglet).
 
 ## Détails techniques
 
-### Fichiers créés
-- `supabase/functions/parse-supplier-receipt/index.ts`
-- `src/components/warehouse/SupplierImportDialog.tsx`
-- `src/components/agenda/EventChefDetailDialog.tsx` (réutilisable)
-- `src/components/kitchen/RescheduleTaskDialog.tsx`
-- `src/components/kitchen/ExpiringItemsPanel.tsx`
-- `src/components/kitchen/WeeklyEventsPanel.tsx`
-
 ### Fichiers modifiés
-- `src/components/pages/ReservePage.tsx` (rename)
-- `src/components/layout/Sidebar.tsx` + `BottomNav.tsx` (rename)
-- `src/components/pages/WarehousePage.tsx` (bouton import)
-- `src/components/pages/ChefDashboardPage.tsx` (onglet יומן, événements cliquables, panneau Pag Tokef, menu reschedule)
-- `src/hooks/useKitchenOps.ts` (`rescheduleTask`)
-- `src/hooks/useReserve.ts` (helper `markAsExpired`)
+- `src/components/pages/ChefDashboardPage.tsx` — suppression des `Tabs` top-level (`topTab`), passage à un layout `grid grid-cols-1 lg:grid-cols-2 gap-6`. Toutes les sections rendues simultanément. Conservation de la logique département (`activeDept`) à l'intérieur de la colonne stock uniquement.
 
-### Aucune migration SQL nécessaire
-Toutes les colonnes existent déjà : `production_tasks.date/status/notes`, `reserve_items.expiry_date`, `events.date/time/delivery_time/client_name`, `event_items.department`, `stock_movements`.
+### Fichiers nouveaux
+- `src/components/kitchen/UpcomingEventsCard.tsx` — composant carte d'événement à venir (header client/date, compteurs dept, progress, bouton détails).
+- `src/components/kitchen/UpcomingEventsColumn.tsx` — wrapper colonne droite : filtre temporel + map des `UpcomingEventsCard` + ouverture dialog.
+- `src/components/kitchen/StockPlanItemDialog.tsx` — mini-dialog "פרטי מוצר" pour les items du planning stock (notes, durée vie, stock actuel, bouton "צור משימה").
+- `src/components/kitchen/WeeklyMiniStatsCard.tsx` — version compacte de `WeeklyEventsPanel` (sans onglet, juste 2 KPI + liste courte).
 
-### Sécurité
-- Nouvelle edge function : auth JWT obligatoire, validation Zod du body (taille PDF, type MIME).
-- Mises à jour stock côté client : déjà protégées par RLS admin sur `warehouse_items`.
+### Fichiers conservés tels quels
+- `EventChefDetailDialog.tsx`, `RescheduleTaskDialog.tsx`, `ExpiringItemsPanel.tsx` — réutilisés directement.
+- `WeeklyEventsPanel.tsx` — peut rester pour usage futur ou être supprimé (zero-dead-code → suppression si plus appelé nulle part).
 
-## Hors-scope (non inclus)
-- OCR offline / sans IA.
-- Reconnaissance automatique du fournisseur depuis le logo du bon.
-- Notifications push pour les péremptions (déjà géré par `check-alerts` cron).
+### Données
+- Charger en parallèle (`Promise.all`) : `production_tasks` (today), `events` (today → +30j), `event_items` (events à venir, joint avec `recipe`), `production_schedule`, `reserve_items`, `reserve_items` proches expiration. Une seule requête initiale, tout le dashboard se peuple d'un coup.
+- Pour chaque événement à venir : compter `event_items` par département + chercher les `production_tasks` associées pour calculer la progression.
+
+### UI/UX
+- Aucune navigation interne (pas de `Tabs` top-level, pas de `Link`).
+- Tous les `Dialog` utilisent shadcn `Dialog` (overlay sombre, fermeture ESC/clic-outside).
+- Coins 12px (cards) / 8px (mini-éléments) — règle projet.
+- RTL conservé partout, heures en LTR avec `tabular-nums`, dates parsées avec `T00:00:00`.
+- Responsive : `lg:grid-cols-2` pour les 2 colonnes principales, empilé sous lg.
+
+### Hors-scope
+- Pas de migration SQL.
+- Pas de modification de `EventWizard` ni création d'événements depuis le dashboard chef.
+- Pas de nouvelles notifications.

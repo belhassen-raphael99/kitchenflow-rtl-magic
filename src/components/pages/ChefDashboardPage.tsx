@@ -3,27 +3,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import {
   ChefHat, Truck, Users, Clock, Printer, Loader2,
   CheckCircle, PlayCircle, Package, AlertTriangle, RefreshCw,
-  Scale, ClipboardList, Eye, ChevronDown, ChevronUp,
-  CalendarDays, MoreVertical, CalendarClock, XCircle,
+  Scale, ClipboardList, ChevronDown, ChevronUp,
+  MoreVertical, CalendarClock, XCircle, Eye,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { he } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { EmptyState } from '@/components/layout/EmptyState';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import { EventChefDetailDialog } from '@/components/agenda/EventChefDetailDialog';
 import { RescheduleTaskDialog } from '@/components/kitchen/RescheduleTaskDialog';
 import { ExpiringItemsPanel } from '@/components/kitchen/ExpiringItemsPanel';
-import { WeeklyEventsPanel } from '@/components/kitchen/WeeklyEventsPanel';
+import { UpcomingEventsColumn } from '@/components/kitchen/UpcomingEventsColumn';
+import { WeeklyMiniStatsCard } from '@/components/kitchen/WeeklyMiniStatsCard';
+import { StockPlanItemDialog, type StockPlanItem } from '@/components/kitchen/StockPlanItemDialog';
 
 interface ChefTask {
   id: string;
@@ -81,13 +80,6 @@ const departments = [
   { key: 'קונדיטוריה-בצקים', label: 'קונד׳-בצקים', icon: '🥐' },
 ];
 
-const deptColors: Record<string, { bg: string; border: string; text: string; bgDark: string; textDark: string }> = {
-  'מטבח': { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-800', bgDark: 'dark:bg-amber-950/20', textDark: 'dark:text-amber-400' },
-  'מאפייה': { bg: 'bg-yellow-50', border: 'border-yellow-300', text: 'text-yellow-800', bgDark: 'dark:bg-yellow-950/20', textDark: 'dark:text-yellow-400' },
-  'קונדיטוריה-פטיסרי': { bg: 'bg-pink-50', border: 'border-pink-300', text: 'text-pink-800', bgDark: 'dark:bg-pink-950/20', textDark: 'dark:text-pink-400' },
-  'קונדיטוריה-בצקים': { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-800', bgDark: 'dark:bg-purple-950/20', textDark: 'dark:text-purple-400' },
-};
-
 const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
 export const ChefDashboardPage = () => {
@@ -101,10 +93,9 @@ export const ChefDashboardPage = () => {
   const [generating, setGenerating] = useState(false);
   const [showFullWeek, setShowFullWeek] = useState(false);
   const [expandedCompleted, setExpandedCompleted] = useState<Set<string>>(new Set());
-  const [mainTab, setMainTab] = useState('plan');
-  const [topTab, setTopTab] = useState<'production' | 'agenda'>('production');
   const [eventDialog, setEventDialog] = useState<TodayDelivery | null>(null);
   const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
+  const [planItemDialog, setPlanItemDialog] = useState<StockPlanItem | null>(null);
   const { toast } = useToast();
 
   const today = new Date();
@@ -126,7 +117,7 @@ export const ChefDashboardPage = () => {
     setSchedule((scheduleRes.data || []) as unknown as ScheduleItem[]);
     setReserveStock((reserveRes.data || []) as ReserveStock[]);
     setLoading(false);
-  }, [todayStr, dayOfWeek]);
+  }, [todayStr]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -235,13 +226,36 @@ export const ChefDashboardPage = () => {
     }
 
     if (created > 0) {
-      toast({ title: `🔄 נוצרו ${created} משימות ייצור`, description: 'לפי תכנית הייצור השבועית ומצב המלאי' });
+      toast({ title: `🔄 נוצרו ${created} משימות ייצור`, description: 'לפי תכנית הייצור והמלאי' });
     } else {
       toast({ title: '✅ המלאי תקין', description: 'אין צורך בייצור נוסף כרגע' });
     }
 
     await fetchData();
     setGenerating(false);
+  };
+
+  const handleCreateTaskFromPlan = async (item: StockPlanItem) => {
+    const needed = Math.max(0, (item.min_quantity || 0) - item.currentStock);
+    if (needed <= 0) return;
+    const stock = reserveStock.find(s => s.name === item.product_name);
+    const { error } = await supabase.from('production_tasks').insert([{
+      date: todayStr,
+      department: item.department,
+      task_type: 'stock',
+      name: item.product_name,
+      target_quantity: needed,
+      unit: item.unit || 'יחידה',
+      priority: item.currentStock === 0 ? 3 : 2,
+      reserve_item_id: stock?.id || null,
+      notes: `נוסף ידנית — מלאי: ${item.currentStock}/${item.min_quantity}`,
+    }]);
+    if (error) {
+      toast({ title: 'שגיאה ביצירת משימה', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: '✅ משימה נוצרה', description: `${item.product_name} (${needed} ${item.unit || 'יחידה'})` });
+    await fetchData();
   };
 
   const handleRescheduleTask = async (task: ChefTask, newDate: string) => {
@@ -272,32 +286,19 @@ export const ChefDashboardPage = () => {
   };
 
   // --- Derived data ---
-  const deptTasks = tasks.filter(t => t.department === activeDept);
+  const stockTasksAll = tasks.filter(t => t.task_type === 'stock');
+  const deptStockTasks = stockTasksAll.filter(t => t.department === activeDept);
+
   const deptScheduleAll = schedule.filter(s => s.department === activeDept);
-  const deptSchedule = showFullWeek 
-    ? deptScheduleAll 
-    : deptScheduleAll.filter(s => s.day_of_week === dayOfWeek || s.day_of_week === null);
+  const deptScheduleStock = deptScheduleAll.filter(s => s.storage_type === 'מלאי' || !s.storage_type);
+  const deptSchedule = showFullWeek
+    ? deptScheduleStock
+    : deptScheduleStock.filter(s => s.day_of_week === dayOfWeek || s.day_of_week === null);
 
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const inProgressTasks = tasks.filter(t => t.status === 'in-progress').length;
-  const pendingTasks = tasks.filter(t => t.status === 'pending').length;
   const overallProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  const nonCompletedCount = totalTasks - completedTasks;
-  const hasActiveWork = inProgressTasks > 0;
-
-  const stockTasks = deptTasks.filter(t => t.task_type === 'stock');
-  const eventTasks = deptTasks.filter(t => t.task_type === 'event');
-
-  const colors = deptColors[activeDept] || deptColors['מטבח'];
-
-  // Auto-select tab when tasks load
-  useEffect(() => {
-    if (!loading) {
-      const deptHasTasks = tasks.filter(t => t.department === activeDept).length;
-      setMainTab(deptHasTasks > 0 ? 'tasks' : 'plan');
-    }
-  }, [loading, activeDept, tasks]);
 
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -311,42 +312,12 @@ export const ChefDashboardPage = () => {
     });
   };
 
-  // --- Step guide (only when no tasks) ---
-  const StepGuide = () => {
-    if (hasActiveWork || totalTasks > 0) return null;
-
-    const steps = [
-      { num: 1, label: 'בדוק את תכנית היום', desc: 'ראה מה מתוכנן לייצור היום', done: false },
-      { num: 2, label: 'לחץ "ייצור אוטומטי"', desc: 'יצירת משימות לפי מצב המלאי', done: false },
-      { num: 3, label: 'בצע משימות', desc: 'התחל → סיים → המלאי מתעדכן', done: false },
-    ];
-
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 no-print">
-        {steps.map(step => (
-          <Card key={step.num} className="rounded-lg border-2 border-dashed border-muted-foreground/20">
-            <CardContent className="p-3 flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-muted text-muted-foreground">
-                {step.num}
-              </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-sm">{step.label}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  };
-
-  // --- Task card ---
+  // --- Task card (stock only) ---
   const renderTaskCard = (task: ChefTask) => {
     const percent = task.target_quantity > 0 ? Math.round((task.completed_quantity / task.target_quantity) * 100) : 0;
     const isCompleted = task.status === 'completed';
     const isExpanded = expandedCompleted.has(task.id);
 
-    // Collapsed completed card
     if (isCompleted && !isExpanded) {
       return (
         <div
@@ -354,15 +325,12 @@ export const ChefDashboardPage = () => {
           className="flex items-center justify-between p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
           onClick={() => toggleCompletedExpand(task.id)}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
-            <span className="text-sm text-muted-foreground line-through">{task.name}</span>
-            {task.task_type === 'event' && (
-              <Badge variant="outline" className="text-[10px] border-kpi-events/30 text-kpi-events">אירוע</Badge>
-            )}
+            <span className="text-sm text-muted-foreground line-through truncate">{task.name}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">✅ הושלם</Badge>
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">✅</Badge>
             <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
         </div>
@@ -376,18 +344,14 @@ export const ChefDashboardPage = () => {
         task.status === 'in-progress' && "border-blue-300 shadow-sm ring-1 ring-blue-200/50"
       )}>
         <CardContent className="p-3 space-y-2.5">
-          {/* Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {task.status === 'completed' && <CheckCircle className="w-4 h-4 text-primary" />}
-              {task.status === 'in-progress' && <PlayCircle className="w-4 h-4 text-blue-500 animate-pulse" />}
-              {task.status === 'pending' && <Clock className="w-4 h-4 text-muted-foreground" />}
-              <span className="font-medium text-sm">{task.name}</span>
-              {task.task_type === 'event' && (
-                <Badge variant="outline" className="text-[10px] border-kpi-events/30 text-kpi-events">אירוע</Badge>
-              )}
+            <div className="flex items-center gap-2 min-w-0">
+              {task.status === 'completed' && <CheckCircle className="w-4 h-4 text-primary shrink-0" />}
+              {task.status === 'in-progress' && <PlayCircle className="w-4 h-4 text-blue-500 animate-pulse shrink-0" />}
+              {task.status === 'pending' && <Clock className="w-4 h-4 text-muted-foreground shrink-0" />}
+              <span className="font-medium text-sm truncate">{task.name}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Badge variant="secondary" className="text-xs gap-1">
                 <Scale className="w-3 h-3" />
                 {task.target_quantity} {task.unit}
@@ -400,50 +364,30 @@ export const ChefDashboardPage = () => {
             </div>
           </div>
 
-          {/* Mini status breadcrumb */}
-          {!isCompleted && (
-            <div className="flex items-center gap-1.5 text-[11px]">
-              <span className={cn(
-                "px-1.5 py-0.5 rounded",
-                task.status === 'pending' ? "bg-muted font-semibold text-foreground" : "text-muted-foreground"
-              )}>⏳ ממתין</span>
-              <span className="text-muted-foreground">→</span>
-              <span className={cn(
-                "px-1.5 py-0.5 rounded",
-                task.status === 'in-progress' ? "bg-blue-100 dark:bg-blue-950 font-semibold text-blue-700 dark:text-blue-300" : "text-muted-foreground"
-              )}>▶️ בביצוע</span>
-              <span className="text-muted-foreground">→</span>
-              <span className="text-muted-foreground">✅ הושלם</span>
-            </div>
-          )}
-
           {task.notes && (
-            <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">{task.notes}</p>
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 truncate">{task.notes}</p>
           )}
 
           <Progress value={percent} className="h-1.5" />
 
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground">
-              {task.completed_quantity}/{task.target_quantity} {task.unit} ({percent}%)
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              {task.completed_quantity}/{task.target_quantity} ({percent}%)
             </span>
             <div className="flex gap-1.5 no-print">
               {task.status === 'pending' && (
                 <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => handleStartTask(task)} disabled={updating === task.id}>
                   {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <PlayCircle className="w-3 h-3" />}
-                  התחל הכנה
+                  התחל
                 </Button>
               )}
               {task.status === 'in-progress' && (
-                <Button size="sm" variant="default" className="gap-1 h-7 text-xs bg-primary hover:bg-primary/90" onClick={() => handleCompleteTask(task)} disabled={updating === task.id}>
+                <Button size="sm" className="gap-1 h-7 text-xs bg-primary hover:bg-primary/90" onClick={() => handleCompleteTask(task)} disabled={updating === task.id}>
                   {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
                   סיימתי
                 </Button>
               )}
-              {task.status === 'completed' && (
-                <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">✅ הושלם</Badge>
-              )}
-              {task.task_type === 'stock' && task.status !== 'completed' && task.status !== 'cancelled' && (
+              {task.status !== 'completed' && task.status !== 'cancelled' && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
@@ -469,7 +413,7 @@ export const ChefDashboardPage = () => {
     );
   };
 
-  // --- Plan item card ---
+  // --- Plan item row ---
   const renderPlanItem = (item: ScheduleItem) => {
     const stock = reserveStock.find(s => s.name === item.product_name);
     const qty = stock?.quantity || 0;
@@ -477,90 +421,50 @@ export const ChefDashboardPage = () => {
     const isLow = minQty > 0 && qty < minQty;
     const hasWarningNote = item.notes?.startsWith('⚠️');
 
+    const planItem: StockPlanItem = {
+      id: item.id,
+      product_name: item.product_name,
+      department: item.department,
+      min_quantity: item.min_quantity,
+      unit: item.unit,
+      storage_type: item.storage_type,
+      shelf_life_label: item.shelf_life_label,
+      notes: item.notes,
+      currentStock: qty,
+    };
+
     return (
-      <div
+      <button
         key={item.id}
+        onClick={() => setPlanItemDialog(planItem)}
         className={cn(
-          "py-2.5 px-3 rounded-md border",
+          "w-full text-right py-2 px-2.5 rounded-md border transition-colors hover:bg-muted/50",
           hasWarningNote
-            ? "bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700"
-            : "border-border/50"
+            ? "bg-amber-50/60 border-amber-300 dark:bg-amber-950/20 dark:border-amber-700/60"
+            : isLow
+              ? "border-destructive/30 bg-destructive/5"
+              : "border-border/50"
         )}
       >
-        <div className="flex items-center justify-between">
-          <span className="font-semibold text-sm">{item.product_name}</span>
-          <div className="flex items-center gap-2">
-            {/* Quantity badge */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-medium text-sm truncate">{item.product_name}</span>
+          <div className="flex items-center gap-1.5 shrink-0">
             {minQty > 0 ? (
-              <Badge variant="secondary" className="text-xs">
-                {minQty} {item.unit}
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-[10px] text-muted-foreground">לפי צורך</Badge>
-            )}
-            {/* Shelf life */}
-            {item.shelf_life_label && (
-              <Badge variant="outline" className="text-[10px]">
-                🕐 {item.shelf_life_label}
-              </Badge>
-            )}
-            {/* Stock status */}
-            {minQty > 0 && (
-              <span className={cn("text-xs", isLow ? "text-destructive font-bold" : "text-muted-foreground")}>
+              <span className={cn(
+                "text-xs tabular-nums font-semibold",
+                isLow ? "text-destructive" : "text-muted-foreground"
+              )}>
                 {qty}/{minQty}
               </span>
+            ) : (
+              <span className="text-[10px] text-muted-foreground">לפי צורך</span>
             )}
             {isLow && <AlertTriangle className="w-3 h-3 text-destructive" />}
           </div>
         </div>
-        {/* Notes */}
-        {item.notes && (
-          <p className={cn(
-            "text-xs mt-1 italic",
-            hasWarningNote ? "text-amber-700 dark:text-amber-400 font-medium not-italic" : "text-muted-foreground"
-          )}>
-            {item.notes}
-          </p>
-        )}
-      </div>
+      </button>
     );
   };
-
-  // --- Generate CTA button ---
-  const GenerateCTA = ({ large = false }: { large?: boolean }) => (
-    <Card className={cn(
-      "rounded-lg no-print",
-      totalTasks === 0
-        ? "border-2 border-primary/40 bg-primary/5"
-        : "border-dashed"
-    )}>
-      <CardContent className={cn("flex flex-col items-center gap-3 text-center", large ? "py-8" : "py-4")}>
-        {large && <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">🔄</div>}
-        <div>
-          <h3 className={cn("font-bold", large ? "text-base" : "text-sm")}>
-            {totalTasks === 0 ? 'לא נוצרו משימות עדיין' : 'ייצור אוטומטי'}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            לחץ כדי ליצור משימות לפי מצב המלאי הנוכחי
-          </p>
-        </div>
-        <Button
-          size={large ? "lg" : "default"}
-          variant={totalTasks === 0 ? "default" : "outline"}
-          className="gap-2"
-          onClick={handleGenerateFromSchedule}
-          disabled={generating}
-        >
-          {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          🔄 ייצור אוטומטי
-        </Button>
-      </CardContent>
-    </Card>
-  );
-
-  // Split today's plan into מלאי vs הרכבה
-  const planStock = deptSchedule.filter(s => s.storage_type === 'מלאי');
-  const planAssembly = deptSchedule.filter(s => s.storage_type === 'הרכבה');
 
   return (
     <div className="space-y-5 print-content" dir="rtl">
@@ -580,249 +484,186 @@ export const ChefDashboardPage = () => {
         </div>
       </div>
 
-      {/* Top-level tabs: production / agenda */}
-      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as 'production' | 'agenda')}>
-        <TabsList className="no-print grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="production" className="gap-2">
-            <ChefHat className="w-4 h-4" /> ייצור היום
-          </TabsTrigger>
-          <TabsTrigger value="agenda" className="gap-2">
-            <CalendarDays className="w-4 h-4" /> יומן אירועים ופג תוקף
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="agenda" className="mt-4 space-y-4">
-          <WeeklyEventsPanel />
-          <ExpiringItemsPanel />
-        </TabsContent>
-        <TabsContent value="production" className="mt-4 space-y-5">
-
-      {/* Step Guide */}
-      <StepGuide />
-
-      {/* KPI Summary */}
+      {/* KPI strip — always visible */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="rounded-md">
           <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold">{totalTasks}</p>
+            <p className="text-2xl font-bold tabular-nums">{totalTasks}</p>
             <p className="text-xs text-muted-foreground">סה״כ משימות</p>
           </CardContent>
         </Card>
         <Card className="rounded-md">
           <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-blue-500">{inProgressTasks}</p>
+            <p className="text-2xl font-bold text-blue-500 tabular-nums">{inProgressTasks}</p>
             <p className="text-xs text-muted-foreground">בביצוע</p>
           </CardContent>
         </Card>
         <Card className="rounded-md">
           <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold text-primary">{completedTasks}</p>
+            <p className="text-2xl font-bold text-primary tabular-nums">{completedTasks}</p>
             <p className="text-xs text-muted-foreground">הושלמו</p>
           </CardContent>
         </Card>
         <Card className="rounded-md">
           <CardContent className="p-3 text-center">
-            <p className="text-2xl font-bold">{overallProgress}%</p>
+            <p className="text-2xl font-bold tabular-nums">{overallProgress}%</p>
             <Progress value={overallProgress} className="h-1.5 mt-1" />
-            <p className="text-[10px] text-muted-foreground mt-1">הושלמו {completedTasks} מתוך {totalTasks} משימות</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{completedTasks}/{totalTasks}</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Department Tabs */}
-      <Tabs value={activeDept} onValueChange={setActiveDept}>
-        <TabsList className="no-print w-full justify-start">
-          {departments.map(d => {
-            const taskCount = tasks.filter(t => t.department === d.key && t.status !== 'completed').length;
-            const dc = deptColors[d.key];
-            return (
-              <TabsTrigger key={d.key} value={d.key} className="text-xs sm:text-sm gap-1">
-                <span>{d.icon}</span>
-                {d.label}
-                {taskCount > 0 && <Badge variant="secondary" className="text-[10px] px-1 h-4">{taskCount}</Badge>}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-
-        {departments.map(dept => (
-          <TabsContent key={dept.key} value={dept.key} className="mt-4">
-            {activeDept === dept.key && (
-              <Tabs value={mainTab} onValueChange={setMainTab}>
-                <TabsList className="no-print grid w-full grid-cols-2 max-w-md">
-                  <TabsTrigger value="plan" className="gap-2">
-                    📋 תכנית היום
-                  </TabsTrigger>
-                  <TabsTrigger value="tasks" className="gap-2">
-                    ⚡ משימות לביצוע
-                    {(() => {
-                      const count = deptTasks.filter(t => t.status !== 'completed').length;
-                      return count > 0 ? <Badge variant="secondary" className="text-[10px] px-1.5 h-4 mr-1">{count}</Badge> : null;
-                    })()}
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* ═══ SECTION A: תכנית היום ═══ */}
-                <TabsContent value="plan" className="space-y-4 mt-4">
-                  {/* Read-only notice */}
-                  <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2 flex items-center gap-2 no-print">
-                    <Eye className="w-3.5 h-3.5 flex-shrink-0" />
-                    תצוגה בלבד — לביצוע לחץ על &quot;ייצור אוטומטי&quot;
-                  </p>
-
-                  {/* Today's deliveries */}
-                  {deliveries.length > 0 && (
-                    <Card className="rounded-lg">
-                      <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-sm font-bold flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-kpi-events" />
-                          משלוחים היום ({deliveries.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        <div className="space-y-2">
-                          {deliveries.map(d => (
-                            <button
-                              key={d.id}
-                              onClick={() => setEventDialog(d)}
-                              className="w-full flex items-center justify-between p-2.5 bg-muted/50 hover:bg-muted rounded-md text-sm border border-border/30 transition-colors text-right"
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="font-bold text-base tabular-nums">{(d.delivery_time || d.time || '').slice(0, 5)}</span>
-                                <div>
-                                  <span className="font-medium">{d.client_name || d.name}</span>
-                                  {d.delivery_address && (
-                                    <p className="text-xs text-muted-foreground truncate max-w-[200px]">{d.delivery_address}</p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 text-muted-foreground">
-                                <span className="flex items-center gap-1 text-xs"><Users className="w-3.5 h-3.5" />{d.guests}</span>
-                                <Badge variant="outline" className="text-[10px]">
-                                  {d.status === 'in-progress' ? '🔵 בדרך' : d.status === 'confirmed' ? '🟢 מאושר' : '⏳ ממתין'}
-                                </Badge>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Plan: ייצור למלאי */}
-                  {planStock.length > 0 && (
-                    <Card className={cn("rounded-lg border", colors.border, colors.bg, colors.bgDark)}>
-                      <CardHeader className="p-4 pb-2">
-                        <CardTitle className={cn("text-sm font-bold flex items-center gap-2", colors.text, colors.textDark)}>
-                          🏪 ייצור למלאי ({planStock.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 space-y-1.5">
-                        {planStock.map(renderPlanItem)}
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Plan: הרכבה */}
-                  {planAssembly.length > 0 && (
-                    <Card className="rounded-lg border-dashed border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
-                      <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-sm font-bold flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                          🔧 הרכבה ביום המשלוח ({planAssembly.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 space-y-1.5">
-                        {planAssembly.map(renderPlanItem)}
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {deptSchedule.length === 0 && (
-                    <EmptyState 
-                      icon={Package} 
-                      title={`אין פריטים מתוכננים להיום`}
-                      description="אין תכנית ייצור ליום זה עבור מחלקה זו"
-                    />
-                  )}
-
-                  {/* Full week toggle */}
-                  <div className="flex justify-center no-print">
-                    <Button variant="ghost" size="sm" className="text-xs" onClick={() => setShowFullWeek(!showFullWeek)}>
-                      {showFullWeek ? 'הצג היום בלבד' : 'הצג שבוע מלא'}
-                    </Button>
+      {/* Today's deliveries — full width banner */}
+      {deliveries.length > 0 && (
+        <Card className="rounded-xl border-kpi-events/30 bg-kpi-events/[0.03]">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Truck className="w-4 h-4 text-kpi-events" />
+              משלוחים היום ({deliveries.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {deliveries.map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => setEventDialog(d)}
+                  className="flex items-center justify-between gap-2 p-2.5 bg-background hover:bg-muted/60 rounded-md text-sm border border-border/50 transition-colors text-right"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-bold text-base tabular-nums shrink-0" dir="ltr">{(d.delivery_time || d.time || '').slice(0, 5)}</span>
+                    <div className="min-w-0">
+                      <span className="font-medium truncate block">{d.client_name || d.name}</span>
+                      {d.delivery_address && (
+                        <p className="text-[11px] text-muted-foreground truncate">{d.delivery_address}</p>
+                      )}
+                    </div>
                   </div>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0"><Users className="w-3.5 h-3.5" />{d.guests}</span>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                  {/* Generate CTA */}
-                  <GenerateCTA large={totalTasks === 0} />
-                </TabsContent>
+      {/* MAIN GRID: Stock (left) | Upcoming events (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* ═══ Colonne gauche : Stock ═══ */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h2 className="text-base font-bold flex items-center gap-2">
+              <Package className="w-4 h-4 text-primary" />
+              מלאי
+              <span className="text-xs font-normal text-muted-foreground">— ייצור קבוע</span>
+            </h2>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5 no-print"
+              onClick={handleGenerateFromSchedule}
+              disabled={generating}
+            >
+              {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              ייצור אוטומטי
+            </Button>
+          </div>
 
-                {/* ═══ SECTION B: משימות לביצוע ═══ */}
-                <TabsContent value="tasks" className="space-y-4 mt-4">
-                  {deptTasks.length === 0 ? (
-                    /* Empty state with CTA */
-                    <Card className="rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/30 dark:bg-amber-950/10">
-                      <CardContent className="py-10 flex flex-col items-center gap-3 text-center">
-                        <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-950/30 flex items-center justify-center text-3xl">🔄</div>
-                        <h3 className="font-bold text-lg">לא נוצרו משימות עדיין</h3>
-                        <p className="text-sm text-muted-foreground max-w-sm">
-                          לחץ &quot;ייצור אוטומטי&quot; כדי ליצור משימות לפי תכנית היום ומצב המלאי
-                        </p>
-                        <Button size="lg" className="gap-2 mt-2" onClick={handleGenerateFromSchedule} disabled={generating}>
-                          {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-                          🔄 ייצור אוטומטי
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {/* Stock Tasks */}
-                      <div className="space-y-3">
-                        <h3 className="font-bold text-sm flex items-center gap-2">
-                          <Package className="w-4 h-4" />
-                          📦 ייצור למלאי
-                          <Badge variant="secondary" className="text-[10px]">{stockTasks.length}</Badge>
-                        </h3>
-                        {stockTasks.length > 0 ? (
-                          <div className="space-y-2">{stockTasks.map(renderTaskCard)}</div>
-                        ) : (
-                          <Card className="border-dashed rounded-md">
-                            <CardContent className="py-6 text-center text-muted-foreground text-sm">אין משימות למלאי</CardContent>
-                          </Card>
-                        )}
-                      </div>
-
-                      {/* Event Tasks */}
-                      <div className="space-y-3">
-                        <h3 className="font-bold text-sm flex items-center gap-2">
-                          <ClipboardList className="w-4 h-4" />
-                          📋 לאירועים
-                          <Badge variant="secondary" className="text-[10px]">{eventTasks.length}</Badge>
-                        </h3>
-                        {eventTasks.length > 0 ? (
-                          <div className="space-y-2">{eventTasks.map(renderTaskCard)}</div>
-                        ) : (
-                          <Card className="border-dashed rounded-md">
-                            <CardContent className="py-6 text-center text-muted-foreground text-sm">אין הזמנות לאירועים</CardContent>
-                          </Card>
-                        )}
-                      </div>
-                    </div>
+          {/* Department filter */}
+          <div className="flex gap-1 overflow-x-auto no-print">
+            {departments.map(d => {
+              const taskCount = stockTasksAll.filter(t => t.department === d.key && t.status !== 'completed').length;
+              const isActive = activeDept === d.key;
+              return (
+                <button
+                  key={d.key}
+                  onClick={() => setActiveDept(d.key)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs whitespace-nowrap transition-colors border",
+                    isActive
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background hover:bg-muted border-border"
                   )}
-
-                  {/* Secondary generate button when tasks exist */}
-                  {deptTasks.length > 0 && (
-                    <div className="flex justify-center no-print">
-                      <Button variant="outline" size="sm" className="gap-2" onClick={handleGenerateFromSchedule} disabled={generating}>
-                        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                        ייצור אוטומטי נוסף
-                      </Button>
-                    </div>
+                >
+                  <span>{d.icon}</span>
+                  {d.label}
+                  {taskCount > 0 && (
+                    <Badge
+                      variant={isActive ? 'secondary' : 'outline'}
+                      className="text-[10px] px-1 h-4 mr-0.5"
+                    >
+                      {taskCount}
+                    </Badge>
                   )}
-                </TabsContent>
-              </Tabs>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Plan today */}
+          <Card className="rounded-xl">
+            <CardHeader className="p-3 pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs font-bold flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                  תכנית היום
+                  <span className="text-[10px] font-normal text-muted-foreground">({deptSchedule.length})</span>
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-[11px] text-muted-foreground"
+                  onClick={() => setShowFullWeek(!showFullWeek)}
+                >
+                  {showFullWeek ? 'היום בלבד' : 'שבוע מלא'}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-1.5">
+              {deptSchedule.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-3 italic">אין פריטים מתוכננים</p>
+              ) : (
+                deptSchedule.map(renderPlanItem)
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tasks to do */}
+          <Card className="rounded-xl">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-xs font-bold flex items-center gap-1.5">
+                <ClipboardList className="w-3.5 h-3.5 text-primary" />
+                משימות לביצוע
+                <span className="text-[10px] font-normal text-muted-foreground">({deptStockTasks.filter(t => t.status !== 'completed').length})</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-2">
+              {deptStockTasks.length === 0 ? (
+                <div className="py-6 text-center space-y-2">
+                  <p className="text-xs text-muted-foreground">אין משימות מלאי</p>
+                  <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={handleGenerateFromSchedule} disabled={generating}>
+                    {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    ייצור אוטומטי
+                  </Button>
+                </div>
+              ) : (
+                deptStockTasks.map(renderTaskCard)
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ═══ Colonne droite : Upcoming events ═══ */}
+        <div>
+          <UpcomingEventsColumn />
+        </div>
+      </div>
+
+      {/* Bottom row: weekly stats + expiring */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <WeeklyMiniStatsCard />
+        <ExpiringItemsPanel />
+      </div>
 
       {/* Print-only summary */}
       <div className="hidden print:block">
@@ -873,8 +714,6 @@ export const ChefDashboardPage = () => {
           </div>
         )}
       </div>
-        </TabsContent>
-      </Tabs>
 
       {/* Dialogs */}
       <EventChefDetailDialog
@@ -891,6 +730,12 @@ export const ChefDashboardPage = () => {
           onConfirm={(newDate) => handleRescheduleTask(rescheduleTask, newDate)}
         />
       )}
+      <StockPlanItemDialog
+        open={!!planItemDialog}
+        onOpenChange={(o) => !o && setPlanItemDialog(null)}
+        item={planItemDialog}
+        onCreateTask={handleCreateTaskFromPlan}
+      />
     </div>
   );
 };
