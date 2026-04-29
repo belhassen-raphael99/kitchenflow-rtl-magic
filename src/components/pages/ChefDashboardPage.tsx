@@ -370,6 +370,19 @@ export const ChefDashboardPage = () => {
 
     const eventItems = (items || []) as EventItemRow[];
 
+    // Vérifier quelles recipe_id existent réellement (certaines références sont orphelines)
+    const candidateRecipeIds = Array.from(
+      new Set(eventItems.map(it => it.recipe_id).filter((x): x is string => !!x))
+    );
+    const validRecipeIds = new Set<string>();
+    if (candidateRecipeIds.length > 0) {
+      const { data: existingRecipes } = await supabase
+        .from('recipes')
+        .select('id')
+        .in('id', candidateRecipeIds);
+      for (const r of existingRecipes || []) validRecipeIds.add(r.id);
+    }
+
     // Anti-doublons : (event_id|name)
     const existingKeys = new Set(
       tasks
@@ -397,12 +410,13 @@ export const ChefDashboardPage = () => {
       const ev = eventsById.get(it.event_id);
       const targetQty = it.quantity * (it.servings || 1);
       const timeStr = (ev?.delivery_time || ev?.time || '').slice(0, 5);
+      const safeRecipeId = it.recipe_id && validRecipeIds.has(it.recipe_id) ? it.recipe_id : null;
       inserts.push({
         date: todayStr,
         department: it.department || 'מטבח',
         task_type: 'event',
         event_id: it.event_id,
-        recipe_id: it.recipe_id,
+        recipe_id: safeRecipeId,
         name: it.name,
         target_quantity: targetQty,
         unit: 'מנה',
