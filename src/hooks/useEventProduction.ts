@@ -79,6 +79,29 @@ export function useEventProduction(eventId: string | null, enabled = true): Even
     const itemNames = itemsList.map(i => i.name);
 
     // Recipes (for servings) + ingredients
+    const reservePromise = (async () => {
+      const results: Array<{ id: string; name: string; recipe_id: string | null; quantity: number }> = [];
+      if (recipeIds.length) {
+        const { data } = await supabase
+          .from('reserve_items')
+          .select('id, name, recipe_id, quantity')
+          .in('recipe_id', recipeIds);
+        if (data) results.push(...data);
+      }
+      if (itemNames.length) {
+        const { data } = await supabase
+          .from('reserve_items')
+          .select('id, name, recipe_id, quantity')
+          .in('name', itemNames);
+        if (data) {
+          for (const r of data) {
+            if (!results.find(x => x.id === r.id)) results.push(r);
+          }
+        }
+      }
+      return { data: results };
+    })();
+
     const [recipesRes, ingredientsRes, reserveRes, tasksRes] = await Promise.all([
       recipeIds.length
         ? supabase.from('recipes').select('id, name, servings').in('id', recipeIds)
@@ -86,12 +109,7 @@ export function useEventProduction(eventId: string | null, enabled = true): Even
       recipeIds.length
         ? supabase.from('recipe_ingredients').select('recipe_id, name, quantity, unit, warehouse_item_id').in('recipe_id', recipeIds)
         : Promise.resolve({ data: [] as Array<{ recipe_id: string; name: string; quantity: number; unit: string; warehouse_item_id: string | null }> }),
-      supabase.from('reserve_items').select('id, name, recipe_id, quantity').or(
-        [
-          recipeIds.length ? `recipe_id.in.(${recipeIds.join(',')})` : '',
-          itemNames.length ? `name.in.(${itemNames.map(n => `"${n.replace(/"/g, '\\"')}"`).join(',')})` : '',
-        ].filter(Boolean).join(',')
-      ),
+      reservePromise,
       supabase.from('production_tasks').select('id, name, recipe_id').eq('event_id', eventId).eq('task_type', 'event').neq('status', 'cancelled'),
     ]);
 
