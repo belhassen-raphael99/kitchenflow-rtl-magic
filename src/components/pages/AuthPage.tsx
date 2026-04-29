@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthContext } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Mail, Lock, LogIn, KeyRound, Eye, EyeOff, AlertTriangle, Chrome } from 'lucide-react';
+import { Loader2, Mail, Lock, LogIn, KeyRound, Eye, EyeOff, AlertTriangle, Chrome, Play } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -24,6 +24,7 @@ export const AuthPage = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('login');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
