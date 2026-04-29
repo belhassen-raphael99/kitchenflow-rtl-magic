@@ -450,7 +450,7 @@ export const ChefDashboardPage = () => {
                       <MoreVertical className="w-3.5 h-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" dir="rtl">
+                  <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setRescheduleTask(task)} className="gap-2">
                       <CalendarClock className="w-4 h-4" />
                       דחה לתאריך אחר
