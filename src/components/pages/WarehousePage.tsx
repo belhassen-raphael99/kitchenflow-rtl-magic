@@ -78,27 +78,28 @@ export const WarehousePage = () => {
           description={`${totalCount} מוצרים`}
           accentColor="violet"
           actions={
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
               <Button variant="outline" size="sm" className="gap-2 no-print" onClick={() => window.print()}>
                 <Printer className="w-4 h-4" />
-                הדפס
+                <span className="hidden sm:inline">הדפס</span>
+                <span className="sm:hidden">הדפס</span>
               </Button>
               {canWrite && (
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowPurchaseDialog(true)}>
                   <ShoppingCart className="w-4 h-4" />
-                  רשימת קניות
+                  <span className="truncate">רשימת קניות</span>
                 </Button>
               )}
               {canWrite && (
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowSupplierImportDialog(true)}>
                   <FileScan className="w-4 h-4" />
-                  ייבוא מהזמנת ספק
+                  <span className="truncate">ייבוא ספק</span>
                 </Button>
               )}
               {canWrite && (
-                <Button onClick={() => { setEditingItem(null); setShowItemDialog(true); }} className="rounded-md gap-2">
+                <Button size="sm" onClick={() => { setEditingItem(null); setShowItemDialog(true); }} className="rounded-md gap-2">
                   <Plus className="w-4 h-4" />
-                  קליטת סחורה
+                  <span className="truncate">קליטת סחורה</span>
                 </Button>
               )}
             </div>
@@ -136,7 +137,7 @@ export const WarehousePage = () => {
       </div>
 
       <div data-demo-tour="warehouse-stock" className="bg-card rounded-lg shadow-soft overflow-hidden">
-        <div className="grid grid-cols-5 gap-4 p-4 bg-muted/50 border-b border-border text-sm font-medium text-muted-foreground">
+        <div className="hidden md:grid grid-cols-5 gap-4 p-4 bg-muted/50 border-b border-border text-sm font-medium text-muted-foreground">
           <div className="text-center">פעולות</div>
           <div className="text-center">סטטוס</div>
           <div className="text-center">כמות</div>
@@ -159,12 +160,48 @@ export const WarehousePage = () => {
                 <div
                   key={item.id}
                   className={cn(
-                    "grid grid-cols-5 gap-4 p-4 hover:bg-accent/30 transition-colors",
+                    "p-3 md:p-4 hover:bg-accent/30 transition-colors",
+                    "md:grid md:grid-cols-5 md:gap-4",
                     item.status === 'critical' && 'bg-red-50/50',
                     item.status === 'low' && 'bg-orange-50/50'
                   )}
                 >
-                  <div className="flex items-center justify-center gap-2">
+                  {/* Mobile layout (< md) */}
+                  <div className="md:hidden space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-semibold text-foreground text-right flex-1 min-w-0">
+                        {item.name}
+                      </div>
+                      <div className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full shrink-0", statusDisplay.color)}>
+                        <span className="text-[11px] font-medium">{statusDisplay.label}</span>
+                        <StatusIcon className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={cn("px-2 py-0.5 rounded-md text-xs", getCategoryColor(item.category?.name))}>
+                        {item.category?.name || '-'}
+                      </span>
+                      <div className="flex items-baseline gap-1">
+                        <span className={cn("font-bold text-base tabular-nums", item.status === 'critical' && 'text-red-600', item.status === 'low' && 'text-orange-600')}>
+                          {item.quantity}
+                        </span>
+                        <span className="text-muted-foreground text-xs">{item.unit}</span>
+                      </div>
+                    </div>
+                    {canWrite && (
+                      <div className="flex gap-2 pt-1">
+                        <Button variant="outline" size="sm" onClick={() => { setStockItem(item); setShowStockDialog(true); }} className="flex-1 h-8 text-xs">
+                          עדכון מלאי
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => { setEditingItem(item); setShowItemDialog(true); }} className="h-8 w-8 shrink-0">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Desktop layout (≥ md) */}
+                  <div className="hidden md:flex items-center justify-center gap-2">
                     {canWrite && (
                       <>
                         <Button variant="ghost" size="sm" onClick={() => { setStockItem(item); setShowStockDialog(true); }} className="h-8 px-2">עדכון מלאי</Button>
@@ -174,24 +211,24 @@ export const WarehousePage = () => {
                       </>
                     )}
                   </div>
-                  <div className="flex items-center justify-center">
+                  <div className="hidden md:flex items-center justify-center">
                     <div className={cn("flex items-center gap-1 px-2 py-1 rounded-full", statusDisplay.color)}>
                       <span className="text-xs font-medium">{statusDisplay.label}</span>
                       <StatusIcon className="w-4 h-4" />
                     </div>
                   </div>
-                  <div className="text-center flex items-center justify-center">
+                  <div className="hidden md:flex text-center items-center justify-center">
                     <span className={cn("font-bold", item.status === 'critical' && 'text-red-600', item.status === 'low' && 'text-orange-600', item.status === 'ok' && 'text-foreground')}>
                       {item.quantity}
                     </span>
                     <span className="text-muted-foreground mr-1 text-sm">{item.unit}</span>
                   </div>
-                  <div className="flex justify-center items-center">
+                  <div className="hidden md:flex justify-center items-center">
                     <span className={cn("px-3 py-1 rounded-lg text-sm", getCategoryColor(item.category?.name))}>
                       {item.category?.name || '-'}
                     </span>
                   </div>
-                  <div className="text-right font-semibold text-foreground flex items-center justify-end">
+                  <div className="hidden md:flex text-right font-semibold text-foreground items-center justify-end">
                     {item.name}
                   </div>
                 </div>
