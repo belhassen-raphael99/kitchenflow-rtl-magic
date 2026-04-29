@@ -146,7 +146,14 @@ export const AuthPage = () => {
         return;
       }
 
-      const { access_token, refresh_token } = data;
+      // Parse defensively: invoke may return a string in some runtimes
+      const payload = typeof data === 'string' ? JSON.parse(data) : data;
+      const { access_token, refresh_token } = payload || {};
+      if (!access_token || !refresh_token) {
+        toast({ title: 'שגיאה', description: 'תגובה לא תקינה מהשרת', variant: 'destructive' });
+        setDemoLoading(false);
+        return;
+      }
       localStorage.setItem('demo_session_start', Date.now().toString());
       localStorage.setItem('show_demo_onboarding', 'true');
       const { error: sessionError } = await supabase.auth.setSession({ access_token, refresh_token });
@@ -155,8 +162,17 @@ export const AuthPage = () => {
         setDemoLoading(false);
         return;
       }
-      // Hard redirect so AuthContext re-initializes cleanly with the new session
-      window.location.href = '/';
+      // Confirm the session was actually persisted before navigating.
+      // Without this, a hard redirect can race the storage write and land
+      // back on /auth because getSession() returns null on first load.
+      const { data: sessionCheck } = await supabase.auth.getSession();
+      if (!sessionCheck?.session) {
+        toast({ title: 'שגיאה', description: 'הסשן לא נשמר — נסה שוב', variant: 'destructive' });
+        setDemoLoading(false);
+        return;
+      }
+      // Soft navigate keeps the in-memory auth state and avoids a reload race
+      navigate('/', { replace: true });
     } catch {
       toast({ title: 'שגיאה', description: 'שגיאה זמנית — נסה שוב', variant: 'destructive' });
       setDemoLoading(false);
