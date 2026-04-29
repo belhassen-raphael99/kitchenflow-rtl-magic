@@ -153,8 +153,9 @@ Deno.serve(async (req) => {
         });
       }
 
-      await supabaseAdmin.from('user_roles').delete().eq('user_id', newUser.user.id);
-      await supabaseAdmin.from('user_roles').insert({ user_id: newUser.user.id, role: 'demo' });
+      await supabaseAdmin
+        .from('user_roles')
+        .upsert({ user_id: newUser.user.id, role: 'demo' }, { onConflict: 'user_id,role' });
       await resetDemoState(supabaseAdmin);
     } else {
       await supabaseAdmin.auth.admin.updateUserById(demoUser.id, {
@@ -175,8 +176,9 @@ Deno.serve(async (req) => {
         }
       }
 
-      await supabaseAdmin.from('user_roles').delete().eq('user_id', demoUser.id);
-      await supabaseAdmin.from('user_roles').insert({ user_id: demoUser.id, role: 'demo' });
+      await supabaseAdmin
+        .from('user_roles')
+        .upsert({ user_id: demoUser.id, role: 'demo' }, { onConflict: 'user_id,role' });
       await resetDemoState(supabaseAdmin);
     }
 
