@@ -244,6 +244,35 @@ export const ChefDashboardPage = () => {
       title: '✅ משימה הושלמה',
       description: completionMessages.length > 0 ? `${task.name} · ${completionMessages.join(' · ')}` : task.name,
     });
+
+    // Si c'est une tâche d'événement : vérifier si toutes les tâches de cet event sont done
+    if (task.task_type === 'event' && task.event_id) {
+      const { data: siblingTasks } = await supabase
+        .from('production_tasks')
+        .select('id, status')
+        .eq('event_id', task.event_id)
+        .eq('task_type', 'event');
+      const allDone = (siblingTasks || []).every(
+        t => t.id === task.id || t.status === 'completed' || t.status === 'cancelled'
+      );
+      if (allDone && (siblingTasks || []).length > 0) {
+        const ev = deliveries.find(d => d.id === task.event_id);
+        const clientName = ev?.client_name || ev?.name || 'אירוע';
+        await supabase.from('notifications').insert([{
+          type: 'order_ready',
+          title: '📦 הזמנה מוכנה לשליחה',
+          message: `כל המשימות של ${clientName} הושלמו — מוכן למשלוח`,
+          severity: 'info',
+          related_table: 'events',
+          related_id: task.event_id,
+        }]);
+        toast({
+          title: '🎉 הזמנה מוכנה!',
+          description: `${clientName} — כל הפריטים הושלמו, מוכן למשלוחים`,
+        });
+      }
+    }
+
     await fetchData();
     setUpdating(null);
   };
