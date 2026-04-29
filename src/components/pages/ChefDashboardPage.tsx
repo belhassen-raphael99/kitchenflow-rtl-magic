@@ -873,6 +873,24 @@ export const ChefDashboardPage = () => {
           </div>
         )}
       </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialogs */}
+      <EventChefDetailDialog
+        open={!!eventDialog}
+        onOpenChange={(o) => !o && setEventDialog(null)}
+        event={eventDialog}
+      />
+      {rescheduleTask && (
+        <RescheduleTaskDialog
+          open={!!rescheduleTask}
+          onOpenChange={(o) => !o && setRescheduleTask(null)}
+          taskName={rescheduleTask.name}
+          currentDate={todayStr}
+          onConfirm={(newDate) => handleRescheduleTask(rescheduleTask, newDate)}
+        />
+      )}
     </div>
   );
 };
