@@ -514,6 +514,15 @@ export const ChefDashboardPage = () => {
         </div>
       </div>
 
+      {/* Critical stock banner */}
+      {!criticalAlerts.loading && criticalAlerts.totalMissing > 0 && (
+        <CriticalStockBanner
+          totalMissing={criticalAlerts.totalMissing}
+          affectedEvents={criticalAlerts.alerts.length}
+          onClick={() => setAlertDialogOpen(true)}
+        />
+      )}
+
       {/* KPI strip — always visible */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="rounded-md">
@@ -765,6 +774,12 @@ export const ChefDashboardPage = () => {
         onOpenChange={(o) => !o && setPlanItemDialog(null)}
         item={planItemDialog}
         onCreateTask={handleCreateTaskFromPlan}
+      />
+      <CriticalStockAlertDialog
+        open={alertDialogOpen}
+        onOpenChange={setAlertDialogOpen}
+        alerts={criticalAlerts.alerts}
+        onViewEvent={(id) => { setAlertEventId(id); openEventDialogById(id); }}
       />
     </div>
   );
