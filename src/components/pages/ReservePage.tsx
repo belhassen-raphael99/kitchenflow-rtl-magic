@@ -104,8 +104,8 @@ export const ReservePage = () => {
     <div className="space-y-5" dir="rtl">
       {/* Header */}
       <PageHeader
-        title="רזרבה (מלאי הייצור)"
-        description="ניהול מוצרים מוכנים למלאי"
+        title="ייצור"
+        description="מוצרים מוכנים שיוצרו על ידי המטבח"
         icon={Package}
         accentColor="violet"
         actions={

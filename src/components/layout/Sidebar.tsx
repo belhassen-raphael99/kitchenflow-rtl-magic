@@ -68,7 +68,7 @@ const navSections: NavSection[] = [
   {
     title: 'מלאי',
     items: [
-      { id: '/reserve', label: 'רזרבה', icon: Layers },
+      { id: '/reserve', label: 'ייצור', icon: Layers },
       { id: '/warehouse', label: 'מחסן', icon: Package },
     ],
   },

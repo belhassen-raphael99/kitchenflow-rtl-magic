@@ -9,6 +9,7 @@ import {
   ChefHat, Truck, Users, Clock, Printer, Loader2,
   CheckCircle, PlayCircle, Package, AlertTriangle, RefreshCw,
   Scale, ClipboardList, Eye, ChevronDown, ChevronUp,
+  CalendarDays, MoreVertical, CalendarClock, XCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -16,6 +17,13 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/layout/EmptyState';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import { EventChefDetailDialog } from '@/components/agenda/EventChefDetailDialog';
+import { RescheduleTaskDialog } from '@/components/kitchen/RescheduleTaskDialog';
+import { ExpiringItemsPanel } from '@/components/kitchen/ExpiringItemsPanel';
+import { WeeklyEventsPanel } from '@/components/kitchen/WeeklyEventsPanel';
 
 interface ChefTask {
   id: string;
@@ -94,6 +102,9 @@ export const ChefDashboardPage = () => {
   const [showFullWeek, setShowFullWeek] = useState(false);
   const [expandedCompleted, setExpandedCompleted] = useState<Set<string>>(new Set());
   const [mainTab, setMainTab] = useState('plan');
+  const [topTab, setTopTab] = useState<'production' | 'agenda'>('production');
+  const [eventDialog, setEventDialog] = useState<TodayDelivery | null>(null);
+  const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
   const { toast } = useToast();
 
   const today = new Date();
@@ -231,6 +242,33 @@ export const ChefDashboardPage = () => {
 
     await fetchData();
     setGenerating(false);
+  };
+
+  const handleRescheduleTask = async (task: ChefTask, newDate: string) => {
+    const note = `[נדחה מ־${todayStr}] ${task.notes || ''}`.trim();
+    const { error } = await supabase
+      .from('production_tasks')
+      .update({ date: newDate, status: 'pending', notes: note })
+      .eq('id', task.id);
+    if (error) {
+      toast({ title: 'שגיאה בדחיית המשימה', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: '📅 המשימה נדחתה', description: `${task.name} → ${newDate}` });
+    await fetchData();
+  };
+
+  const handleCancelTask = async (task: ChefTask) => {
+    const { error } = await supabase
+      .from('production_tasks')
+      .update({ status: 'cancelled' })
+      .eq('id', task.id);
+    if (error) {
+      toast({ title: 'שגיאה בביטול', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: '❌ המשימה בוטלה', description: task.name });
+    await fetchData();
   };
 
   // --- Derived data ---
@@ -405,6 +443,25 @@ export const ChefDashboardPage = () => {
               {task.status === 'completed' && (
                 <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">✅ הושלם</Badge>
               )}
+              {task.task_type === 'stock' && task.status !== 'completed' && task.status !== 'cancelled' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                      <MoreVertical className="w-3.5 h-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setRescheduleTask(task)} className="gap-2">
+                      <CalendarClock className="w-4 h-4" />
+                      דחה לתאריך אחר
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleCancelTask(task)} className="gap-2 text-destructive focus:text-destructive">
+                      <XCircle className="w-4 h-4" />
+                      בטל היום
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
         </CardContent>
@@ -523,6 +580,22 @@ export const ChefDashboardPage = () => {
         </div>
       </div>
 
+      {/* Top-level tabs: production / agenda */}
+      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as 'production' | 'agenda')}>
+        <TabsList className="no-print grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="production" className="gap-2">
+            <ChefHat className="w-4 h-4" /> ייצור היום
+          </TabsTrigger>
+          <TabsTrigger value="agenda" className="gap-2">
+            <CalendarDays className="w-4 h-4" /> יומן אירועים ופג תוקף
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="agenda" className="mt-4 space-y-4">
+          <WeeklyEventsPanel />
+          <ExpiringItemsPanel />
+        </TabsContent>
+        <TabsContent value="production" className="mt-4 space-y-5">
+
       {/* Step Guide */}
       <StepGuide />
 
@@ -608,7 +681,11 @@ export const ChefDashboardPage = () => {
                       <CardContent className="p-4 pt-0">
                         <div className="space-y-2">
                           {deliveries.map(d => (
-                            <div key={d.id} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-md text-sm border border-border/30">
+                            <button
+                              key={d.id}
+                              onClick={() => setEventDialog(d)}
+                              className="w-full flex items-center justify-between p-2.5 bg-muted/50 hover:bg-muted rounded-md text-sm border border-border/30 transition-colors text-right"
+                            >
                               <div className="flex items-center gap-3">
                                 <span className="font-bold text-base tabular-nums">{(d.delivery_time || d.time || '').slice(0, 5)}</span>
                                 <div>
@@ -624,7 +701,7 @@ export const ChefDashboardPage = () => {
                                   {d.status === 'in-progress' ? '🔵 בדרך' : d.status === 'confirmed' ? '🟢 מאושר' : '⏳ ממתין'}
                                 </Badge>
                               </div>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </CardContent>
@@ -796,6 +873,24 @@ export const ChefDashboardPage = () => {
           </div>
         )}
       </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialogs */}
+      <EventChefDetailDialog
+        open={!!eventDialog}
+        onOpenChange={(o) => !o && setEventDialog(null)}
+        event={eventDialog}
+      />
+      {rescheduleTask && (
+        <RescheduleTaskDialog
+          open={!!rescheduleTask}
+          onOpenChange={(o) => !o && setRescheduleTask(null)}
+          taskName={rescheduleTask.name}
+          currentDate={todayStr}
+          onConfirm={(newDate) => handleRescheduleTask(rescheduleTask, newDate)}
+        />
+      )}
     </div>
   );
 };
