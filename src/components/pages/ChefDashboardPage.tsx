@@ -102,6 +102,9 @@ export const ChefDashboardPage = () => {
   const [showFullWeek, setShowFullWeek] = useState(false);
   const [expandedCompleted, setExpandedCompleted] = useState<Set<string>>(new Set());
   const [mainTab, setMainTab] = useState('plan');
+  const [topTab, setTopTab] = useState<'production' | 'agenda'>('production');
+  const [eventDialog, setEventDialog] = useState<TodayDelivery | null>(null);
+  const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
   const { toast } = useToast();
 
   const today = new Date();
