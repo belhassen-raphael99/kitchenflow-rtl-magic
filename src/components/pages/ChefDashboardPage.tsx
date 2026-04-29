@@ -882,11 +882,21 @@ export const ChefDashboardPage = () => {
           {/* Tasks to do */}
           <Card className="rounded-xl">
             <CardHeader className="p-3 pb-2">
-              <CardTitle className="text-xs font-bold flex items-center gap-1.5">
-                <ClipboardList className="w-3.5 h-3.5 text-primary" />
-                משימות לביצוע
-                <span className="text-[10px] font-normal text-muted-foreground">({deptStockTasks.filter(t => t.status !== 'completed').length})</span>
-              </CardTitle>
+              {(() => {
+                const total = deptStockTasks.length;
+                const done = deptStockTasks.filter(t => t.status === 'completed').length;
+                return (
+                  <CardTitle className="text-xs font-bold flex items-center gap-1.5">
+                    <ClipboardList className="w-3.5 h-3.5 text-primary" />
+                    משימות לביצוע
+                    {total > 0 && (
+                      <Badge variant="secondary" className="text-[10px] tabular-nums">
+                        {done}/{total}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                );
+              })()}
             </CardHeader>
             <CardContent className="p-3 pt-0 space-y-2">
               {rescheduledTodayCount > 0 && (
@@ -897,17 +907,44 @@ export const ChefDashboardPage = () => {
                   </span>
                 </div>
               )}
-              {deptStockTasks.length === 0 ? (
-                <div className="py-6 text-center space-y-2">
-                  <p className="text-xs text-muted-foreground">אין משימות מלאי</p>
-                  <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={handleGenerateFromSchedule} disabled={generating}>
-                    {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                    ייצור אוטומטי
-                  </Button>
-                </div>
-              ) : (
-                deptStockTasks.map(renderTaskCard)
-              )}
+              {(() => {
+                const activeStockTasks = deptStockTasks.filter(
+                  t => t.status !== 'completed' && t.status !== 'cancelled'
+                );
+                if (deptStockTasks.length === 0) {
+                  return (
+                    <div className="py-6 text-center space-y-2">
+                      <p className="text-xs text-muted-foreground">אין משימות מלאי</p>
+                      <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={handleGenerateFromSchedule} disabled={generating}>
+                        {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                        ייצור אוטומטי
+                      </Button>
+                    </div>
+                  );
+                }
+                if (activeStockTasks.length === 0) {
+                  return (
+                    <p className="text-sm text-primary text-center py-4 font-medium">
+                      🎉 כל המשימות הושלמו!
+                    </p>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                    {activeStockTasks.map(t => (
+                      <StockTaskTile
+                        key={t.id}
+                        task={t}
+                        updating={updating === t.id}
+                        onStart={() => handleStartTask(t)}
+                        onComplete={() => handleCompleteTask(t)}
+                        onReschedule={() => setRescheduleTask(t)}
+                        onCancel={() => handleCancelTask(t)}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
