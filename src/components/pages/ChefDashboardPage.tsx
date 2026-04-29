@@ -39,6 +39,8 @@ interface ChefTask {
   recipe_id: string | null;
   reserve_item_id: string | null;
   notes: string | null;
+  rescheduled_from?: string | null;
+  original_date?: string | null;
 }
 
 interface TodayDelivery {
@@ -105,7 +107,7 @@ export const ChefDashboardPage = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [tasksRes, deliveriesRes, scheduleRes, reserveRes] = await Promise.all([
-      supabase.from('production_tasks').select('id, name, department, task_type, status, target_quantity, completed_quantity, unit, priority, notes, event_id, recipe_id, reserve_item_id, assigned_to, started_at, completed_at, date').eq('date', todayStr).order('priority', { ascending: false }),
+      supabase.from('production_tasks').select('id, name, department, task_type, status, target_quantity, completed_quantity, unit, priority, notes, event_id, recipe_id, reserve_item_id, assigned_to, started_at, completed_at, date, rescheduled_from, original_date').eq('date', todayStr).order('priority', { ascending: false }),
       supabase.from('events').select('id, name, client_name, delivery_time, time, guests, status, delivery_address')
         .eq('date', todayStr).in('status', ['confirmed', 'pending', 'in-progress']).order('delivery_time', { ascending: true }),
       supabase.from('production_schedule' as any).select('id, day_of_week, department, product_name, min_quantity, unit, storage_type, production_day_label, shelf_life_label, notes'),
@@ -260,14 +262,30 @@ export const ChefDashboardPage = () => {
 
   const handleRescheduleTask = async (task: ChefTask, newDate: string) => {
     const note = `[נדחה מ־${todayStr}] ${task.notes || ''}`.trim();
+    const originalDate = task.original_date || todayStr;
     const { error } = await supabase
       .from('production_tasks')
-      .update({ date: newDate, status: 'pending', notes: note })
+      .update({
+        date: newDate,
+        status: 'pending',
+        notes: note,
+        rescheduled_from: todayStr,
+        original_date: originalDate,
+      })
       .eq('id', task.id);
     if (error) {
       toast({ title: 'שגיאה בדחיית המשימה', description: error.message, variant: 'destructive' });
       return;
     }
+    // Notification immédiate (confirmation) + future (jour J)
+    await supabase.from('notifications').insert([{
+      type: 'system',
+      title: '📅 משימה נדחתה',
+      message: `${task.name} — תזכורת תופיע ב־${newDate}`,
+      severity: 'info',
+      related_table: 'production_tasks',
+      related_id: task.id,
+    }]);
     toast({ title: '📅 המשימה נדחתה', description: `${task.name} → ${newDate}` });
     await fetchData();
   };
@@ -287,7 +305,18 @@ export const ChefDashboardPage = () => {
 
   // --- Derived data ---
   const stockTasksAll = tasks.filter(t => t.task_type === 'stock');
-  const deptStockTasks = stockTasksAll.filter(t => t.department === activeDept);
+  const deptStockTasks = stockTasksAll
+    .filter(t => t.department === activeDept)
+    .sort((a, b) => {
+      // Tâches reportées en premier
+      const aResched = a.rescheduled_from ? 1 : 0;
+      const bResched = b.rescheduled_from ? 1 : 0;
+      if (aResched !== bResched) return bResched - aResched;
+      return 0;
+    });
+  const rescheduledTodayCount = deptStockTasks.filter(
+    t => t.rescheduled_from && t.status !== 'completed' && t.status !== 'cancelled'
+  ).length;
 
   const deptScheduleAll = schedule.filter(s => s.department === activeDept);
   const deptScheduleStock = deptScheduleAll.filter(s => s.storage_type === 'מלאי' || !s.storage_type);
@@ -317,6 +346,7 @@ export const ChefDashboardPage = () => {
     const percent = task.target_quantity > 0 ? Math.round((task.completed_quantity / task.target_quantity) * 100) : 0;
     const isCompleted = task.status === 'completed';
     const isExpanded = expandedCompleted.has(task.id);
+    const isRescheduled = !!task.rescheduled_from;
 
     if (isCompleted && !isExpanded) {
       return (
@@ -341,9 +371,16 @@ export const ChefDashboardPage = () => {
       <Card key={task.id} className={cn(
         "rounded-md transition-all",
         isCompleted && "bg-muted/30 border-muted",
-        task.status === 'in-progress' && "border-blue-300 shadow-sm ring-1 ring-blue-200/50"
+        task.status === 'in-progress' && "border-blue-300 shadow-sm ring-1 ring-blue-200/50",
+        isRescheduled && !isCompleted && "border-r-4 border-r-orange-500 bg-orange-50/40 dark:bg-orange-950/20"
       )}>
         <CardContent className="p-3 space-y-2.5">
+          {isRescheduled && !isCompleted && (
+            <Badge variant="outline" className="border-orange-400 text-orange-700 dark:text-orange-400 text-[10px] gap-1">
+              <CalendarClock className="w-3 h-3" />
+              נדחה מ־{task.rescheduled_from}
+            </Badge>
+          )}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
               {task.status === 'completed' && <CheckCircle className="w-4 h-4 text-primary shrink-0" />}
@@ -388,6 +425,16 @@ export const ChefDashboardPage = () => {
                 </Button>
               )}
               {task.status !== 'completed' && task.status !== 'cancelled' && (
+                <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1 h-7 text-xs"
+                  onClick={() => setRescheduleTask(task)}
+                >
+                  <CalendarClock className="w-3 h-3" />
+                  דחה
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
@@ -395,16 +442,13 @@ export const ChefDashboardPage = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setRescheduleTask(task)} className="gap-2">
-                      <CalendarClock className="w-4 h-4" />
-                      דחה לתאריך אחר
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleCancelTask(task)} className="gap-2 text-destructive focus:text-destructive">
                       <XCircle className="w-4 h-4" />
                       בטל היום
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </>
               )}
             </div>
           </div>
@@ -638,6 +682,14 @@ export const ChefDashboardPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 pt-0 space-y-2">
+              {rescheduledTodayCount > 0 && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-orange-50 border border-orange-200 dark:bg-orange-950/30 dark:border-orange-700/40 text-xs text-orange-800 dark:text-orange-300">
+                  <CalendarClock className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    <strong>{rescheduledTodayCount}</strong> משימות שנדחו מגיעות היום — אל תשכח!
+                  </span>
+                </div>
+              )}
               {deptStockTasks.length === 0 ? (
                 <div className="py-6 text-center space-y-2">
                   <p className="text-xs text-muted-foreground">אין משימות מלאי</p>

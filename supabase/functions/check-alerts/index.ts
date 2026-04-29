@@ -225,6 +225,27 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // 6. Reminder for production tasks rescheduled to today
+    const { data: rescheduledTasks } = await supabase
+      .from("production_tasks")
+      .select("id, name, target_quantity, unit, rescheduled_from, department")
+      .eq("date", today)
+      .eq("status", "pending")
+      .not("rescheduled_from", "is", null);
+
+    if (rescheduledTasks && rescheduledTasks.length > 0) {
+      for (const task of rescheduledTasks) {
+        notifications.push({
+          type: "system",
+          title: `🔔 משימה שנדחתה — להיום`,
+          message: `${task.name} (${task.target_quantity} ${task.unit}) הייתה אמורה ב־${task.rescheduled_from} — אל תשכח!`,
+          severity: "warning",
+          related_table: "production_tasks",
+          related_id: task.id,
+        });
+      }
+    }
+
     console.log(`Found ${notifications.length} notifications to create`);
 
     // Delete old unread notifications to avoid duplicates
@@ -233,7 +254,7 @@ Deno.serve(async (req: Request) => {
         .from("notifications")
         .delete()
         .eq("is_read", false)
-        .in("type", ["low_stock", "expiring", "upcoming_event", "stock_shortage"]);
+        .in("type", ["low_stock", "expiring", "upcoming_event", "stock_shortage", "system"]);
     }
 
     // Insert new notifications

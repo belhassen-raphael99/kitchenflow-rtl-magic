@@ -477,8 +477,10 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          original_date: string | null
           priority: number
           recipe_id: string | null
+          rescheduled_from: string | null
           reserve_item_id: string | null
           started_at: string | null
           status: string
@@ -498,8 +500,10 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          original_date?: string | null
           priority?: number
           recipe_id?: string | null
+          rescheduled_from?: string | null
           reserve_item_id?: string | null
           started_at?: string | null
           status?: string
@@ -519,8 +523,10 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          original_date?: string | null
           priority?: number
           recipe_id?: string | null
+          rescheduled_from?: string | null
           reserve_item_id?: string | null
           started_at?: string | null
           status?: string
