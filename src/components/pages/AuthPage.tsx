@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthContext } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Mail, Lock, LogIn, KeyRound, Eye, EyeOff, AlertTriangle, Chrome } from 'lucide-react';
+import { Loader2, Mail, Lock, LogIn, KeyRound, Eye, EyeOff, AlertTriangle, Chrome, Play } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -24,6 +24,7 @@ export const AuthPage = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('login');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -123,6 +124,40 @@ export const AuthPage = () => {
       }
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setDemoLoading(true);
+    try {
+      await supabase.auth.signOut();
+      localStorage.clear();
+      sessionStorage.clear();
+
+      const { data, error } = await supabase.functions.invoke('demo-auto-login');
+
+      if (error || data?.error) {
+        const msg = data?.error || error?.message || '';
+        const isRateLimit = msg.includes('tentatives') || msg.includes('rate') || msg.includes('429');
+        toast({
+          title: 'שגיאה',
+          description: isRateLimit
+            ? 'יותר מדי ניסיונות — נסה שוב בעוד מספר דקות'
+            : 'שגיאה זמנית — נסה שוב',
+          variant: 'destructive',
+        });
+        setDemoLoading(false);
+        return;
+      }
+
+      const { access_token, refresh_token } = data;
+      await supabase.auth.setSession({ access_token, refresh_token });
+      localStorage.setItem('demo_session_start', Date.now().toString());
+      localStorage.setItem('show_demo_onboarding', 'true');
+      navigate('/', { replace: true });
+    } catch {
+      toast({ title: 'שגיאה', description: 'שגיאה זמנית — נסה שוב', variant: 'destructive' });
+      setDemoLoading(false);
     }
   };
 
@@ -261,8 +296,24 @@ export const AuthPage = () => {
         </p>
         <div className="border-t border-border pt-3 mt-3">
           <p className="text-sm text-muted-foreground mb-2">רוצה לראות את המערכת?</p>
-          <Button type="button" variant="outline" className="w-full gap-2" onClick={() => navigate('/demo')}>
-            🎯 כניסה לסביבת דמו
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2"
+            onClick={handleDemoLogin}
+            disabled={demoLoading}
+          >
+            {demoLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                מתחבר לסביבת הדמו...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                כניסה מיידית לסביבת דמו
+              </>
+            )}
           </Button>
         </div>
       </div>
