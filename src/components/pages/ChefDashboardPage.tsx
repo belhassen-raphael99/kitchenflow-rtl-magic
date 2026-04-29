@@ -665,7 +665,11 @@ export const ChefDashboardPage = () => {
                       <CardContent className="p-4 pt-0">
                         <div className="space-y-2">
                           {deliveries.map(d => (
-                            <div key={d.id} className="flex items-center justify-between p-2.5 bg-muted/50 rounded-md text-sm border border-border/30">
+                            <button
+                              key={d.id}
+                              onClick={() => setEventDialog(d)}
+                              className="w-full flex items-center justify-between p-2.5 bg-muted/50 hover:bg-muted rounded-md text-sm border border-border/30 transition-colors text-right"
+                            >
                               <div className="flex items-center gap-3">
                                 <span className="font-bold text-base tabular-nums">{(d.delivery_time || d.time || '').slice(0, 5)}</span>
                                 <div>
@@ -681,7 +685,7 @@ export const ChefDashboardPage = () => {
                                   {d.status === 'in-progress' ? '🔵 בדרך' : d.status === 'confirmed' ? '🟢 מאושר' : '⏳ ממתין'}
                                 </Badge>
                               </div>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       </CardContent>
