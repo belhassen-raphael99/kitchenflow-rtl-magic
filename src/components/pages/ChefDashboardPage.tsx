@@ -100,7 +100,6 @@ export const ChefDashboardPage = () => {
   const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
   const [planItemDialog, setPlanItemDialog] = useState<StockPlanItem | null>(null);
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
-  const [alertEventId, setAlertEventId] = useState<string | null>(null);
   const { toast } = useToast();
   const criticalAlerts = useCriticalStockAlerts();
 
@@ -779,7 +778,7 @@ export const ChefDashboardPage = () => {
         open={alertDialogOpen}
         onOpenChange={setAlertDialogOpen}
         alerts={criticalAlerts.alerts}
-        onViewEvent={(id) => { setAlertEventId(id); openEventDialogById(id); }}
+        onViewEvent={(id) => { void openEventDialogById(id); }}
       />
     </div>
   );
