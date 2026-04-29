@@ -104,7 +104,6 @@ export const ChefDashboardPage = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showFullWeek, setShowFullWeek] = useState(false);
-  const [expandedCompleted, setExpandedCompleted] = useState<Set<string>>(new Set());
   const [eventDialog, setEventDialog] = useState<TodayDelivery | null>(null);
   const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
   const [planItemDialog, setPlanItemDialog] = useState<StockPlanItem | null>(null);
