@@ -6,17 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
   ChefHat, Truck, Users, Clock, Printer, Loader2,
-  CheckCircle, PlayCircle, Package, AlertTriangle, RefreshCw,
-  Scale, ClipboardList, ChevronDown, ChevronUp,
-  MoreVertical, CalendarClock, XCircle, Eye,
+  CheckCircle, Package, AlertTriangle, RefreshCw,
+  ClipboardList, CalendarClock, Eye,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
-import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
 import { EventChefDetailDialog } from '@/components/agenda/EventChefDetailDialog';
 import { RescheduleTaskDialog } from '@/components/kitchen/RescheduleTaskDialog';
 import { ExpiringItemsPanel } from '@/components/kitchen/ExpiringItemsPanel';
@@ -25,6 +21,7 @@ import { WeeklyMiniStatsCard } from '@/components/kitchen/WeeklyMiniStatsCard';
 import { StockPlanItemDialog, type StockPlanItem } from '@/components/kitchen/StockPlanItemDialog';
 import { EventTasksSection } from '@/components/kitchen/EventTasksSection';
 import type { EventTaskCardData } from '@/components/kitchen/EventTaskCard';
+import { StockTaskTile } from '@/components/kitchen/StockTaskTile';
 
 interface ChefTask {
   id: string;
@@ -107,7 +104,6 @@ export const ChefDashboardPage = () => {
   const [updating, setUpdating] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showFullWeek, setShowFullWeek] = useState(false);
-  const [expandedCompleted, setExpandedCompleted] = useState<Set<string>>(new Set());
   const [eventDialog, setEventDialog] = useState<TodayDelivery | null>(null);
   const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
   const [planItemDialog, setPlanItemDialog] = useState<StockPlanItem | null>(null);
@@ -527,130 +523,6 @@ export const ChefDashboardPage = () => {
     return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
-  const toggleCompletedExpand = (id: string) => {
-    setExpandedCompleted(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  // --- Task card (stock only) ---
-  const renderTaskCard = (task: ChefTask) => {
-    const percent = task.target_quantity > 0 ? Math.round((task.completed_quantity / task.target_quantity) * 100) : 0;
-    const isCompleted = task.status === 'completed';
-    const isExpanded = expandedCompleted.has(task.id);
-    const isRescheduled = !!task.rescheduled_from;
-
-    if (isCompleted && !isExpanded) {
-      return (
-        <div
-          key={task.id}
-          className="flex items-center justify-between p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-          onClick={() => toggleCompletedExpand(task.id)}
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
-            <span className="text-sm text-muted-foreground line-through truncate">{task.name}</span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Badge variant="outline" className="text-primary border-primary/30 text-[10px]">✅</Badge>
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <Card key={task.id} className={cn(
-        "rounded-md transition-all",
-        isCompleted && "bg-muted/30 border-muted",
-        task.status === 'in-progress' && "border-blue-300 shadow-sm ring-1 ring-blue-200/50",
-        isRescheduled && !isCompleted && "border-r-4 border-r-orange-500 bg-orange-50/40 dark:bg-orange-950/20"
-      )}>
-        <CardContent className="p-3 space-y-2.5">
-          {isRescheduled && !isCompleted && (
-            <Badge variant="outline" className="border-orange-400 text-orange-700 dark:text-orange-400 text-[10px] gap-1">
-              <CalendarClock className="w-3 h-3" />
-              נדחה מ־{task.rescheduled_from}
-            </Badge>
-          )}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              {task.status === 'completed' && <CheckCircle className="w-4 h-4 text-primary shrink-0" />}
-              {task.status === 'in-progress' && <PlayCircle className="w-4 h-4 text-blue-500 animate-pulse shrink-0" />}
-              {task.status === 'pending' && <Clock className="w-4 h-4 text-muted-foreground shrink-0" />}
-              <span className="font-medium text-sm truncate">{task.name}</span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge variant="secondary" className="text-xs gap-1">
-                <Scale className="w-3 h-3" />
-                {task.target_quantity} {task.unit}
-              </Badge>
-              {isCompleted && (
-                <button onClick={() => toggleCompletedExpand(task.id)} className="text-muted-foreground hover:text-foreground">
-                  <ChevronUp className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {task.notes && (
-            <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 truncate">{task.notes}</p>
-          )}
-
-          <Progress value={percent} className="h-1.5" />
-
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground tabular-nums">
-              {task.completed_quantity}/{task.target_quantity} ({percent}%)
-            </span>
-            <div className="flex gap-1.5 no-print">
-              {task.status === 'pending' && (
-                <Button size="sm" className="gap-1 h-7 text-xs" onClick={() => handleStartTask(task)} disabled={updating === task.id}>
-                  {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <PlayCircle className="w-3 h-3" />}
-                  התחל
-                </Button>
-              )}
-              {task.status === 'in-progress' && (
-                <Button size="sm" className="gap-1 h-7 text-xs bg-primary hover:bg-primary/90" onClick={() => handleCompleteTask(task)} disabled={updating === task.id}>
-                  {updating === task.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                  סיימתי
-                </Button>
-              )}
-              {task.status !== 'completed' && task.status !== 'cancelled' && (
-                <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1 h-7 text-xs"
-                  onClick={() => setRescheduleTask(task)}
-                >
-                  <CalendarClock className="w-3 h-3" />
-                  דחה
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
-                      <MoreVertical className="w-3.5 h-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleCancelTask(task)} className="gap-2 text-destructive focus:text-destructive">
-                      <XCircle className="w-4 h-4" />
-                      בטל היום
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                </>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
   // --- Plan item row ---
   const renderPlanItem = (item: ScheduleItem) => {
     const stock = reserveStock.find(s => s.name === item.product_name);
@@ -881,11 +753,21 @@ export const ChefDashboardPage = () => {
           {/* Tasks to do */}
           <Card className="rounded-xl">
             <CardHeader className="p-3 pb-2">
-              <CardTitle className="text-xs font-bold flex items-center gap-1.5">
-                <ClipboardList className="w-3.5 h-3.5 text-primary" />
-                משימות לביצוע
-                <span className="text-[10px] font-normal text-muted-foreground">({deptStockTasks.filter(t => t.status !== 'completed').length})</span>
-              </CardTitle>
+              {(() => {
+                const total = deptStockTasks.length;
+                const done = deptStockTasks.filter(t => t.status === 'completed').length;
+                return (
+                  <CardTitle className="text-xs font-bold flex items-center gap-1.5">
+                    <ClipboardList className="w-3.5 h-3.5 text-primary" />
+                    משימות לביצוע
+                    {total > 0 && (
+                      <Badge variant="secondary" className="text-[10px] tabular-nums">
+                        {done}/{total}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                );
+              })()}
             </CardHeader>
             <CardContent className="p-3 pt-0 space-y-2">
               {rescheduledTodayCount > 0 && (
@@ -896,17 +778,44 @@ export const ChefDashboardPage = () => {
                   </span>
                 </div>
               )}
-              {deptStockTasks.length === 0 ? (
-                <div className="py-6 text-center space-y-2">
-                  <p className="text-xs text-muted-foreground">אין משימות מלאי</p>
-                  <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={handleGenerateFromSchedule} disabled={generating}>
-                    {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                    ייצור אוטומטי
-                  </Button>
-                </div>
-              ) : (
-                deptStockTasks.map(renderTaskCard)
-              )}
+              {(() => {
+                const activeStockTasks = deptStockTasks.filter(
+                  t => t.status !== 'completed' && t.status !== 'cancelled'
+                );
+                if (deptStockTasks.length === 0) {
+                  return (
+                    <div className="py-6 text-center space-y-2">
+                      <p className="text-xs text-muted-foreground">אין משימות מלאי</p>
+                      <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={handleGenerateFromSchedule} disabled={generating}>
+                        {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                        ייצור אוטומטי
+                      </Button>
+                    </div>
+                  );
+                }
+                if (activeStockTasks.length === 0) {
+                  return (
+                    <p className="text-sm text-primary text-center py-4 font-medium">
+                      🎉 כל המשימות הושלמו!
+                    </p>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                    {activeStockTasks.map(t => (
+                      <StockTaskTile
+                        key={t.id}
+                        task={t}
+                        updating={updating === t.id}
+                        onStart={() => handleStartTask(t)}
+                        onComplete={() => handleCompleteTask(t)}
+                        onReschedule={() => setRescheduleTask(t)}
+                        onCancel={() => handleCancelTask(t)}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
