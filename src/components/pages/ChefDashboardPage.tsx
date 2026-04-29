@@ -3,20 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   ChefHat, Truck, Users, Clock, Printer, Loader2,
-  CheckCircle, PlayCircle, Package, AlertTriangle, RefreshCw,
-  Scale, ClipboardList, ChevronDown, ChevronUp,
-  MoreVertical, CalendarClock, XCircle, Eye,
+  CheckCircle, Package, AlertTriangle, RefreshCw,
+  ClipboardList, CalendarClock, Eye,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
-import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
 import { EventChefDetailDialog } from '@/components/agenda/EventChefDetailDialog';
 import { RescheduleTaskDialog } from '@/components/kitchen/RescheduleTaskDialog';
 import { ExpiringItemsPanel } from '@/components/kitchen/ExpiringItemsPanel';
@@ -527,15 +522,6 @@ export const ChefDashboardPage = () => {
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
-
-  const toggleCompletedExpand = (id: string) => {
-    setExpandedCompleted(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
 
   // --- Plan item row ---
   const renderPlanItem = (item: ScheduleItem) => {
