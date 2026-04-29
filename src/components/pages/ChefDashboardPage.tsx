@@ -23,6 +23,8 @@ import { ExpiringItemsPanel } from '@/components/kitchen/ExpiringItemsPanel';
 import { UpcomingEventsColumn } from '@/components/kitchen/UpcomingEventsColumn';
 import { WeeklyMiniStatsCard } from '@/components/kitchen/WeeklyMiniStatsCard';
 import { StockPlanItemDialog, type StockPlanItem } from '@/components/kitchen/StockPlanItemDialog';
+import { EventTasksSection } from '@/components/kitchen/EventTasksSection';
+import type { EventTaskCardData } from '@/components/kitchen/EventTaskCard';
 
 interface ChefTask {
   id: string;
@@ -75,6 +77,17 @@ interface ReserveStock {
   unit: string;
 }
 
+interface EventItemRow {
+  id: string;
+  event_id: string;
+  name: string;
+  quantity: number;
+  servings: number | null;
+  department: string | null;
+  recipe_id: string | null;
+  notes: string | null;
+}
+
 const departments = [
   { key: 'מטבח', label: 'מטבח', icon: '🍳' },
   { key: 'מאפייה', label: 'מאפייה', icon: '🍞' },
@@ -98,6 +111,7 @@ export const ChefDashboardPage = () => {
   const [eventDialog, setEventDialog] = useState<TodayDelivery | null>(null);
   const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
   const [planItemDialog, setPlanItemDialog] = useState<StockPlanItem | null>(null);
+  const [generatingEvents, setGeneratingEvents] = useState(false);
   const { toast } = useToast();
 
   const today = new Date();
@@ -133,6 +147,8 @@ export const ChefDashboardPage = () => {
 
   const handleCompleteTask = async (task: ChefTask) => {
     setUpdating(task.id);
+    const completionMessages: string[] = [];
+
     await supabase.from('production_tasks').update({
       status: 'completed',
       completed_quantity: task.target_quantity,
@@ -156,43 +172,78 @@ export const ChefDashboardPage = () => {
     }
 
     if (task.recipe_id) {
+      // Récupérer la recette pour connaître le nombre de portions de référence
+      const { data: recipeRow } = await supabase
+        .from('recipes')
+        .select('servings')
+        .eq('id', task.recipe_id)
+        .single();
+      const recipeServings = Math.max(1, recipeRow?.servings || 1);
+      const scaleFactor = task.target_quantity / recipeServings;
+
       const { data: ingredients } = await supabase
         .from('recipe_ingredients')
-        .select('warehouse_item_id, quantity')
+        .select('warehouse_item_id, quantity, name')
         .eq('recipe_id', task.recipe_id);
 
       if (ingredients) {
-        const batchMultiplier = task.target_quantity;
         for (const ing of ingredients) {
-          if (ing.warehouse_item_id) {
-            const { data: wItem } = await supabase
-              .from('warehouse_items')
-              .select('quantity, min_stock, name')
-              .eq('id', ing.warehouse_item_id)
-              .single();
+          if (!ing.warehouse_item_id) continue;
+          const { data: wItem } = await supabase
+            .from('warehouse_items')
+            .select('quantity, min_stock, name')
+            .eq('id', ing.warehouse_item_id)
+            .single();
+          if (!wItem) continue;
 
-            if (wItem) {
-              const deduction = ing.quantity * batchMultiplier;
-              const newQty = Math.max(0, wItem.quantity - deduction);
-              await supabase.from('warehouse_items').update({ quantity: newQty }).eq('id', ing.warehouse_item_id);
+          const deduction = ing.quantity * scaleFactor;
+          const insufficient = wItem.quantity < deduction;
+          const newQty = Math.max(0, wItem.quantity - deduction);
 
-              if (newQty < wItem.min_stock) {
-                await supabase.from('notifications').insert([{
-                  type: 'low_stock',
-                  title: 'מלאי נמוך',
-                  message: `${wItem.name}: ${newQty} (מינימום: ${wItem.min_stock})`,
-                  severity: newQty === 0 ? 'critical' : 'warning',
-                  related_table: 'warehouse_items',
-                  related_id: ing.warehouse_item_id,
-                }]);
-              }
-            }
+          await supabase.from('warehouse_items').update({ quantity: newQty }).eq('id', ing.warehouse_item_id);
+
+          // Audit trail
+          await supabase.from('stock_movements').insert([{
+            item_type: 'warehouse',
+            item_id: ing.warehouse_item_id,
+            item_name: wItem.name,
+            movement_type: 'consume',
+            quantity_before: wItem.quantity,
+            quantity_change: -deduction,
+            quantity_after: newQty,
+            task_id: task.id,
+            event_id: task.event_id,
+            reason: task.task_type === 'event' ? `אירוע: ${task.name}` : `ייצור מלאי: ${task.name}`,
+          }]);
+
+          if (insufficient) {
+            await supabase.from('notifications').insert([{
+              type: 'low_stock',
+              title: '🚨 מלאי לא מספיק',
+              message: `${wItem.name}: נדרש ${deduction.toFixed(2)}, יש ${wItem.quantity}`,
+              severity: 'critical',
+              related_table: 'warehouse_items',
+              related_id: ing.warehouse_item_id,
+            }]);
+          } else if (newQty < wItem.min_stock) {
+            await supabase.from('notifications').insert([{
+              type: 'low_stock',
+              title: 'מלאי נמוך',
+              message: `${wItem.name}: ${newQty.toFixed(2)} (מינימום: ${wItem.min_stock})`,
+              severity: newQty === 0 ? 'critical' : 'warning',
+              related_table: 'warehouse_items',
+              related_id: ing.warehouse_item_id,
+            }]);
           }
         }
+        completionMessages.push(`${ingredients.length} מצרכים נוכו מהמרזן`);
       }
     }
 
-    toast({ title: '✅ משימה הושלמה', description: task.name });
+    toast({
+      title: '✅ משימה הושלמה',
+      description: completionMessages.length > 0 ? `${task.name} · ${completionMessages.join(' · ')}` : task.name,
+    });
     await fetchData();
     setUpdating(null);
   };
@@ -303,6 +354,79 @@ export const ChefDashboardPage = () => {
     await fetchData();
   };
 
+  const handleGenerateEventTasks = async () => {
+    setGeneratingEvents(true);
+    const eventIds = deliveries.map(d => d.id);
+    if (eventIds.length === 0) {
+      toast({ title: 'אין אירועים היום', description: 'אין צורך לייצר משימות' });
+      setGeneratingEvents(false);
+      return;
+    }
+
+    const { data: items } = await supabase
+      .from('event_items')
+      .select('id, event_id, name, quantity, servings, department, recipe_id, notes')
+      .in('event_id', eventIds);
+
+    const eventItems = (items || []) as EventItemRow[];
+
+    // Anti-doublons : (event_id|name)
+    const existingKeys = new Set(
+      tasks
+        .filter(t => t.task_type === 'event' && t.event_id)
+        .map(t => `${t.event_id}|${t.name}`)
+    );
+
+    const eventsById = new Map(deliveries.map(d => [d.id, d]));
+    const inserts: Array<{
+      date: string;
+      department: string;
+      task_type: string;
+      event_id: string;
+      recipe_id: string | null;
+      name: string;
+      target_quantity: number;
+      unit: string;
+      priority: number;
+      notes: string | null;
+    }> = [];
+
+    for (const it of eventItems) {
+      const key = `${it.event_id}|${it.name}`;
+      if (existingKeys.has(key)) continue;
+      const ev = eventsById.get(it.event_id);
+      const targetQty = it.quantity * (it.servings || 1);
+      const timeStr = (ev?.delivery_time || ev?.time || '').slice(0, 5);
+      inserts.push({
+        date: todayStr,
+        department: it.department || 'מטבח',
+        task_type: 'event',
+        event_id: it.event_id,
+        recipe_id: it.recipe_id,
+        name: it.name,
+        target_quantity: targetQty,
+        unit: 'מנה',
+        priority: 5,
+        notes: ev ? `אירוע: ${ev.client_name || ev.name}${timeStr ? ' · ' + timeStr : ''}${it.notes ? ' — ' + it.notes : ''}` : (it.notes || null),
+      });
+    }
+
+    if (inserts.length === 0) {
+      toast({ title: '✅ הכל מעודכן', description: 'כל פריטי האירועים כבר נוצרו כמשימות' });
+      setGeneratingEvents(false);
+      return;
+    }
+
+    const { error } = await supabase.from('production_tasks').insert(inserts);
+    if (error) {
+      toast({ title: 'שגיאה ביצירת משימות אירועים', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: `🎉 נוצרו ${inserts.length} משימות אירועים`, description: 'מסודרות לפי מחלקה' });
+      await fetchData();
+    }
+    setGeneratingEvents(false);
+  };
+
   // --- Derived data ---
   const stockTasksAll = tasks.filter(t => t.task_type === 'stock');
   const deptStockTasks = stockTasksAll
@@ -328,6 +452,33 @@ export const ChefDashboardPage = () => {
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const inProgressTasks = tasks.filter(t => t.status === 'in-progress').length;
   const overallProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // Event tasks enrichies pour la nouvelle section
+  const eventTasksEnriched: EventTaskCardData[] = tasks
+    .filter(t => t.task_type === 'event')
+    .map(t => {
+      const ev = t.event_id ? deliveries.find(d => d.id === t.event_id) : null;
+      return {
+        id: t.id,
+        name: t.name,
+        department: t.department,
+        target_quantity: t.target_quantity,
+        completed_quantity: t.completed_quantity,
+        unit: t.unit,
+        status: t.status,
+        event_id: t.event_id,
+        recipe_id: t.recipe_id,
+        notes: t.notes,
+        client_name: ev?.client_name || null,
+        event_name: ev?.name || null,
+        event_time: ev?.delivery_time || ev?.time || null,
+      };
+    });
+
+  const handleEventTaskClickEvent = (eventId: string) => {
+    const ev = deliveries.find(d => d.id === eventId);
+    if (ev) setEventDialog(ev);
+  };
 
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -590,6 +741,20 @@ export const ChefDashboardPage = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Event tasks — full width, by department */}
+      <EventTasksSection
+        tasks={eventTasksEnriched}
+        expandedCompleted={expandedCompleted}
+        onToggleExpand={toggleCompletedExpand}
+        updating={updating}
+        onStart={(t) => handleStartTask(tasks.find(x => x.id === t.id) as ChefTask)}
+        onComplete={(t) => handleCompleteTask(tasks.find(x => x.id === t.id) as ChefTask)}
+        onClickEvent={handleEventTaskClickEvent}
+        onGenerate={handleGenerateEventTasks}
+        generating={generatingEvents}
+        hasEventsToday={deliveries.length > 0}
+      />
 
       {/* MAIN GRID: Stock (left) | Upcoming events (right) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
