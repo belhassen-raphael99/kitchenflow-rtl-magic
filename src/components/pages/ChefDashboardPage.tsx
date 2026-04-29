@@ -244,6 +244,33 @@ export const ChefDashboardPage = () => {
     setGenerating(false);
   };
 
+  const handleRescheduleTask = async (task: ChefTask, newDate: string) => {
+    const note = `[נדחה מ־${todayStr}] ${task.notes || ''}`.trim();
+    const { error } = await supabase
+      .from('production_tasks')
+      .update({ date: newDate, status: 'pending', notes: note })
+      .eq('id', task.id);
+    if (error) {
+      toast({ title: 'שגיאה בדחיית המשימה', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: '📅 המשימה נדחתה', description: `${task.name} → ${newDate}` });
+    await fetchData();
+  };
+
+  const handleCancelTask = async (task: ChefTask) => {
+    const { error } = await supabase
+      .from('production_tasks')
+      .update({ status: 'cancelled' })
+      .eq('id', task.id);
+    if (error) {
+      toast({ title: 'שגיאה בביטול', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: '❌ המשימה בוטלה', description: task.name });
+    await fetchData();
+  };
+
   // --- Derived data ---
   const deptTasks = tasks.filter(t => t.department === activeDept);
   const deptScheduleAll = schedule.filter(s => s.department === activeDept);
