@@ -57,11 +57,22 @@ export function useAuth() {
   }, []);
 
   const fetchUserRole = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
+    // Retry once on empty result to absorb the brief race that can occur
+    // right after the demo edge function recreates the role row, where the
+    // first SELECT may land before the INSERT is visible to the API node.
+    let data: { role: string } | null = null;
+    let error: unknown = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+      error = res.error;
+      data = res.data as { role: string } | null;
+      if (error || data) break;
+      await new Promise((r) => setTimeout(r, 400));
+    }
 
     if (error) {
       // Fail-closed: sign out if we can't verify the role
