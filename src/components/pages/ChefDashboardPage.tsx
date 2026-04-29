@@ -759,8 +759,6 @@ export const ChefDashboardPage = () => {
       {/* Event tasks — full width, by department */}
       <EventTasksSection
         tasks={eventTasksEnriched}
-        expandedCompleted={expandedCompleted}
-        onToggleExpand={toggleCompletedExpand}
         updating={updating}
         onStart={(t) => handleStartTask(tasks.find(x => x.id === t.id) as ChefTask)}
         onComplete={(t) => handleCompleteTask(tasks.find(x => x.id === t.id) as ChefTask)}
