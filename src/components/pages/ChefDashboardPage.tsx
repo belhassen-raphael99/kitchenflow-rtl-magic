@@ -9,6 +9,7 @@ import {
   ChefHat, Truck, Users, Clock, Printer, Loader2,
   CheckCircle, PlayCircle, Package, AlertTriangle, RefreshCw,
   Scale, ClipboardList, Eye, ChevronDown, ChevronUp,
+  CalendarDays, MoreVertical, CalendarClock, XCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
@@ -16,6 +17,13 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EmptyState } from '@/components/layout/EmptyState';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
+import { EventChefDetailDialog } from '@/components/agenda/EventChefDetailDialog';
+import { RescheduleTaskDialog } from '@/components/kitchen/RescheduleTaskDialog';
+import { ExpiringItemsPanel } from '@/components/kitchen/ExpiringItemsPanel';
+import { WeeklyEventsPanel } from '@/components/kitchen/WeeklyEventsPanel';
 
 interface ChefTask {
   id: string;
