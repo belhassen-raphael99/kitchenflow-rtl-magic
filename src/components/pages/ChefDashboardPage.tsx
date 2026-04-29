@@ -127,6 +127,7 @@ export const ChefDashboardPage = () => {
           user_id: null,
         }));
         if (rows.length > 0) {
+          // Best-effort: only admins/demo can insert; silently ignore RLS failures for employees
           await supabase.from('notifications').insert(rows);
         }
       })();
