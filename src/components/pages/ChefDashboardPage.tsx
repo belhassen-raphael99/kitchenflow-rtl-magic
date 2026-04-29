@@ -580,6 +580,22 @@ export const ChefDashboardPage = () => {
         </div>
       </div>
 
+      {/* Top-level tabs: production / agenda */}
+      <Tabs value={topTab} onValueChange={(v) => setTopTab(v as 'production' | 'agenda')}>
+        <TabsList className="no-print grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="production" className="gap-2">
+            <ChefHat className="w-4 h-4" /> ייצור היום
+          </TabsTrigger>
+          <TabsTrigger value="agenda" className="gap-2">
+            <CalendarDays className="w-4 h-4" /> יומן אירועים ופג תוקף
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="agenda" className="mt-4 space-y-4">
+          <WeeklyEventsPanel />
+          <ExpiringItemsPanel />
+        </TabsContent>
+        <TabsContent value="production" className="mt-4 space-y-5">
+
       {/* Step Guide */}
       <StepGuide />
 
