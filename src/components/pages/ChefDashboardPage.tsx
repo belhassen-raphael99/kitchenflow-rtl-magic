@@ -115,6 +115,21 @@ export const ChefDashboardPage = () => {
     if (sig && sig !== lastSig) {
       setAlertDialogOpen(true);
       try { localStorage.setItem('chef_critical_alert_sig', sig); } catch { /* ignore */ }
+      // Fire admin notifications (broadcast — user_id = null) once per signature
+      (async () => {
+        const rows = criticalAlerts.alerts.map(a => ({
+          type: 'critical_stock_for_event',
+          title: '🚨 חוסרים קריטיים לאירוע',
+          message: `${a.clientName || a.eventName} (${a.date} ${a.time?.slice(0, 5)}) — חסרים ${a.missingIngredients.length} רכיבים`,
+          severity: 'critical',
+          related_table: 'events',
+          related_id: a.eventId,
+          user_id: null,
+        }));
+        if (rows.length > 0) {
+          await supabase.from('notifications').insert(rows);
+        }
+      })();
     }
   }, [criticalAlerts.loading, criticalAlerts.totalMissing, criticalAlerts.alerts]);
 
