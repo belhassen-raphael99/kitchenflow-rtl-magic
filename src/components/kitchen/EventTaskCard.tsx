@@ -25,15 +25,17 @@ interface Props {
   onStart: () => void;
   onComplete: () => void;
   onClickEvent: () => void;
+  onClickRecipe?: () => void;
 }
 
-export function EventTaskCard({ task, updating, onStart, onComplete, onClickEvent }: Props) {
+export function EventTaskCard({ task, updating, onStart, onComplete, onClickEvent, onClickRecipe }: Props) {
   // Une fois complété, la tuile disparaît (filtrée par le parent)
   if (task.status === 'completed') return null;
 
   const time = (task.event_time || '').slice(0, 5);
   const clientLabel = task.client_name || task.event_name || 'אירוע';
   const isInProgress = task.status === 'in-progress';
+  const hasRecipe = !!task.recipe_id && !!onClickRecipe;
 
   return (
     <Card className={cn(
@@ -42,9 +44,20 @@ export function EventTaskCard({ task, updating, onStart, onComplete, onClickEven
     )}>
       <CardContent className="p-2.5 space-y-2">
         <div className="space-y-0.5">
-          <p className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.4em]">
-            {task.name}
-          </p>
+          {hasRecipe ? (
+            <button
+              type="button"
+              onClick={onClickRecipe}
+              className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.4em] text-right w-full hover:text-primary hover:underline transition-colors cursor-pointer"
+              title="הצג מתכון מלא"
+            >
+              {task.name}
+            </button>
+          ) : (
+            <p className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.4em]">
+              {task.name}
+            </p>
+          )}
           <div className="flex items-center justify-between gap-1 text-[10px]">
             <button
               type="button"
