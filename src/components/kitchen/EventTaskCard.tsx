@@ -35,7 +35,7 @@ export function EventTaskCard({ task, updating, onStart, onComplete, onClickEven
   const time = (task.event_time || '').slice(0, 5);
   const clientLabel = task.client_name || task.event_name || 'אירוע';
   const isInProgress = task.status === 'in-progress';
-  const hasRecipe = !!task.recipe_id && !!onClickRecipe;
+  const canPreview = !!onClickRecipe;
 
   return (
     <Card className={cn(
@@ -44,12 +44,12 @@ export function EventTaskCard({ task, updating, onStart, onComplete, onClickEven
     )}>
       <CardContent className="p-2.5 space-y-2">
         <div className="space-y-0.5">
-          {hasRecipe ? (
+          {canPreview ? (
             <button
               type="button"
               onClick={onClickRecipe}
               className="font-semibold text-sm leading-tight line-clamp-2 min-h-[2.4em] text-right w-full hover:text-primary hover:underline transition-colors cursor-pointer"
-              title="הצג מתכון מלא"
+              title={task.recipe_id ? 'הצג מתכון מלא' : 'אין מתכון מקושר'}
             >
               {task.name}
             </button>
