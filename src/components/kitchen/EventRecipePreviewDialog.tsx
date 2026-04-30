@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Clock, Users, ChefHat, ListOrdered, Loader2, AlertTriangle, Package,
+  Clock, Users, ChefHat, ListOrdered, Loader2, AlertTriangle, Package, FileQuestion,
 } from 'lucide-react';
 import { Recipe, useRecipes } from '@/hooks/useRecipes';
 import { cn } from '@/lib/utils';
@@ -34,7 +34,8 @@ export function EventRecipePreviewDialog({
   const [warehouseStock, setWarehouseStock] = useState<WarehouseStock[]>([]);
 
   useEffect(() => {
-    if (!open || !recipeId) { setRecipe(null); return; }
+    if (!open) { setRecipe(null); return; }
+    if (!recipeId) { setRecipe(null); setLoading(false); return; }
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -80,17 +81,46 @@ export function EventRecipePreviewDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] p-0 overflow-hidden" dir="rtl">
-        {loading || !recipe ? (
+        {loading ? (
           <div className="flex items-center justify-center py-16">
-            {loading ? (
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            ) : (
-              <div className="text-center text-muted-foreground p-6">
-                <p className="font-medium">{recipeName || 'מתכון'}</p>
-                <p className="text-sm mt-2">אין מתכון מקושר לפריט זה</p>
-              </div>
-            )}
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
+        ) : !recipe ? (
+          <>
+            <div className="bg-gradient-to-l from-amber-500 to-amber-600 p-5 text-white">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                  <FileQuestion className="w-5 h-5" />
+                  מתכון חסר
+                </DialogTitle>
+                <p className="text-white/90 text-sm">{recipeName || 'פריט זה'}</p>
+              </DialogHeader>
+            </div>
+            <div className="p-6 text-center space-y-3" dir="rtl">
+              <div className="mx-auto w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-amber-600" />
+              </div>
+              <p className="text-base font-semibold">אין מתכון מקושר לפריט זה</p>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                לא ניתן להציג כמויות אוטומטיות. יש לפנות למנהל כדי לקשר מתכון לפריט
+                <span className="font-medium"> "{recipeName}"</span> בקטלוג.
+              </p>
+              {(clientName || eventTime) && (
+                <div className="flex flex-wrap gap-2 justify-center pt-2">
+                  {clientName && (
+                    <Badge variant="secondary" className="text-xs">
+                      <Users className="w-3 h-3 ml-1" />{clientName}
+                    </Badge>
+                  )}
+                  {eventTime && (
+                    <Badge variant="secondary" className="text-xs tabular-nums" dir="ltr">
+                      ⏱ {eventTime.slice(0, 5)}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
         ) : (
           <>
             {/* Header */}
