@@ -16,6 +16,7 @@ interface Props {
   onStart: (task: EventTaskCardData) => void;
   onComplete: (task: EventTaskCardData) => void;
   onClickEvent: (eventId: string) => void;
+  onClickRecipe?: (task: EventTaskCardData) => void;
   onGenerate: () => void;
   generating: boolean;
   hasEventsToday: boolean;
@@ -28,7 +29,7 @@ function normalizeDept(dept: string): string {
 }
 
 export function EventTasksSection({
-  tasks, updating, onStart, onComplete, onClickEvent, onGenerate, generating, hasEventsToday,
+  tasks, updating, onStart, onComplete, onClickEvent, onClickRecipe, onGenerate, generating, hasEventsToday,
 }: Props) {
   if (!hasEventsToday && tasks.length === 0) return null;
 
@@ -133,6 +134,7 @@ export function EventTasksSection({
                         onStart={() => onStart(t)}
                         onComplete={() => onComplete(t)}
                         onClickEvent={() => t.event_id && onClickEvent(t.event_id)}
+                        onClickRecipe={onClickRecipe ? () => onClickRecipe(t) : undefined}
                       />
                     ))}
                   </div>
