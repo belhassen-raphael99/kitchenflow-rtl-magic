@@ -22,6 +22,7 @@ import { StockPlanItemDialog, type StockPlanItem } from '@/components/kitchen/St
 import { EventTasksSection } from '@/components/kitchen/EventTasksSection';
 import type { EventTaskCardData } from '@/components/kitchen/EventTaskCard';
 import { StockTaskTile } from '@/components/kitchen/StockTaskTile';
+import { EventRecipePreviewDialog } from '@/components/kitchen/EventRecipePreviewDialog';
 
 interface ChefTask {
   id: string;
@@ -108,6 +109,7 @@ export const ChefDashboardPage = () => {
   const [rescheduleTask, setRescheduleTask] = useState<ChefTask | null>(null);
   const [planItemDialog, setPlanItemDialog] = useState<StockPlanItem | null>(null);
   const [generatingEvents, setGeneratingEvents] = useState(false);
+  const [recipePreviewTask, setRecipePreviewTask] = useState<EventTaskCardData | null>(null);
   const { toast } = useToast();
 
   const today = new Date();
@@ -664,6 +666,7 @@ export const ChefDashboardPage = () => {
         onStart={(t) => handleStartTask(tasks.find(x => x.id === t.id) as ChefTask)}
         onComplete={(t) => handleCompleteTask(tasks.find(x => x.id === t.id) as ChefTask)}
         onClickEvent={handleEventTaskClickEvent}
+        onClickRecipe={(t) => t.recipe_id && setRecipePreviewTask(t)}
         onGenerate={handleGenerateEventTasks}
         generating={generatingEvents}
         hasEventsToday={deliveries.length > 0}
