@@ -1,60 +1,45 @@
 ## Objectif
 
-Appliquer le même format **tuiles compactes en grille** (déjà utilisé pour `הכנות לאירועי היום`) à la section **משימות לביצוע — מלאי** dans le dashboard chef. Plus de scroll vertical : tout tient à l'écran, on appuie sur "סיימתי", la tuile disparaît.
+Quand le chef clique sur le **nom d'une tuile de tâche d'événement** (ex: "מיני תפוחי אדמה ובטטה") dans le Dashboard Chef, ouvrir une **fenêtre pop-up** affichant la recette complète, avec les **quantités d'ingrédients déjà multipliées** selon le nombre de portions à préparer pour cet événement.
 
-## État actuel
+## Comportement attendu
 
-La section "משימות לביצוע" du département actif affiche les tâches `task_type='stock'` via `renderTaskCard()` — chaque carte fait toute la largeur (~100px de haut), ce qui force un long scroll quand il y a 10–20 tâches.
+- Clic sur le **titre de la recette** dans la tuile → ouvre un dialog.
+- Le dialog affiche :
+  - Nom de la recette + département + badge "×N portions pour cet événement".
+  - Nom du client / événement + heure de service.
+  - Liste des **ingrédients avec quantités automatiquement scalées** (en utilisant `qty_x2` / `qty_x3` du JSONB de la recette si N=2/3, sinon multiplication linéaire — exactement la même logique que `RecipeDetailDialog`).
+  - Indicateur de stock insuffisant (rouge) si un ingrédient manque au mahsan.
+  - Avertissement de capacité si le poids total dépasse `max_capacity_grams`.
+  - Instructions de préparation numérotées.
+  - Bouton "סיימתי" / "התחל" intégré pour pouvoir mettre à jour le statut sans fermer.
+- Le **clic sur le nom du client** (déjà existant) garde son comportement actuel (ouvre le détail de l'événement). Seul le clic sur le **titre de la recette** déclenche la nouvelle pop-up.
 
-```text
-Aujourd'hui :              Cible :
-┌──────────────────┐      ┌────┬────┬────┬────┬────┐
-│ Pain hallah ×3   │      │Pain│Hou-│Tar-│Sou-│... │
-│ [התחל] [דחה][⋮] │      │×3  │×2kg│×50 │×1L │    │
-├──────────────────┤  →   │[▶] │[▶] │[✓] │[▶] │    │
-│ Houmous ×2kg     │      └────┴────┴────┴────┴────┘
-│ [התחל] [דחה][⋮] │      (grille dense, complétées disparaissent)
-└──────────────────┘
-```
+## Implémentation technique
 
-## Approche
+1. **Nouveau composant `src/components/kitchen/EventRecipePreviewDialog.tsx`**
+   - Props : `open`, `onOpenChange`, `recipeId`, `portions` (= `target_quantity` de la tâche), `clientName`, `eventTime`, `department`.
+   - Charge la recette via `useRecipes().fetchRecipeWithIngredients(recipeId)`.
+   - Charge `warehouse_items` pour calculer manques + max portions possibles.
+   - Réutilise la logique `getScaledQty` de `RecipeDetailDialog` (gestion `qty_x2` / `qty_x3` / multiplication linéaire).
+   - Affiche aussi la durée totale, l'avertissement capacité, les instructions.
+   - Pas d'édition d'ingrédient (vue chef en lecture seule).
 
-Réutiliser le pattern de `EventTaskCard` / `EventTasksSection` :
-- Une nouvelle tuile compacte pour les tâches de stock.
-- Tâches `completed` filtrées (n'apparaissent plus — le compteur `X/Y` reste visible en en-tête).
-- Grille responsive : `grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6`.
-- Garder les actions essentielles : **התחל**, **סיימתי**, et un menu compact (⋮) pour **דחה** (reporter) et **בטל** — ce sont des actions stock-spécifiques absentes des event-tasks.
+2. **`EventTaskCard.tsx`**
+   - Rendre le **titre `<p>` de la recette** cliquable (`<button>` stylé identiquement) avec un nouveau prop `onClickRecipe`.
+   - Garder les boutons "התחל" / "סיימתי" et le clic sur le client séparés (stopPropagation).
 
-## Modifications
+3. **`EventTasksSection.tsx`**
+   - Ajouter prop `onClickRecipe(task)` et la passer à chaque `EventTaskCard`.
 
-### 1. Nouveau composant `src/components/kitchen/StockTaskTile.tsx`
-Tuile compacte calquée sur `EventTaskCard.tsx` :
-- En-tête : nom de la tâche (2 lignes max, `line-clamp-2`), quantité cible (`×3 ק״ג`).
-- Si `rescheduled_from` : petit badge orange "נדחה".
-- Si `notes` non vide : petite icône info au survol (tooltip), pas affiché en clair pour rester compact.
-- Si `in-progress` : ring bleu + petite barre de progression fine.
-- Boutons :
-  - `pending` → bouton plein largeur **התחל**
-  - `in-progress` → bouton plein largeur **סיימתי** (vert primary)
-  - Menu kebab (⋮) en haut à droite → דחה (ouvre `RescheduleTaskDialog` existant), בטל
-- Tuile masquée si `status === 'completed' || 'cancelled'`.
+4. **`ChefDashboardPage.tsx`**
+   - Ajouter état local `previewTask: EventTaskCardData | null`.
+   - Handler `onClickRecipe={(task) => setPreviewTask(task)}`.
+   - Monter `<EventRecipePreviewDialog>` ouvert si `previewTask?.recipe_id`, en passant `portions={previewTask.target_quantity}` et les méta de l'événement.
+   - Gérer le cas où `recipe_id` est null (tâche libre sans recette liée) → ne rien faire au clic / curseur normal.
 
-### 2. Modifs dans `src/components/pages/ChefDashboardPage.tsx`
+## Notes
 
-Dans le bloc "Tasks to do" (lignes ~881–911) :
-- Remplacer `deptStockTasks.map(renderTaskCard)` par une grille de `<StockTaskTile />`.
-- Calculer `activeStockTasks = deptStockTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled')`.
-- Afficher dans l'en-tête le compteur `completed/total` (badge `X/Y`) comme dans `EventTasksSection`.
-- Si toutes les tâches sont terminées → message "🎉 כל המשימות הושלמו!" (comme côté events).
-- `renderTaskCard` peut être conservé pour l'instant ou supprimé si plus aucun appelant — vérifier qu'il n'est utilisé que là.
-
-### 3. Pas de changement
-- Logique de `handleStartTask`, `handleCompleteTask`, `handleCancelTask`, `setRescheduleTask` : inchangée, on passe juste les handlers à la tuile.
-- Filtre par département (boutons en haut) : inchangé.
-- Carte "תכנית היום" au-dessus : inchangée.
-
-## Hors-périmètre
-
-- Ne touche pas au composant `ProductionTaskCard.tsx` (utilisé ailleurs hypothétiquement, à garder).
-- Pas de changement à la vue "אירועים" (déjà en tuiles).
-- Pas de modification SQL ni d'edge functions.
+- Aucune migration DB nécessaire — toutes les données (recipe_id, target_quantity, ingrédients, qty_x2/x3) sont déjà persistées.
+- Le dialog est **lecture seule** côté ingrédients : pas de bouton "הוסף מרכיב" ni "חשב עלות" pour le rôle chef.
+- Style visuel cohérent avec `RecipeDetailDialog` (header dégradé primary, sections, RTL).
