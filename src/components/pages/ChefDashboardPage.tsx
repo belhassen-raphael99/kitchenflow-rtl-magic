@@ -666,7 +666,7 @@ export const ChefDashboardPage = () => {
         onStart={(t) => handleStartTask(tasks.find(x => x.id === t.id) as ChefTask)}
         onComplete={(t) => handleCompleteTask(tasks.find(x => x.id === t.id) as ChefTask)}
         onClickEvent={handleEventTaskClickEvent}
-        onClickRecipe={(t) => t.recipe_id && setRecipePreviewTask(t)}
+        onClickRecipe={(t) => setRecipePreviewTask(t)}
         onGenerate={handleGenerateEventTasks}
         generating={generatingEvents}
         hasEventsToday={deliveries.length > 0}
