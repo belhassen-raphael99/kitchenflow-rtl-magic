@@ -906,6 +906,16 @@ export const ChefDashboardPage = () => {
         item={planItemDialog}
         onCreateTask={handleCreateTaskFromPlan}
       />
+      <EventRecipePreviewDialog
+        open={!!recipePreviewTask}
+        onOpenChange={(o) => !o && setRecipePreviewTask(null)}
+        recipeId={recipePreviewTask?.recipe_id || null}
+        portions={recipePreviewTask?.target_quantity || 1}
+        recipeName={recipePreviewTask?.name}
+        clientName={recipePreviewTask?.client_name || recipePreviewTask?.event_name || null}
+        eventTime={recipePreviewTask?.event_time || null}
+        department={recipePreviewTask?.department || null}
+      />
     </div>
   );
 };
